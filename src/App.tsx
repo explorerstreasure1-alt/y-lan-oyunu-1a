@@ -122,6 +122,7 @@ export default function App() {
   const [maxCombo, setMaxCombo] = useState(0);
   const [showComboBanner, setShowComboBanner] = useState(false);
   const [scoreFloat, setScoreFloat] = useState<{ id: number; text: string } | null>(null);
+const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; isReview: boolean } | null>(null);
   const [boardFlash, setBoardFlash] = useState<"good" | "gold" | null>(null);
   const [showHint, setShowHint] = useState(false);
 
@@ -523,6 +524,8 @@ export default function App() {
 
         setScoreFloat({ id: Date.now(), text: `+${scorePoints}` });
         window.setTimeout(() => setScoreFloat(null), 850);
+        setWordToast({ id: Date.now(), word: currentWord, isReview });
+        window.setTimeout(() => setWordToast(null), 1250);
         setBoardFlash(isReview ? "gold" : "good");
         window.setTimeout(() => setBoardFlash(null), 480);
         setShowHint(false);
@@ -671,6 +674,12 @@ export default function App() {
                 <div ref={boardRef} onTouchStart={handleBoardTouchStart} onTouchEnd={handleBoardTouchEnd} className="game-board story-board" style={{ "--columns": COLUMNS } as React.CSSProperties}>
                   {boardFlash && <div className={`board-flash ${boardFlash}`} />}
                   {scoreFloat && <div key={scoreFloat.id} className="score-float">{scoreFloat.text}</div>}
+                  {wordToast && (
+                    <div key={wordToast.id} className="word-toast">
+                      <span className={`word-toast-word ${wordToast.isReview ? "text-[#ffe9a0]" : ""}`}>{wordToast.word.word}</span>
+                      <span className="word-toast-meaning">🇹🇷 {wordToast.word.meaningTr.split(" /")[0].split(" (")[0].slice(0, 18)}</span>
+                    </div>
+                  )}
                   {Array.from({ length: COLUMNS * ROWS }, (_, index) => {
                     const point = { x: index % COLUMNS, y: Math.floor(index / COLUMNS) };
                     const snakeIndex = snake.findIndex((s) => isSamePoint(s, point));
@@ -717,13 +726,7 @@ export default function App() {
                         {isPower && <div className="absolute inset-0 flex items-center justify-center text-base animate-bounce z-10">{powerUpOnGrid!.emoji}</div>}
                         {bossOpt && <div className="absolute inset-[1px] flex items-center justify-center rounded-md border-2 border-[#ff84ad] bg-[#ff84ad] text-[#21123a] font-pixel text-[7px] font-black leading-none text-center p-0.5 z-20 animate-pulse">🇹🇷 {bossOpt.textTr}</div>}
                         {isFood && !bossOpt && (
-                          <div className={`word-treat story-treat ${activeFood.isReview ? "review-treat" : ""}`}>
-                            <span className="treat-dot" />
-                            <div className="flex flex-col items-center leading-none">
-                              <span className="text-[10px]">{currentWord.word}</span>
-                              <span className="text-[7px] opacity-80 font-normal mt-0.5">🇹🇷 {currentWord.meaningTr.split(" /")[0].split(" (")[0].slice(0,14)}</span>
-                            </div>
-                          </div>
+                          <div className={`word-treat ${activeFood.isReview ? "review-treat" : ""}`} />
                         )}
                       </div>
                     );

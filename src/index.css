@@ -132,17 +132,6 @@ button { font: inherit; }
   aspect-ratio: 9 / 16;
   background-size: 100% calc(100% / 32), calc(100% / 18) 100%, auto !important;
 }
-.story-treat {
-  min-width: 20px !important;
-  max-width: 48px !important;
-  padding: 1px 2.5px !important;
-  font-size: 6px !important;
-  line-height: 1;
-  border-radius: 3px !important;
-  box-shadow: 0.5px 0.5px 0 #dd6a9e !important;
-  border-width: 1px !important;
-}
-
 .game-board::after {
   content: "";
   position: absolute;
@@ -205,44 +194,63 @@ button { font: inherit; }
 .snake-head.snake-down .eye-two { bottom: 3px; top: auto; right: 3px; left: auto; }
 .snake-cheek { display: none; }
 
-/* Ultra minicik yemler - ekranın çok azını kapsasın */
+/* Yuvarlak küçük lokma - yazısız yem, yiyince kelime ortada belirip kaybolur */
 .word-treat {
   position: absolute;
   z-index: 3;
   top: 50%;
   left: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 22px;
-  max-width: 52px;
-  padding: 1.5px 3px;
-  border: 1px solid #fff2c4;
-  border-radius: 3px;
-  color: #43215e;
+  width: 40%;
+  aspect-ratio: 1 / 1;
+  max-width: 18px;
+  min-width: 10px;
+  border-radius: 50%;
   background: #ffd96d;
-  box-shadow: 1px 1px 0 #dd6a9e;
-  font-family: "Courier New", ui-monospace, monospace;
-  font-size: clamp(5.5px, 0.85vw, 8px);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  white-space: nowrap;
+  box-shadow: 0 0 8px rgba(255, 217, 109, 0.55), inset -2px -2px 0 rgba(0, 0, 0, 0.12);
   transform: translate(-50%, -50%);
   animation: treat-bob 1.3s ease-in-out infinite alternate;
 }
 
 .word-treat.review-treat {
-  border-color: #ffffff;
-  background: linear-gradient(135deg, #ffe073, #f5a623);
-  color: #1a0e33;
-  box-shadow: 0 0 6px rgba(255, 224, 115, 0.6), 1px 1px 0 #b35900;
+  background: linear-gradient(135deg, #ffe9a0, #f5a623);
+  box-shadow: 0 0 10px rgba(255, 224, 115, 0.85), 0 0 0 2px rgba(255, 255, 255, 0.5), inset -2px -2px 0 rgba(0, 0, 0, 0.15);
   animation: review-treat-bob 1s ease-in-out infinite alternate;
 }
 
-.treat-dot { display: block; width: 3px; height: 3px; flex: none; border-radius: 50%; background: #f06ea0; }
-.review-treat .treat-dot { width: 3.5px; height: 3.5px; background: #ffffff; box-shadow: 0 0 3px #ffffff; }
+/* Yiyince ortada hafif belirip kaybolan kelime */
+.word-toast {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: 45%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: word-toast-fade 1.2s ease-out forwards;
+}
+.word-toast-word {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: clamp(13px, 2.5vw, 20px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: rgba(255, 240, 178, 0.95);
+  text-shadow: 2px 2px 0 rgba(84, 42, 125, 0.6);
+}
+.word-toast-meaning {
+  font-size: clamp(9px, 1.5vw, 12px);
+  font-weight: 700;
+  color: rgba(255, 217, 109, 0.75);
+  text-shadow: 1px 1px 0 rgba(84, 42, 125, 0.5);
+}
+@keyframes word-toast-fade {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(1); }
+}
 
 .board-message {
   position: absolute;
@@ -283,9 +291,6 @@ button { font: inherit; }
 @media (max-width: 480px) {
   .arcade-bezel { border-radius: 14px; box-shadow: 4px 4px 0 #703f9e; }
   .story-bezel { max-width: 100%; border-radius: 18px; }
-  .word-treat { min-width: 28px; padding: 1.5px 3px; gap: 1.5px; font-size: 7px; }
-  .story-treat { min-width: 28px !important; max-width: 54px !important; font-size: 6.5px !important; }
-  .treat-dot { width: 3px; height: 3px; }
 }
 
 /* --- Mobil dokunmatik: yön pedi oyun alanının hemen altında, ikisi tek ekranda --- */
