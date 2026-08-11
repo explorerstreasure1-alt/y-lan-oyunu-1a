@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LEARNING_PATH, TOTAL_WORDS, type VocabularyWord, type WordLevel } from "./vocabulary";
 import {
   getNextFoodItem,
@@ -175,6 +175,7 @@ export default function App() {
   const recentUnlearnedIdsRef = useRef<number[]>([]);
   const comboStreakRef = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<Point | null>(null);
 
   masteryMapRef.current = masteryMap;
@@ -326,44 +327,40 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [changeDirection, setGameStatus, startGame]);
 
-  // Mobil: oyun alanını ekrana sığdır - sabit yön pedi ile birlikte hepsi tek ekranda görünsün
-  useEffect(() => {
+  // Mobil: oyun çerçevesini (alan + yön pedi) ekrana sığdır - ped alanın hemen altında, ikisi birlikte görünür
+  useLayoutEffect(() => {
     const board = boardRef.current;
-    if (!board) return;
+    const frame = frameRef.current;
+    if (!board || !frame) return;
 
-    const fitBoardToViewport = () => {
+    const fitFrameToViewport = () => {
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
       if (!isMobile) {
+        frame.style.height = "";
         board.style.width = "";
-        board.style.height = "";
+        board.style.aspectRatio = "";
         return;
       }
-      const naturalHeight = (board.offsetWidth * 16) / 9;
       // Kaydırmadan bağımsız doküman konumu
-      const docTop = board.getBoundingClientRect().top + window.scrollY;
-      // Sabit yön pedi (~144px) + alt boşluk + nefes payı
-      const padBlockHeight = 190;
-      const available = window.innerHeight - docTop - padBlockHeight;
-      if (available < naturalHeight) {
-        // Genişliği sabitle, yükseklikten aspect-ratio daraltmasın (9/16 en-boy kare 9:16 çerçevede kalır)
-        board.style.width = "100%";
-        board.style.height = `${Math.max(200, Math.round(available))}px`;
-      } else {
-        board.style.width = "";
-        board.style.height = "";
-      }
+      const docTop = frame.getBoundingClientRect().top + window.scrollY;
+      // Alt nefes payı: 12px
+      const available = window.innerHeight - docTop - 12;
+      frame.style.height = `${Math.max(320, Math.round(available))}px`;
+      // 9/16 en-boy çerçeve dikeyde daralsın (flex ile board kalan yüksekliği alır)
+      board.style.width = "100%";
+      board.style.aspectRatio = "auto";
     };
 
-    fitBoardToViewport();
+    fitFrameToViewport();
     // Üstteki içerik (install banner vb.) değişince yeniden hesapla
-    const layoutObserver = new ResizeObserver(fitBoardToViewport);
+    const layoutObserver = new ResizeObserver(fitFrameToViewport);
     layoutObserver.observe(document.body);
-    window.addEventListener("resize", fitBoardToViewport);
-    window.addEventListener("orientationchange", fitBoardToViewport);
+    window.addEventListener("resize", fitFrameToViewport);
+    window.addEventListener("orientationchange", fitFrameToViewport);
     return () => {
       layoutObserver.disconnect();
-      window.removeEventListener("resize", fitBoardToViewport);
-      window.removeEventListener("orientationchange", fitBoardToViewport);
+      window.removeEventListener("resize", fitFrameToViewport);
+      window.removeEventListener("orientationchange", fitFrameToViewport);
     };
   }, []);
 
@@ -584,7 +581,7 @@ export default function App() {
   };
 
   return (
-    <main className={`pad-clearance min-h-screen overflow-x-hidden bg-[#17112e] px-3 py-3 text-[#fff7e8] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}>
+    <main className={`min-h-screen overflow-x-hidden bg-[#17112e] px-3 py-3 text-[#fff7e8] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}>
       <div className="arcade-stars" aria-hidden="true" />
 
       <div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
@@ -646,7 +643,7 @@ export default function App() {
         <div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
           {/* Left/Center - Story Phone Frame */}
           <div className="w-full max-w-[400px] flex-none">
-            <div className="story-frame">
+            <div ref={frameRef} className="story-frame">
               <div className="arcade-bezel story-bezel relative overflow-hidden">
                 {bossBattle && (
                   <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 w-[88%] animate-pop rounded-xl border-2 border-[#ff84ad] bg-[#2d0014]/95 p-2.5 text-center shadow-2xl backdrop-blur">
@@ -659,7 +656,7 @@ export default function App() {
                   <div className="absolute top-10 left-1/2 z-20 -translate-x-1/2 animate-pop rounded-xl border-2 border-[#ffd96d] bg-[#ffd96d] px-3 py-1 font-pixel text-xs font-black text-[#21123a] shadow-xl">🔥 COMBO x{comboStreak}!</div>
                 )}
 
-                <div className="flex items-center justify-between border-b border-white/10 bg-[#302052] px-3 py-2">
+                <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#302052] px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <span className={`status-light status-${status}`} />
                     <span className="font-pixel text-[9px] tracking-wider text-[#ffe99f] truncate max-w-[120px]">{currentWord.level} • {currentWord.topic}</span>
@@ -736,7 +733,7 @@ export default function App() {
                   {status === "over" && <div className="board-message"><span>BİTTİ</span><div className="flex gap-2 mt-2"><button onClick={()=>setIsStatsOpen(true)} type="button">📊 Rapor</button><button onClick={resetGame} type="button">Yeniden</button></div></div>}
                 </div>
 
-                <div className="flex items-center justify-between bg-[#302052] px-3 py-2">
+                <div className="flex shrink-0 items-center justify-between bg-[#302052] px-3 py-2">
                   <p className="font-pixel text-[9px] text-white/60">SKOR <strong className="text-[#99f5c3] ml-1">{String(score).padStart(3,"0")}</strong></p>
                   {comboStreak>1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
                   <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3,"0")}</p>
@@ -746,7 +743,7 @@ export default function App() {
 
               <ArcadeControls onDirectionChange={changeDirection} onPauseToggle={() => (status === "playing" ? setGameStatus("paused") : startGame())} isPlaying={status === "playing"} />
 
-              <div className="mt-2 flex justify-center gap-1.5">
+              <div className="mt-2 flex shrink-0 justify-center gap-1.5">
                 <button onClick={()=>setIsTopicsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">📌 Konu</button>
                 <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
                 <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">🎰 Çark</button>

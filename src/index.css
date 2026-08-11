@@ -129,7 +129,7 @@ button { font: inherit; }
   border-width: 2.5px;
 }
 .story-board {
-  aspect-ratio: 9 / 16 !important;
+  aspect-ratio: 9 / 16;
   background-size: 100% calc(100% / 32), calc(100% / 18) 100%, auto !important;
 }
 .story-treat {
@@ -288,7 +288,7 @@ button { font: inherit; }
   .treat-dot { width: 3px; height: 3px; }
 }
 
-/* --- Mobil dokunmatik: sabit yön pedi + oyun alanını viewport'a sığdırma --- */
+/* --- Mobil dokunmatik: yön pedi oyun alanının hemen altında, ikisi tek ekranda --- */
 @media (max-width: 640px) {
   .arcade-pad {
     touch-action: manipulation;
@@ -296,13 +296,20 @@ button { font: inherit; }
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Sayfanın en altındaki içerik sabit pedin altında kalmasın */
-  .pad-clearance {
-    padding-bottom: calc(190px + env(safe-area-inset-bottom));
-  }
   /* Oyun alanında kaydırma (swipe) yön değiştirsin, sayfa kaymasın */
   .story-board {
     touch-action: none;
+  }
+  /* Çerçeve ekrana sığsın: bezel ve board kalan yüksekliği paylaşsın, sabit çubuklar ve ped küçülmesin */
+  .story-bezel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+  }
+  .story-board {
+    flex: 1 1 0%;
+    min-height: 0;
   }
 }
 

@@ -8,8 +8,8 @@ type ArcadeControlsProps = {
 
 export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying }: ArcadeControlsProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
-      <div className="arcade-pad pointer-events-auto relative h-36 w-36 rounded-full border-2 border-white/10 bg-[#251646]/95 p-2 shadow-inner backdrop-blur-sm">
+    <div className="mt-3 flex shrink-0 justify-center sm:hidden">
+      <div className="arcade-pad relative h-36 w-36 rounded-full border-2 border-white/10 bg-[#251646]/95 p-2 shadow-inner backdrop-blur-sm">
         {/* Up */}
         <button
           type="button"
