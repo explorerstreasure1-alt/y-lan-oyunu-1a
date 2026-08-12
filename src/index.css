@@ -301,6 +301,10 @@ button { font: inherit; }
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
+  /* Dokunma anında anında tepki: kaydırma/zoom çakışması olmasın */
+  .arcade-pad button {
+    touch-action: none;
+  }
   /* Oyun alanında kaydırma (swipe) yön değiştirsin, sayfa kaymasın */
   .story-board {
     touch-action: none;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LEARNING_PATH, TOTAL_WORDS, type VocabularyWord, type WordLevel } from "./vocabulary";
 import {
   getNextFoodItem,
@@ -89,6 +89,15 @@ function findOpenCell(snake: Point[], seed: number, reservedPoints: Point[] = []
   return { x: 2, y: 2 };
 }
 
+// Konu + seviye filtreli kelime havuzu - boş dönerse tüm havuza düş
+function buildFilteredPool(topic: string | "ALL", level: WordLevel | "ALL"): VocabularyWord[] {
+  if (topic === "ALL" && level === "ALL") return LEARNING_PATH;
+  const pool = LEARNING_PATH.filter(
+    (w) => (topic === "ALL" || w.topic === topic) && (level === "ALL" || w.level === level)
+  );
+  return pool.length > 0 ? pool : LEARNING_PATH;
+}
+
 export default function App() {
   const [snake, setSnake] = useState<Point[]>(STARTING_SNAKE);
   const [foodPoint, setFoodPoint] = useState<Point>(() => findOpenCell(STARTING_SNAKE, 1));
@@ -102,6 +111,7 @@ export default function App() {
   const [wrapWalls, setWrapWalls] = useState(true);
   const [autoPauseOnEat] = useState(false);
   const [crtMode, setCrtMode] = useState(false);
+  const [isBoosting, setIsBoosting] = useState(false); // basılı tut = yılan hızlansın
 
   // Power-Ups & Buffs
   const [powerUpOnGrid, setPowerUpOnGrid] = useState<PowerUpOnGrid | null>(null);
@@ -113,9 +123,24 @@ export default function App() {
   const [bossBattle, setBossBattle] = useState<BossBattleState | null>(null);
   const [bossesDefeated, setBossesDefeated] = useState(0);
 
-  // Filters
-  const [selectedTopic, setSelectedTopic] = useState<string | "ALL">("ALL");
-  const [selectedLevel, setSelectedLevel] = useState<WordLevel | "ALL">("ALL");
+  // Filters (seçim localStorage'da kalıcı - her açılışta aynı konudan devam)
+  const [selectedTopic, setSelectedTopic] = useState<string | "ALL">(() => {
+    try {
+      const saved = window.localStorage.getItem("snake-abc-topic");
+      return saved && saved !== "ALL" ? saved : "ALL";
+    } catch {
+      return "ALL";
+    }
+  });
+  const [selectedLevel, setSelectedLevel] = useState<WordLevel | "ALL">(() => {
+    try {
+      const saved = window.localStorage.getItem("snake-abc-level");
+      return saved === "A1" || saved === "A2" || saved === "B1" || saved === "B2" || saved === "C1" || saved === "C2" ? (saved as WordLevel) : "ALL";
+    } catch {
+      return "ALL";
+    }
+  });
+  const filteredPool = useMemo(() => buildFilteredPool(selectedTopic, selectedLevel), [selectedTopic, selectedLevel]);
 
   // Streak / Combo & Visuals
   const [comboStreak, setComboStreak] = useState(0);
@@ -262,7 +287,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     recentUnlearnedIdsRef.current = [];
 
     const nextFoodPoint = findOpenCell(freshSnake, 1);
-    const { item, updatedCursor } = getNextFoodItem(0, masteryMapRef.current, 0, [], customWordBank);
+    const { item, updatedCursor } = getNextFoodItem(0, masteryMapRef.current, 0, [], customWordBank, filteredPool);
 
     newWordCursorRef.current = updatedCursor;
     foodPointRef.current = nextFoodPoint;
@@ -284,7 +309,35 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     setRecentUnlearnedIds([]);
     setShowHint(false);
     setGameStatus("ready");
-  }, [customWordBank, setGameStatus]);
+  }, [customWordBank, filteredPool, setGameStatus]);
+
+  // Konu/seviye değişince: filtreyi uygula, imleci sıfırla, yeni kelime seç (oyunu bozmadan)
+  const selectPool = useCallback(
+    (topic: string | "ALL", level: WordLevel | "ALL") => {
+      setSelectedTopic(topic);
+      setSelectedLevel(level);
+      try {
+        window.localStorage.setItem("snake-abc-topic", topic);
+        window.localStorage.setItem("snake-abc-level", level);
+      } catch {}
+      const pool = buildFilteredPool(topic, level);
+      const { item, updatedCursor } = getNextFoodItem(
+        0,
+        masteryMapRef.current,
+        eatenTotalRef.current,
+        recentUnlearnedIdsRef.current,
+        customWordBank,
+        pool
+      );
+      newWordCursorRef.current = updatedCursor;
+      activeFoodRef.current = item;
+      setActiveFood(item);
+      const nextFoodCell = findOpenCell(snakeRef.current, eatenTotalRef.current + 3);
+      foodPointRef.current = nextFoodCell;
+      setFoodPoint(nextFoodCell);
+    },
+    [customWordBank]
+  );
 
   const changeDirection = useCallback(
     (nextDirection: Direction) => {
@@ -323,9 +376,21 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
         if (statusRef.current === "playing") setGameStatus("paused");
         else if (statusRef.current === "paused" || statusRef.current === "ready") startGame();
       }
+      // Shift = yılanı hızlandır (basılı tut)
+      if (event.key === "Shift") {
+        event.preventDefault();
+        setIsBoosting(true);
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") setIsBoosting(false);
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, [changeDirection, setGameStatus, startGame]);
 
   // Mobil: oyun çerçevesini (alan + yön pedi) ekrana sığdır - ped alanın hemen altında, ikisi birlikte görünür
@@ -397,6 +462,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     // Story mod için çok daha yavaş, okumaya odaklı hızlar - kullanıcı isteği: çok çok yavaş
     let tickInterval = speed === "slow" ? 280 : speed === "normal" ? 200 : 135;
     if (isSlowBerryActive) tickInterval += 90;
+    if (isBoosting) tickInterval = Math.max(55, Math.round(tickInterval * 0.45));
 
     const gameLoop = window.setInterval(() => {
       if (statusRef.current !== "playing") return;
@@ -542,7 +608,8 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
           updatedMap,
           eatenTotalRef.current,
           recentUnlearnedIdsRef.current,
-          customWordBank
+          customWordBank,
+          filteredPool
         );
 
         newWordCursorRef.current = updatedCursor;
@@ -556,12 +623,19 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     }, tickInterval);
 
     return () => window.clearInterval(gameLoop);
-  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, customWordBank, triggerBossBattle, setGameStatus, sessionEatenWords.length]);
+  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, customWordBank, filteredPool, isBoosting, triggerBossBattle, setGameStatus, sessionEatenWords.length]);
 
   const currentWord = activeFood.word;
   const isCurrentLearned = Boolean(masteryMap[currentWord.id]?.isLearned);
   const statusLabel = status === "playing" ? "OYUNDA" : status === "paused" ? "DURAKLATILDI" : status === "over" ? "BİTTİ" : "HAZIR";
-  const progressPercent = Math.min(100, Math.round((learnedCount / TOTAL_WORDS) * 100));
+
+  // Konu/seviye filtresi aktifse ilerleme çubuğu o havuza göre hesaplanır (konu başına kayıt)
+  const isPoolFiltered = filteredPool.length < LEARNING_PATH.length;
+  const poolTotal = filteredPool.length;
+  const poolLearned = filteredPool.filter((w) => masteryMap[w.id]?.isLearned).length;
+  const displayTotal = isPoolFiltered ? poolTotal : TOTAL_WORDS;
+  const displayLearned = isPoolFiltered ? poolLearned : learnedCount;
+  const displayPercent = Math.min(100, Math.round((displayLearned / displayTotal) * 100));
 
   const achievementStats: AchievementStats = {
     learnedCount,
@@ -738,16 +812,24 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
 
                 <div className="flex shrink-0 items-center justify-between bg-[#302052] px-3 py-2">
                   <p className="font-pixel text-[9px] text-white/60">SKOR <strong className="text-[#99f5c3] ml-1">{String(score).padStart(3,"0")}</strong></p>
+                  {isBoosting && <span className="font-pixel text-[9px] text-[#ff84ad] animate-pulse">⚡ HIZLI</span>}
                   {comboStreak>1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
                   <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3,"0")}</p>
                   <button onClick={() => (status === "playing" ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
                 </div>
               </div>
 
-              <ArcadeControls onDirectionChange={changeDirection} onPauseToggle={() => (status === "playing" ? setGameStatus("paused") : startGame())} isPlaying={status === "playing"} />
+              <ArcadeControls
+                onDirectionChange={changeDirection}
+                onPauseToggle={() => (status === "playing" ? setGameStatus("paused") : startGame())}
+                isPlaying={status === "playing"}
+                isBoosting={isBoosting}
+                onBoostStart={() => setIsBoosting(true)}
+                onBoostEnd={() => setIsBoosting(false)}
+              />
 
               <div className="mt-2 flex shrink-0 justify-center gap-1.5">
-                <button onClick={()=>setIsTopicsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">📌 Konu</button>
+                <button onClick={()=>setIsTopicsOpen(true)} type="button" className={`rounded-full px-3 py-1 text-[11px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
                 <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
                 <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">🎰 Çark</button>
                 <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">✍️ Özel</button>
@@ -761,7 +843,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
               <span className="font-pixel text-[10px] text-[#99f5c3]">SEVİYE FİLTRE:</span>
               <div className="flex gap-1">
                 {(["ALL","A1","A2","B1","B2","C1","C2"] as const).map(lvl=> (
-                  <button key={lvl} onClick={()=>setSelectedLevel(lvl)} className={`rounded px-1.5 py-0.5 font-pixel text-[10px] font-bold ${selectedLevel===lvl?"bg-[#ffd96d] text-[#21123a]":"bg-white/10 text-white/60"}`}>{lvl}</button>
+                  <button key={lvl} onClick={()=>selectPool(selectedTopic, lvl)} className={`rounded px-1.5 py-0.5 font-pixel text-[10px] font-bold ${selectedLevel===lvl?"bg-[#ffd96d] text-[#21123a]":"bg-white/10 text-white/60"}`}>{lvl}</button>
                 ))}
               </div>
             </div>
@@ -811,13 +893,14 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
               <div className="mt-3">
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="font-pixel text-[9px] tracking-widest text-[#ffd96d]">3000 KELİME İLERLEME</p>
-                    <p className="mt-0.5 text-xs text-white/60"><strong className="text-white">{learnedCount}</strong> / {TOTAL_WORDS} Öğrendim (asla çıkmaz)</p>
+                    <p className="font-pixel text-[9px] tracking-widest text-[#ffd96d]">{isPoolFiltered ? "BU KONUDAKİ İLERLEME" : "3000 KELİME İLERLEME"}</p>
+                    <p className="mt-0.5 text-xs text-white/60"><strong className="text-white">{displayLearned}</strong> / {displayTotal} {isPoolFiltered ? "bu konuda Öğrendim (asla çıkmaz)" : "Öğrendim (asla çıkmaz)"}</p>
                   </div>
-                  <span className="font-pixel text-[11px] font-bold text-[#99f5c3]">{progressPercent}%</span>
+                  <span className="font-pixel text-[11px] font-bold text-[#99f5c3]">{displayPercent}%</span>
                 </div>
-                <div className="journey-track mt-2"><span style={{ width: `${Math.max(progressPercent, learnedCount?1:0)}%` }} /></div>
+                <div className="journey-track mt-2"><span style={{ width: `${Math.max(displayPercent, displayLearned?1:0)}%` }} /></div>
                 <p className="mt-1.5 text-[10px] leading-4 text-white/50">💡 Öğrendim yaptığın kelime, <strong className="text-white/80">Unuttum 🔁</strong> diyene kadar oyunda, çarkta, patron savaşında ve tüm havuzda bir daha asla karşına çıkmaz. Tam kalıcı öğrenme!</p>
+                {isPoolFiltered && <p className="mt-1.5 text-[10px] leading-4 text-white/50">📌 {selectedTopic !== "ALL" ? `"${selectedTopic}" konusu` : "Seçili seviye"} etkin — seçimi değiştirmek için üstteki <strong className="text-white/80">📌 Konu</strong> butonunu kullan.</p>}
               </div>
 
               {lastEaten && (
@@ -848,7 +931,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
       {/* Modals */}
       <WordLibraryModal isOpen={isLibraryOpen} onClose={()=>setIsLibraryOpen(false)} masteryMap={masteryMap} onMasteryChange={(m)=>setMasteryMap(m)} speechMode={speechMode} />
       <SkinsModal isOpen={isSkinsOpen} onClose={()=>setIsSkinsOpen(false)} learnedCount={learnedCount} activeSkinId={activeSkinId} onSelectSkin={(id)=>{setActiveSkinId(id); setIsSkinsOpen(false);}} />
-      <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>setSelectedTopic(t)} onSelectLevel={(l)=>setSelectedLevel(l)} />
+      <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>selectPool(t, selectedLevel)} onSelectLevel={(l)=>selectPool(selectedTopic, l)} masteryMap={masteryMap} />
       <AchievementsModal isOpen={isAchievementsOpen} onClose={()=>setIsAchievementsOpen(false)} stats={achievementStats} />
       <CustomWordsModal isOpen={isCustomWordsOpen} onClose={()=>setIsCustomWordsOpen(false)} onAddCustomWords={(nw)=>{setCustomWordsBank(p=>[...nw, ...p]); setIsCustomWordsOpen(false);}} />
       <ArcadeWheelModal isOpen={isWheelOpen} onClose={()=>setIsWheelOpen(false)} onRewardWon={(pts)=>setScore(p=>p+pts)} />

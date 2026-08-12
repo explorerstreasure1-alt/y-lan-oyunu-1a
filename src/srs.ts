@@ -1,4 +1,4 @@
-import { LEARNING_PATH, TOTAL_WORDS, type VocabularyWord } from "./vocabulary";
+import { LEARNING_PATH, type VocabularyWord } from "./vocabulary";
 
 export type WordMastery = {
   wordId: number;
@@ -96,15 +96,17 @@ export function recordWordEaten(
  * 3000 kelime havuzu + özel kelimeler ile akıllı mama seçici
  * - isLearned = true olan kelime ASLA havuza girmez
  * - Her 5 yeni kelimede 3 tekrar (sadece öğrenilmemiş son kelimelerden)
+ * - basePool: konu/seviye filtreli havuz (verilmezse tüm LEARNING_PATH)
  */
 export function getNextFoodItem(
   newWordCursor: number,
   masteryMap: Record<number, WordMastery>,
   eatenTotalCount: number,
   recentSessionUnlearnedIds: number[],
-  extraPool: VocabularyWord[] = []
+  extraPool: VocabularyWord[] = [],
+  basePool: VocabularyWord[] = LEARNING_PATH
 ): { item: ActiveFoodItem; updatedCursor: number } {
-  const fullPool = extraPool.length > 0 ? [...extraPool, ...LEARNING_PATH] : LEARNING_PATH;
+  const fullPool = extraPool.length > 0 ? [...extraPool, ...basePool] : basePool;
   const poolSize = fullPool.length;
 
   const cycleIndex = eatenTotalCount % 8;
@@ -114,7 +116,7 @@ export function getNextFoodItem(
     const candidateIds = recentSessionUnlearnedIds.filter((id) => !masteryMap[id]?.isLearned);
     if (candidateIds.length > 0) {
       const selectedId = candidateIds[eatenTotalCount % candidateIds.length];
-      const found = fullPool.find((w) => w.id === selectedId) || LEARNING_PATH[selectedId % TOTAL_WORDS];
+      const found = fullPool.find((w) => w.id === selectedId) || basePool[selectedId % basePool.length];
       if (found && !masteryMap[found.id]?.isLearned) {
         return {
           item: { word: found, isReview: true },

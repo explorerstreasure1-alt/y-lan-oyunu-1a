@@ -1,4 +1,5 @@
 import { LEARNING_PATH, type WordLevel } from "../vocabulary";
+import type { WordMastery } from "../srs";
 
 type TopicsModalProps = {
   isOpen: boolean;
@@ -7,6 +8,7 @@ type TopicsModalProps = {
   selectedLevel: WordLevel | "ALL";
   onSelectTopic: (topic: string | "ALL") => void;
   onSelectLevel: (level: WordLevel | "ALL") => void;
+  masteryMap: Record<number, WordMastery>;
 };
 
 export function TopicsModal({
@@ -16,6 +18,7 @@ export function TopicsModal({
   selectedLevel,
   onSelectTopic,
   onSelectLevel,
+  masteryMap,
 }: TopicsModalProps) {
   if (!isOpen) return null;
 
@@ -23,6 +26,16 @@ export function TopicsModal({
   const allTopicsSet = new Set<string>();
   LEARNING_PATH.forEach((w) => allTopicsSet.add(w.topic));
   const topicsList = Array.from(allTopicsSet);
+
+  // Her konunun toplam ve öğrenilen kelime sayısı (konu başına kalıcı kayıt)
+  const topicStats = new Map<string, { total: number; learned: number }>();
+  LEARNING_PATH.forEach((w) => {
+    const stat = topicStats.get(w.topic) || { total: 0, learned: 0 };
+    stat.total += 1;
+    if (masteryMap[w.id]?.isLearned) stat.learned += 1;
+    topicStats.set(w.topic, stat);
+  });
+  const allLearned = Array.from(topicStats.values()).reduce((sum, s) => sum + s.learned, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-pop">
@@ -32,7 +45,7 @@ export function TopicsModal({
           <div>
             <h2 className="font-pixel text-xl tracking-wide text-[#ffe073]">KONU VE SEVİYE FİLTRESİ</h2>
             <p className="mt-1 text-xs text-white/70">
-              Oyun esnasında karşınıza çıkacak kelimeleri özel bir konuya veya seviyeye odaklayın.
+              Konu seçince oyun sadece o konunun kelimeleriyle oynanır — her konunun öğrendiklerin ayrı ayrı kaydedilir ve gösterilir.
             </p>
           </div>
           <button
@@ -86,23 +99,33 @@ export function TopicsModal({
                     : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
                 }`}
               >
-                <span>🌈 Tüm Konular (Karışık Akış)</span>
+                <span className="flex items-center justify-between gap-2">
+                  <span>🌈 Tüm Konular (Karışık Akış)</span>
+                  <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-[#99f5c3]">✔ {allLearned}/{LEARNING_PATH.length}</span>
+                </span>
               </button>
 
-              {topicsList.map((top) => (
-                <button
-                  key={top}
-                  type="button"
-                  onClick={() => onSelectTopic(top)}
-                  className={`rounded-xl border p-3 text-left font-bold text-xs transition-all ${
-                    selectedTopic === top
-                      ? "border-[#ffd96d] bg-[#ffd96d]/20 text-[#ffd96d] shadow"
-                      : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
-                  }`}
-                >
-                  <span>📌 {top}</span>
-                </button>
-              ))}
+              {topicsList.map((top) => {
+                const stat = topicStats.get(top) || { total: 0, learned: 0 };
+                const done = stat.total > 0 && stat.learned === stat.total;
+                return (
+                  <button
+                    key={top}
+                    type="button"
+                    onClick={() => onSelectTopic(top)}
+                    className={`rounded-xl border p-3 text-left font-bold text-xs transition-all ${
+                      selectedTopic === top
+                        ? "border-[#ffd96d] bg-[#ffd96d]/20 text-[#ffd96d] shadow"
+                        : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span>📌 {top} {done && <span className="ml-1">🏆</span>}</span>
+                      <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-[#99f5c3]">✔ {stat.learned}/{stat.total}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
