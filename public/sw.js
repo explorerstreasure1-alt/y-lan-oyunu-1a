@@ -1,4 +1,4 @@
-const CACHE = "snake-abc-v5-story";
+const CACHE = "snake-abc-v6";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (e) => {

@@ -833,6 +833,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
                 <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
                 <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">🎰 Çark</button>
                 <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">✍️ Özel</button>
+                <span className="self-center rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold text-white/40 select-none" title="Uygulama sürümü">v1.5</span>
               </div>
             </div>
           </div>
