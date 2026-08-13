@@ -130,8 +130,9 @@ export function playGameOverSfx() {
 }
 
 /**
- * Eğlenceli Lofi Hip-Hop - daha canlı, eğlenceli, konsantrasyon arttıran
- * Rhodes tarzı akorlar + boom bap beat + vinyl çıtırtı + eğlenceli arpej
+ * Sakin Lofi Ambient - ritmik beat YOK (tık tık yok!)
+ * Yumuşak pad akorları + derin bas + hafif vinyl dokusu
+ * Konsantrasyonu bozmaz, arka planda akar gider.
  */
 const LOFI_CHORDS: number[][] = [
   [174.61, 220.0, 261.63, 329.63], // Fmaj7 - mutlu
@@ -143,67 +144,6 @@ const LOFI_BASS: number[] = [87.31, 98.0, 73.42, 65.41];
 
 let lofiFilter: BiquadFilterNode | null = null;
 let vinylNode: AudioBufferSourceNode | null = null;
-let vinylGain: GainNode | null = null;
-
-function playKick(ctx: AudioContext, at: number, dest: AudioNode) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(110, at);
-  osc.frequency.exponentialRampToValueAtTime(42, at + 0.12);
-  gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.linearRampToValueAtTime(0.55, at + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, at + 0.32);
-  osc.connect(gain);
-  gain.connect(dest);
-  osc.start(at);
-  osc.stop(at + 0.35);
-}
-
-function playSnare(ctx: AudioContext, at: number, dest: AudioNode) {
-  // body
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(180, at);
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.linearRampToValueAtTime(0.22, at + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.001, at + 0.22);
-  osc.connect(g);
-  g.connect(dest);
-  osc.start(at);
-  osc.stop(at + 0.25);
-  // snap
-  const osc2 = ctx.createOscillator();
-  const g2 = ctx.createGain();
-  osc2.type = "square";
-  osc2.frequency.setValueAtTime(320, at);
-  g2.gain.setValueAtTime(0.0001, at);
-  g2.gain.linearRampToValueAtTime(0.12, at + 0.005);
-  g2.gain.exponentialRampToValueAtTime(0.001, at + 0.12);
-  osc2.connect(g2);
-  g2.connect(dest);
-  osc2.start(at);
-  osc2.stop(at + 0.15);
-}
-
-function playHiHat(ctx: AudioContext, at: number, dest: AudioNode, open = false) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-  filter.type = "highpass";
-  filter.frequency.value = 6500;
-  osc.type = "square";
-  osc.frequency.setValueAtTime(9000, at);
-  gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.linearRampToValueAtTime(open ? 0.09 : 0.05, at + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.001, at + (open ? 0.28 : 0.08));
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(dest);
-  osc.start(at);
-  osc.stop(at + (open ? 0.3 : 0.1));
-}
 
 export function toggleRetroBgm(enable: boolean) {
   if (!enable) {
@@ -225,18 +165,18 @@ export function toggleRetroBgm(enable: boolean) {
 
   if (!bgmMasterGain) {
     bgmMasterGain = ctx.createGain();
-    bgmMasterGain.gain.value = 0.58; // eğlenceli lofi için dolgun ses
+    bgmMasterGain.gain.value = 0.5; // sakin, arka planda kalan seviye
     lofiFilter = ctx.createBiquadFilter();
     lofiFilter.type = "lowpass";
-    lofiFilter.frequency.value = 1450; // daha parlak, eğlenceli
-    lofiFilter.Q.value = 0.4;
+    lofiFilter.frequency.value = 1100; // yumuşak, parlak değil
+    lofiFilter.Q.value = 0.3;
     bgmMasterGain.connect(lofiFilter);
     lofiFilter.connect(ctx.destination);
   } else {
-    bgmMasterGain.gain.setValueAtTime(0.58, ctx.currentTime);
+    bgmMasterGain.gain.setValueAtTime(0.5, ctx.currentTime);
   }
 
-  // Vinyl crackle - lofi dokusu
+  // Vinyl crackle - çok kısık, lo-fi dokusu (tık değil, hafif çıtırtı)
   try {
     const bufferSize = ctx.sampleRate * 2;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -245,8 +185,8 @@ export function toggleRetroBgm(enable: boolean) {
     vinylNode = ctx.createBufferSource();
     vinylNode.buffer = buffer;
     vinylNode.loop = true;
-    vinylGain = ctx.createGain();
-    vinylGain.gain.value = 0.018; // çok kısık çıtırtı
+    const vinylGain = ctx.createGain();
+    vinylGain.gain.value = 0.008; // neredeyse duyulmaz
     const vFilter = ctx.createBiquadFilter();
     vFilter.type = "bandpass";
     vFilter.frequency.value = 1800;
@@ -258,63 +198,48 @@ export function toggleRetroBgm(enable: boolean) {
   } catch {}
 
   let chordIndex = 0;
-  let beatLoop = 0;
 
-  const playLofiBar = () => {
+  const playAmbientBar = () => {
     if (!bgmPlaying || !bgmMasterGain || !ctx) return;
     const now = ctx.currentTime + 0.05;
     const chord = LOFI_CHORDS[chordIndex % LOFI_CHORDS.length];
     const bassFreq = LOFI_BASS[chordIndex % LOFI_BASS.length];
     chordIndex++;
 
-    // Eğlenceli arpej - Rhodes tarzı, notalar tek tek sevimli şekilde
-    chord.forEach((freq, i) => {
+    // Yumuşak pad akoru - notalar BİRLİKTE çalar, uzun salınımlı, "tık" yok
+    chord.forEach((freq) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = i % 2 === 0 ? "triangle" : "sine";
-      osc.frequency.setValueAtTime(freq, now + i * 0.09);
-      osc.detune.value = (Math.random() - 0.5) * 8;
-      gain.gain.setValueAtTime(0.0001, now + i * 0.09);
-      gain.gain.linearRampToValueAtTime(0.14, now + i * 0.09 + 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.003, now + i * 0.09 + 2.6);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, now);
+      osc.detune.value = (Math.random() - 0.5) * 6;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.09, now + 1.2); // yavaş yükselir
+      gain.gain.setValueAtTime(0.09, now + 2.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 3.6); // yumuşak söner
       osc.connect(gain);
       gain.connect(bgmMasterGain!);
-      osc.start(now + i * 0.09);
-      osc.stop(now + i * 0.09 + 2.8);
+      osc.start(now);
+      osc.stop(now + 3.8);
     });
 
-    // Bouncy bass - biraz daha eğlenceli, hafif slide
+    // Derin, sabit bas - sakin ve dolgun
     const bOsc = ctx.createOscillator();
     const bGain = ctx.createGain();
     bOsc.type = "sine";
     bOsc.frequency.setValueAtTime(bassFreq, now);
-    bOsc.frequency.linearRampToValueAtTime(bassFreq * 1.02, now + 0.12);
-    bOsc.frequency.linearRampToValueAtTime(bassFreq, now + 0.28);
     bGain.gain.setValueAtTime(0.0001, now);
-    bGain.gain.linearRampToValueAtTime(0.28, now + 0.12);
-    bGain.gain.exponentialRampToValueAtTime(0.005, now + 1.8);
+    bGain.gain.linearRampToValueAtTime(0.16, now + 0.9);
+    bGain.gain.setValueAtTime(0.16, now + 2.4);
+    bGain.gain.exponentialRampToValueAtTime(0.001, now + 3.6);
     bOsc.connect(bGain);
     bGain.connect(bgmMasterGain!);
     bOsc.start(now);
-    bOsc.stop(now + 2.0);
-
-    // 🎵 Daha eğlenceli boom bap beat - her bar'da 8 vuruş
-    const beatDur = 0.52; // ~115 BPM, daha canlı
-    for (let b = 0; b < 8; b++) {
-      const t = now + b * (beatDur / 2);
-      // Kick pattern: 1, 3, 4.5 - eğlenceli
-      if (b === 0 || b === 4 || b === 5) playKick(ctx, t, bgmMasterGain!);
-      // Snare: 2 ve 6
-      if (b === 2 || b === 6) playSnare(ctx, t, bgmMasterGain!);
-      // Hi-hat: her 8'likte, açık/kapalı varyasyonla eğlenceli
-      if (b % 2 === 1) playHiHat(ctx, t, bgmMasterGain!, b === 7);
-      else playHiHat(ctx, t, bgmMasterGain!, false);
-    }
-    beatLoop++;
+    bOsc.stop(now + 3.8);
   };
 
-  playLofiBar();
-  bgmTimer = window.setInterval(playLofiBar, 2080); // 4 beat bar
+  playAmbientBar();
+  bgmTimer = window.setInterval(playAmbientBar, 3800); // yavaş, nefes alan döngü
 }
 
 function duckBgm(duckDurationMs: number) {
@@ -345,7 +270,7 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   setTimeout(loadVoices, 500);
 }
 
-function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr"): number {
+function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru"): number {
   const name = v.name.toLowerCase();
   const lang = v.lang.toLowerCase();
   let s = 0;
@@ -360,7 +285,7 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr"): number {
     if (name.includes("zira") || name.includes("aria") || name.includes("jenny") || name.includes("samantha")) s += 25;
     // penalize low quality
     if (name.includes("espeak") || name.includes("festival")) s -= 30;
-  } else {
+  } else if (targetLang === "tr") {
     if (lang === "tr-tr") s += 100;
     else if (lang.startsWith("tr")) s += 80;
     if (name.includes("google") && lang.includes("tr")) s += 60;
@@ -368,18 +293,27 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr"): number {
     if (name.includes("microsoft") && lang.includes("tr")) s += 30;
     if (name.includes("natural") || name.includes("neural")) s += 35;
     if (name.includes("espeak")) s -= 20;
+  } else {
+    // Russian
+    if (lang === "ru-ru") s += 100;
+    else if (lang.startsWith("ru")) s += 80;
+    if (name.includes("google") && lang.includes("ru")) s += 60;
+    if (name.includes("microsoft") && lang.includes("ru")) s += 30;
+    if (name.includes("natural") || name.includes("neural")) s += 35;
+    if (name.includes("milena") || name.includes("svetlana") || name.includes("pavel")) s += 25;
+    if (name.includes("espeak")) s -= 20;
   }
   // Prefer default voice slightly
   if (v.default) s += 5;
   return s;
 }
 
-function pickBestVoice(langPrefix: "en" | "tr"): SpeechSynthesisVoice | null {
+function pickBestVoice(langPrefix: "en" | "tr" | "ru"): SpeechSynthesisVoice | null {
   if (cachedVoices.length === 0) loadVoices();
   if (cachedVoices.length === 0) return null;
   const candidates = cachedVoices
     .map((v) => ({ v, score: scoreVoice(v, langPrefix) }))
-    .filter(({ v }) => langPrefix === "en" ? v.lang.toLowerCase().startsWith("en") : v.lang.toLowerCase().startsWith("tr"))
+    .filter(({ v }) => v.lang.toLowerCase().startsWith(langPrefix))
     .sort((a, b) => b.score - a.score);
   if (candidates.length === 0) return null;
   return candidates[0].v;
@@ -428,7 +362,7 @@ function extractCoreTurkishForSpeech(raw: string): string {
 
 function speakUtterance(
   text: string,
-  lang: "en-US" | "tr-TR",
+  lang: "en-US" | "tr-TR" | "ru-RU",
   rate: number,
   pitch: number,
   volume: number = 1,
@@ -440,7 +374,8 @@ function speakUtterance(
     return;
   }
   const utterance = new SpeechSynthesisUtterance(text);
-  const best = pickBestVoice(lang.startsWith("en") ? "en" : "tr");
+  const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : "tr";
+  const best = pickBestVoice(prefix);
   if (best) utterance.voice = best;
   utterance.lang = lang;
   utterance.rate = rate;
@@ -451,9 +386,20 @@ function speakUtterance(
   window.speechSynthesis.speak(utterance);
 }
 
+/** Aktif öğrenme dili - App.tsx dil değişince çağırır */
+let currentSpeechLang: "en" | "ru" = "en";
+
+export function setSpeechLanguage(lang: "en" | "ru") {
+  currentSpeechLang = lang;
+}
+
+function cleanRussianWordForSpeech(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ");
+}
+
 /**
- * Main: Beautiful, crystal-clear EN -> (pause) -> TR sequence
- * - English spoken slowly, clearly
+ * Main: Beautiful, crystal-clear EN/RU -> (pause) -> TR sequence
+ * - Target word spoken slowly, clearly
  * - Short natural pause
  * - Turkish core meaning spoken warmly
  * No overlap, no emoji, no technical notes.
@@ -469,36 +415,38 @@ export function speakWordDetails(
 
   window.speechSynthesis.cancel();
 
-  const enClean = cleanEnglishWordForSpeech(word);
+  const isRussian = currentSpeechLang === "ru";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const trCore = extractCoreTurkishForSpeech(meaningTr);
 
-  let englishText = enClean;
-  if (mode === "word-def") englishText = `${enClean}. ${definition}`;
-  if (mode === "word-def-ex") englishText = `${enClean}. ${definition}. For example: ${example}`;
+  let targetText = wordClean;
+  if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
+  if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. For example: ${example}`;
 
-  const estimatedMs = (englishText.length + (mode === "word-tr" ? trCore.length : 0)) * 70 + 600;
+  const estimatedMs = (targetText.length + (mode === "word-tr" ? trCore.length : 0)) * 70 + 600;
   duckBgm(estimatedMs);
 
   if (mode === "word-tr") {
-    // Yenildiği AN söylensin - en hızlı şekilde, İngilizce hemen, ardından Türkçe
-    speakUtterance(enClean, "en-US", 0.86, 1.02, 1, () => {
+    // Yenildiği AN söylensin - en hızlı şekilde, hedef dilde, ardından Türkçe
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.86, 1.02, 1, () => {
       window.setTimeout(() => {
         speakUtterance(trCore, "tr-TR", 0.94, 1.0, 1);
       }, 70);
     });
   } else if (mode === "word") {
-    speakUtterance(enClean, "en-US", 0.86, 1.03);
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.86, 1.03);
   } else {
-    speakUtterance(englishText, "en-US", 0.88, 1.02);
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 0.88, 1.02);
   }
 }
 
 export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
-  const enClean = cleanEnglishWordForSpeech(word);
-  duckBgm(enClean.length * 90 + 600);
-  speakUtterance(enClean, "en-US", 0.78, 1.03);
+  const isRussian = currentSpeechLang === "ru";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
+  duckBgm(wordClean.length * 90 + 600);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.78, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
