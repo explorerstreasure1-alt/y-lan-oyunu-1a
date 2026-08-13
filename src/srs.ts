@@ -1,5 +1,7 @@
 import { LEARNING_PATH, type VocabularyWord } from "./vocabulary";
 
+export type LearningLanguage = "en" | "ru";
+
 export type WordMastery = {
   wordId: number;
   timesSeen: number;
@@ -14,11 +16,16 @@ export type ActiveFoodItem = {
 };
 
 const MASTERY_STORAGE_KEY = "snake_abc_mastery_v5_story_3000";
+const MASTERY_STORAGE_KEY_RU = "snake_abc_mastery_v5_story_3000_ru";
 
-export function getSavedMasteryMap(): Record<number, WordMastery> {
+function storageKeyFor(lang: LearningLanguage): string {
+  return lang === "ru" ? MASTERY_STORAGE_KEY_RU : MASTERY_STORAGE_KEY;
+}
+
+export function getSavedMasteryMap(lang: LearningLanguage = "en"): Record<number, WordMastery> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(MASTERY_STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKeyFor(lang));
     if (!raw) return {};
     return JSON.parse(raw);
   } catch {
@@ -26,16 +33,17 @@ export function getSavedMasteryMap(): Record<number, WordMastery> {
   }
 }
 
-export function saveMasteryMap(map: Record<number, WordMastery>) {
+export function saveMasteryMap(map: Record<number, WordMastery>, lang: LearningLanguage = "en") {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(MASTERY_STORAGE_KEY, JSON.stringify(map));
+    window.localStorage.setItem(storageKeyFor(lang), JSON.stringify(map));
   } catch {}
 }
 
 export function toggleWordLearnedState(
   wordId: number,
-  masteryMap: Record<number, WordMastery>
+  masteryMap: Record<number, WordMastery>,
+  lang: LearningLanguage = "en"
 ): Record<number, WordMastery> {
   const existing = masteryMap[wordId] || {
     wordId,
@@ -55,13 +63,14 @@ export function toggleWordLearnedState(
   };
 
   const nextMap = { ...masteryMap, [wordId]: updated };
-  saveMasteryMap(nextMap);
+  saveMasteryMap(nextMap, lang);
   return nextMap;
 }
 
 export function recordWordEaten(
   wordId: number,
-  masteryMap: Record<number, WordMastery>
+  masteryMap: Record<number, WordMastery>,
+  lang: LearningLanguage = "en"
 ): { updatedMap: Record<number, WordMastery>; newStars: number } {
   const existing = masteryMap[wordId] || {
     wordId,
@@ -87,7 +96,7 @@ export function recordWordEaten(
   };
 
   const nextMap = { ...masteryMap, [wordId]: updated };
-  saveMasteryMap(nextMap);
+  saveMasteryMap(nextMap, lang);
 
   return { updatedMap: nextMap, newStars: nextStars };
 }
