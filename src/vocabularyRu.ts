@@ -198,8 +198,8 @@ function buildRussianDataset(): VocabularyWord[] {
       pos,
       topic,
       level,
-      definition: `${pos.toUpperCase()} - Russian ${level} word meaning '${tr}' in Turkish. Used in ${topic}.`,
-      example: `Example: I use "${clean}" when talking about ${topic.toLowerCase()}.`
+      definition: `Русское слово уровня ${level} (${pos.toUpperCase()}), по-турецки: «${tr}». Тема: ${topic}.`,
+      example: `Пример: Я использую слово «${clean}», когда говорю на тему «${topic}».`
     };
   };
 

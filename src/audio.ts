@@ -426,7 +426,7 @@ export function speakWordDetails(
 
   let targetText = wordClean;
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
-  if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. For example: ${example}`;
+  if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. ${isRussian ? "Например:" : "For example:"} ${example}`;
 
   const estimatedMs = (targetText.length + (mode === "word-tr" ? trCore.length : 0)) * 55 + 400;
   duckBgm(estimatedMs);
