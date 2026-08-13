@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { LEARNING_PATH, type WordLevel } from "./vocabulary";
-import { toggleWordLearnedState, type WordMastery } from "./srs";
+import type { VocabularyWord, WordLevel } from "./vocabulary";
+import { toggleWordLearnedState, type LearningLanguage, type WordMastery } from "./srs";
 import { speakWordDetails, type SpeechMode } from "./audio";
 
 type WordLibraryModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  words: VocabularyWord[];
   masteryMap: Record<number, WordMastery>;
   onMasteryChange: (newMap: Record<number, WordMastery>) => void;
   speechMode: SpeechMode;
+  language: LearningLanguage;
 };
 
 type FilterStatus = "ALL" | "TO_LEARN" | "LEARNED";
@@ -16,9 +18,11 @@ type FilterStatus = "ALL" | "TO_LEARN" | "LEARNED";
 export function WordLibraryModal({
   isOpen,
   onClose,
+  words,
   masteryMap,
   onMasteryChange,
   speechMode,
+  language,
 }: WordLibraryModalProps) {
   const [search, setSearch] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<WordLevel | "ALL">("ALL");
@@ -27,11 +31,11 @@ export function WordLibraryModal({
   if (!isOpen) return null;
 
   const handleToggleLearned = (wordId: number) => {
-    const nextMap = toggleWordLearnedState(wordId, masteryMap);
+    const nextMap = toggleWordLearnedState(wordId, masteryMap, language);
     onMasteryChange(nextMap);
   };
 
-  const filteredWords = LEARNING_PATH.filter((word) => {
+  const filteredWords = words.filter((word) => {
     const mastery = masteryMap[word.id];
     const isLearned = Boolean(mastery?.isLearned);
 

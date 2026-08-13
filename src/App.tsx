@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { LEARNING_PATH, TOTAL_WORDS, type VocabularyWord, type WordLevel } from "./vocabulary";
+import { LEARNING_PATH, type VocabularyWord, type WordLevel } from "./vocabulary";
+import { RUSSIAN_PATH } from "./vocabularyRu";
 import {
   getNextFoodItem,
   getSavedMasteryMap,
   recordWordEaten,
   toggleWordLearnedState,
   type ActiveFoodItem,
+  type LearningLanguage,
   type WordMastery,
 } from "./srs";
 import {
@@ -14,6 +16,7 @@ import {
   playGameOverSfx,
   playLevelUpSfx,
   playTurnSfx,
+  setSpeechLanguage,
   speakWordDetails,
   toggleRetroBgm,
   type SpeechMode,
@@ -90,12 +93,12 @@ function findOpenCell(snake: Point[], seed: number, reservedPoints: Point[] = []
 }
 
 // Konu + seviye filtreli kelime havuzu - boş dönerse tüm havuza düş
-function buildFilteredPool(topic: string | "ALL", level: WordLevel | "ALL"): VocabularyWord[] {
-  if (topic === "ALL" && level === "ALL") return LEARNING_PATH;
-  const pool = LEARNING_PATH.filter(
+function buildFilteredPool(topic: string | "ALL", level: WordLevel | "ALL", pool: VocabularyWord[]): VocabularyWord[] {
+  if (topic === "ALL" && level === "ALL") return pool;
+  const filtered = pool.filter(
     (w) => (topic === "ALL" || w.topic === topic) && (level === "ALL" || w.level === level)
   );
-  return pool.length > 0 ? pool : LEARNING_PATH;
+  return filtered.length > 0 ? filtered : pool;
 }
 
 export default function App() {
@@ -140,7 +143,24 @@ export default function App() {
       return "ALL";
     }
   });
-  const filteredPool = useMemo(() => buildFilteredPool(selectedTopic, selectedLevel), [selectedTopic, selectedLevel]);
+  // Dil: EN veya RU - her dilin kendi havuzu + kendi kaydı (localStorage kalıcı)
+  const [language, setLanguage] = useState<LearningLanguage>(() => {
+    try {
+      const saved = window.localStorage.getItem("snake-abc-lang");
+      return saved === "ru" ? "ru" : "en";
+    } catch {
+      return "en";
+    }
+  });
+  const activePool = language === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+  const filteredPool = useMemo(() => buildFilteredPool(selectedTopic, selectedLevel, activePool), [selectedTopic, selectedLevel, activePool]);
+
+  // Dil değişince: ses dilini ayarla + o güne ait kayıt haritasını yükle
+  useEffect(() => {
+    setSpeechLanguage(language);
+    setMasteryMap(getSavedMasteryMap(language));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   // Streak / Combo & Visuals
   const [comboStreak, setComboStreak] = useState(0);
@@ -173,12 +193,12 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
-  // Data
+  // Data - aktif dil (EN) or (RU) - her dili için ayrı kayıt
   const [customWordBank, setCustomWordsBank] = useState<VocabularyWord[]>([]);
   const [quizzesCompletedCount, setQuizzesCompletedCount] = useState(0);
-  const [masteryMap, setMasteryMap] = useState<Record<number, WordMastery>>(() => getSavedMasteryMap());
+  const [masteryMap, setMasteryMap] = useState<Record<number, WordMastery>>(() => getSavedMasteryMap(language));
   const [activeFood, setActiveFood] = useState<ActiveFoodItem>(() => ({
-    word: LEARNING_PATH[0],
+    word: activePool[0],
     isReview: false,
   }));
   const [lastEaten, setLastEaten] = useState<{ word: VocabularyWord; isReview: boolean; stars: number } | null>(null);
@@ -320,7 +340,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
         window.localStorage.setItem("snake-abc-topic", topic);
         window.localStorage.setItem("snake-abc-level", level);
       } catch {}
-      const pool = buildFilteredPool(topic, level);
+      const pool = buildFilteredPool(topic, level, activePool);
       const { item, updatedCursor } = getNextFoodItem(
         0,
         masteryMapRef.current,
@@ -336,7 +356,50 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
       foodPointRef.current = nextFoodCell;
       setFoodPoint(nextFoodCell);
     },
-    [customWordBank]
+    [customWordBank, activePool]
+  );
+
+  // Dil değiştirme: kaydı, havuzu, mama kelimesini ve oyunu yeni dile göre sıfırla
+  const switchLanguage = useCallback(
+    (nextLang: LearningLanguage) => {
+      if (nextLang === language) return;
+      try {
+        window.localStorage.setItem("snake-abc-lang", nextLang);
+      } catch {}
+      const newPool = nextLang === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+      const newMap = getSavedMasteryMap(nextLang);
+      masteryMapRef.current = newMap;
+      setMasteryMap(newMap);
+      setLanguage(nextLang);
+      setSpeechLanguage(nextLang);
+      const { item, updatedCursor } = getNextFoodItem(
+        0,
+        newMap,
+        0,
+        [],
+        customWordBank,
+        buildFilteredPool(selectedTopic, selectedLevel, newPool)
+      );
+      newWordCursorRef.current = updatedCursor;
+      activeFoodRef.current = item;
+      setActiveFood(item);
+      const nextFoodCell = findOpenCell(snakeRef.current, 3);
+      foodPointRef.current = nextFoodCell;
+      setFoodPoint(nextFoodCell);
+      setSessionEatenWords([]);
+      setRecentUnlearnedIds([]);
+      recentUnlearnedIdsRef.current = [];
+      setLastEaten(null);
+      setBossBattle(null);
+      setComboStreak(0);
+      comboStreakRef.current = 0;
+      scoreRef.current = 0;
+      setScore(0);
+      eatenTotalRef.current = 0;
+      setGameStatus("ready");
+      setIsQuizOpen(false);
+    },
+    [language, customWordBank, selectedTopic, selectedLevel, setGameStatus]
   );
 
   const changeDirection = useCallback(
@@ -453,7 +516,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
 
   const toggleLearnedCurrentTarget = () => {
     const wordId = activeFood.word.id;
-    const nextMap = toggleWordLearnedState(wordId, masteryMap);
+    const nextMap = toggleWordLearnedState(wordId, masteryMap, language);
     setMasteryMap(nextMap);
   };
 
@@ -519,7 +582,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
           setScore((prev) => prev + 50);
           if (sfxEnabled) playLevelUpSfx();
           speakWordDetails(currentBoss.word.word, currentBoss.word.meaningTr, currentBoss.word.definition, currentBoss.word.example, speechMode);
-          setMasteryMap((prev) => toggleWordLearnedState(currentBoss.word.id, prev));
+          setMasteryMap((prev) => toggleWordLearnedState(currentBoss.word.id, prev, language));
         }
         setBossBattle(null);
       }
@@ -543,7 +606,7 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
         const currentWord = foodItem.word;
         const isReview = foodItem.isReview;
 
-        const { updatedMap, newStars } = recordWordEaten(currentWord.id, masteryMapRef.current);
+        const { updatedMap, newStars } = recordWordEaten(currentWord.id, masteryMapRef.current, language);
         setMasteryMap(updatedMap);
         masteryMapRef.current = updatedMap;
 
@@ -623,17 +686,17 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     }, tickInterval);
 
     return () => window.clearInterval(gameLoop);
-  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, customWordBank, filteredPool, isBoosting, triggerBossBattle, setGameStatus, sessionEatenWords.length]);
+  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, customWordBank, filteredPool, isBoosting, triggerBossBattle, setGameStatus, sessionEatenWords.length, language]);
 
   const currentWord = activeFood.word;
   const isCurrentLearned = Boolean(masteryMap[currentWord.id]?.isLearned);
   const statusLabel = status === "playing" ? "OYUNDA" : status === "paused" ? "DURAKLATILDI" : status === "over" ? "BİTTİ" : "HAZIR";
 
   // Konu/seviye filtresi aktifse ilerleme çubuğu o havuza göre hesaplanır (konu başına kayıt)
-  const isPoolFiltered = filteredPool.length < LEARNING_PATH.length;
+  const isPoolFiltered = filteredPool.length < activePool.length;
   const poolTotal = filteredPool.length;
   const poolLearned = filteredPool.filter((w) => masteryMap[w.id]?.isLearned).length;
-  const displayTotal = isPoolFiltered ? poolTotal : TOTAL_WORDS;
+  const displayTotal = isPoolFiltered ? poolTotal : activePool.length;
   const displayLearned = isPoolFiltered ? poolLearned : learnedCount;
   const displayPercent = Math.min(100, Math.round((displayLearned / displayTotal) * 100));
 
@@ -673,9 +736,13 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 p-0.5">
+              <button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-2 py-1 text-[11px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
+              <button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-2 py-1 text-[11px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
+            </div>
             <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-2.5 py-1 text-[11px] font-bold text-[#99f5c3]">🌟 Günlük</button>
             <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-2.5 py-1 text-[11px] font-bold text-[#ffd96d]">🏆 Rozet</button>
-            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80">📖 {learnedCount}/{TOTAL_WORDS}</button>
+            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
           </div>
         </header>
 
@@ -930,16 +997,16 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
       </div>
 
       {/* Modals */}
-      <WordLibraryModal isOpen={isLibraryOpen} onClose={()=>setIsLibraryOpen(false)} masteryMap={masteryMap} onMasteryChange={(m)=>setMasteryMap(m)} speechMode={speechMode} />
+      <WordLibraryModal isOpen={isLibraryOpen} onClose={()=>setIsLibraryOpen(false)} words={activePool} masteryMap={masteryMap} onMasteryChange={(m)=>setMasteryMap(m)} speechMode={speechMode} language={language} />
       <SkinsModal isOpen={isSkinsOpen} onClose={()=>setIsSkinsOpen(false)} learnedCount={learnedCount} activeSkinId={activeSkinId} onSelectSkin={(id)=>{setActiveSkinId(id); setIsSkinsOpen(false);}} />
-      <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>selectPool(t, selectedLevel)} onSelectLevel={(l)=>selectPool(selectedTopic, l)} masteryMap={masteryMap} />
+      <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} words={activePool} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>selectPool(t, selectedLevel)} onSelectLevel={(l)=>selectPool(selectedTopic, l)} masteryMap={masteryMap} />
       <AchievementsModal isOpen={isAchievementsOpen} onClose={()=>setIsAchievementsOpen(false)} stats={achievementStats} />
       <CustomWordsModal isOpen={isCustomWordsOpen} onClose={()=>setIsCustomWordsOpen(false)} onAddCustomWords={(nw)=>{setCustomWordsBank(p=>[...nw, ...p]); setIsCustomWordsOpen(false);}} />
       <ArcadeWheelModal isOpen={isWheelOpen} onClose={()=>setIsWheelOpen(false)} onRewardWon={(pts)=>setScore(p=>p+pts)} />
       <MicPracticeModal isOpen={isMicOpen} onClose={()=>setIsMicOpen(false)} word={currentWord} />
-      <WordOfDayModal isOpen={isWordOfDayOpen} onClose={()=>setIsWordOfDayOpen(false)} speechMode={speechMode} />
+      <WordOfDayModal isOpen={isWordOfDayOpen} onClose={()=>setIsWordOfDayOpen(false)} speechMode={speechMode} words={activePool} />
       <QuizModal isOpen={isQuizOpen} onClose={()=>{setIsQuizOpen(false); setQuizzesCompletedCount(p=>p+1); setIsStatsOpen(true);}} recentWords={sessionEatenWords} onBonusEarned={(b)=>setScore(p=>p+b)} />
-      <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap))} speechMode={speechMode} />
+      <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} />
     </main>
   );
 }

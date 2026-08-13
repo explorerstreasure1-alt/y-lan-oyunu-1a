@@ -1,9 +1,10 @@
-import { LEARNING_PATH, type WordLevel } from "../vocabulary";
+import type { VocabularyWord, WordLevel } from "../vocabulary";
 import type { WordMastery } from "../srs";
 
 type TopicsModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  words: VocabularyWord[];
   selectedTopic: string | "ALL";
   selectedLevel: WordLevel | "ALL";
   onSelectTopic: (topic: string | "ALL") => void;
@@ -14,6 +15,7 @@ type TopicsModalProps = {
 export function TopicsModal({
   isOpen,
   onClose,
+  words,
   selectedTopic,
   selectedLevel,
   onSelectTopic,
@@ -24,12 +26,12 @@ export function TopicsModal({
 
   // Extract unique topics from dataset
   const allTopicsSet = new Set<string>();
-  LEARNING_PATH.forEach((w) => allTopicsSet.add(w.topic));
+  words.forEach((w) => allTopicsSet.add(w.topic));
   const topicsList = Array.from(allTopicsSet);
 
   // Her konunun toplam ve öğrenilen kelime sayısı (konu başına kalıcı kayıt)
   const topicStats = new Map<string, { total: number; learned: number }>();
-  LEARNING_PATH.forEach((w) => {
+  words.forEach((w) => {
     const stat = topicStats.get(w.topic) || { total: 0, learned: 0 };
     stat.total += 1;
     if (masteryMap[w.id]?.isLearned) stat.learned += 1;
@@ -101,7 +103,7 @@ export function TopicsModal({
               >
                 <span className="flex items-center justify-between gap-2">
                   <span>🌈 Tüm Konular (Karışık Akış)</span>
-                  <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-[#99f5c3]">✔ {allLearned}/{LEARNING_PATH.length}</span>
+                  <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-[#99f5c3]">✔ {allLearned}/{words.length}</span>
                 </span>
               </button>
 

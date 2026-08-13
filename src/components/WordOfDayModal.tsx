@@ -1,26 +1,27 @@
-import { LEARNING_PATH, type VocabularyWord } from "../vocabulary";
+import type { VocabularyWord } from "../vocabulary";
 import { speakWordDetails, type SpeechMode } from "../audio";
 
 type WordOfDayModalProps = {
   isOpen: boolean;
   onClose: () => void;
   speechMode: SpeechMode;
+  words: VocabularyWord[];
 };
 
 // Deterministic word pick that changes each calendar day
-export function getWordOfTheDay(): VocabularyWord {
+export function getWordOfTheDay(pool: VocabularyWord[]): VocabularyWord {
   const today = new Date();
   const dayIndex =
     today.getFullYear() * 1000 + (today.getMonth() + 1) * 40 + today.getDate();
   // Prefer meaningful curated words at the start of the dataset
-  const pool = LEARNING_PATH.slice(0, 120);
-  return pool[dayIndex % pool.length];
+  const words = pool.slice(0, 120);
+  return words[dayIndex % words.length];
 }
 
-export function WordOfDayModal({ isOpen, onClose, speechMode }: WordOfDayModalProps) {
+export function WordOfDayModal({ isOpen, onClose, speechMode, words }: WordOfDayModalProps) {
   if (!isOpen) return null;
 
-  const word = getWordOfTheDay();
+  const word = getWordOfTheDay(words);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-pop">
