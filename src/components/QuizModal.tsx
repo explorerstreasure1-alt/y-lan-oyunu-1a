@@ -6,9 +6,10 @@ type QuizModalProps = {
   onClose: () => void;
   recentWords: VocabularyWord[];
   onBonusEarned: (points: number) => void;
+  onWordFailed: (wordId: number) => void;
 };
 
-export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned }: QuizModalProps) {
+export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordFailed }: QuizModalProps) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -34,6 +35,9 @@ export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned }: QuizM
 
     if (option === currentWord.meaningTr) {
       setScore((prev) => prev + 1);
+    } else {
+      // Hata defteri: yanlış cevap → kelime zayıflar, tekrara girer
+      onWordFailed(currentWord.id);
     }
   };
 

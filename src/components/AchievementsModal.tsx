@@ -1,3 +1,18 @@
+import { useEffect, useState } from "react";
+
+const ACHIEVEMENTS_KEY = "snake_abc_achievements_v1";
+
+function loadUnlocked(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export type Achievement = {
   id: string;
   icon: string;
@@ -14,6 +29,7 @@ export type AchievementStats = {
   bossesDefeated: number;
   quizzesCompleted: number;
   customWordsAdded: number;
+  streakDays: number;
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -101,6 +117,20 @@ export const ACHIEVEMENTS: Achievement[] = [
     descriptionTr: "10 kelimelik devasa bir kombo serisi yakala.",
     condition: (s) => s.maxCombo >= 10,
   },
+  {
+    id: "daily_streak_5",
+    icon: "📅",
+    titleTr: "Haftalık İstikrar",
+    descriptionTr: "5 gün üst üste oyuna gir ve pratik yap.",
+    condition: (s) => s.streakDays >= 5,
+  },
+  {
+    id: "daily_streak_30",
+    icon: "🏅",
+    titleTr: "Demir İrade",
+    descriptionTr: "Tam 30 gün boyunca her gün kelime pratiği yap.",
+    condition: (s) => s.streakDays >= 30,
+  },
 ];
 
 type AchievementsModalProps = {
@@ -110,9 +140,30 @@ type AchievementsModalProps = {
 };
 
 export function AchievementsModal({ isOpen, onClose, stats }: AchievementsModalProps) {
+  // Rozetler kalıcı: koşulu bir kez sağlanan rozet bir daha kilitlenmez (localStorage)
+  const [unlocked, setUnlocked] = useState<Record<string, boolean>>(loadUnlocked);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let changed = false;
+    const next = { ...unlocked };
+    for (const ach of ACHIEVEMENTS) {
+      if (!next[ach.id] && ach.condition(stats)) {
+        next[ach.id] = true;
+        changed = true;
+      }
+    }
+    if (changed) {
+      setUnlocked(next);
+      try {
+        localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(next));
+      } catch {}
+    }
+  }, [isOpen, stats, unlocked]);
+
   if (!isOpen) return null;
 
-  const unlockedCount = ACHIEVEMENTS.filter((a) => a.condition(stats)).length;
+  const unlockedCount = ACHIEVEMENTS.filter((a) => unlocked[a.id]).length;
   const progressPercent = Math.round((unlockedCount / ACHIEVEMENTS.length) * 100);
 
   return (
@@ -151,7 +202,7 @@ export function AchievementsModal({ isOpen, onClose, stats }: AchievementsModalP
         {/* Badges Grid */}
         <div className="grid flex-1 gap-3 overflow-y-auto p-6 sm:grid-cols-2 lg:grid-cols-3">
           {ACHIEVEMENTS.map((ach) => {
-            const isUnlocked = ach.condition(stats);
+            const isUnlocked = Boolean(unlocked[ach.id]);
 
             return (
               <div

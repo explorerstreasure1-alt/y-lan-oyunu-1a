@@ -5,9 +5,44 @@ type MicPracticeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   word: VocabularyWord;
+  language: "en" | "ru";
 };
 
-export function MicPracticeModal({ isOpen, onClose, word }: MicPracticeModalProps) {
+// Levenshtein mesafesi - iki metin arasındaki fark sayısı
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i += 1) {
+    const curr = [i];
+    for (let j = 1; j <= n; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[n];
+}
+
+// Algılanan ses ile hedef kelime arasındaki benzerlik skoru (0-100)
+function similarityScore(spoken: string, target: string): number {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[.,!?;:'"()-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const a = normalize(spoken);
+  const t = normalize(target);
+  if (a === t) return 100;
+  if (a.length === 0) return 0;
+  const distance = levenshtein(a, t);
+  return Math.max(0, Math.round((1 - distance / Math.max(t.length, a.length)) * 100));
+}
+
+export function MicPracticeModal({ isOpen, onClose, word, language }: MicPracticeModalProps) {
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState<string | null>(null);
   const [matchScore, setMatchScore] = useState<number | null>(null);
@@ -32,7 +67,7 @@ export function MicPracticeModal({ isOpen, onClose, word }: MicPracticeModalProp
         onerror: () => void;
       })();
 
-      recognition.lang = "en-US";
+      recognition.lang = language === "ru" ? "ru-RU" : "en-US";
       setIsListening(true);
       setSpokenText(null);
       setMatchScore(null);
@@ -44,12 +79,7 @@ export function MicPracticeModal({ isOpen, onClose, word }: MicPracticeModalProp
         const target = word.word.toLowerCase().trim();
         setIsListening(false);
         setSpokenText(transcript);
-
-        if (transcript === target || transcript.includes(target) || target.includes(transcript)) {
-          setMatchScore(100);
-        } else {
-          setMatchScore(65);
-        }
+        setMatchScore(similarityScore(transcript, target));
       };
 
       recognition.onerror = () => {
@@ -98,8 +128,14 @@ export function MicPracticeModal({ isOpen, onClose, word }: MicPracticeModalProp
             <p className="font-pixel text-base font-bold text-[#ffd96d] mt-1">"{spokenText}"</p>
 
             {matchScore !== null && (
-              <div className="mt-2 font-pixel text-sm font-bold text-[#75d9a6]">
-                {matchScore === 100 ? "🎉 MÜKEMMEL TELAFFUZ! (100%)" : "👍 BİRAZ DAHI DİKKATLİ OKUYUN (%65)"}
+              <div className={`mt-2 font-pixel text-sm font-bold ${
+                matchScore >= 85 ? "text-[#75d9a6]" : matchScore >= 60 ? "text-[#ffd96d]" : "text-[#ff84ad]"
+              }`}>
+                {matchScore >= 85
+                  ? `🎉 MÜKEMMEL TELAFFUZ! (%${matchScore})`
+                  : matchScore >= 60
+                  ? `👍 İYİ GİDİYOR! (%${matchScore})`
+                  : `🔄 TEKRAR DENE (%${matchScore})`}
               </div>
             )}
           </div>

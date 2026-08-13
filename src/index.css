@@ -217,6 +217,23 @@ button { font: inherit; }
   animation: review-treat-bob 1s ease-in-out infinite alternate;
 }
 
+/* Altın bonus mama - yenince cümle mini-oyunu açılır */
+.word-treat.bonus-treat {
+  background: radial-gradient(circle at 35% 30%, #fff7cc, #ffd700 55%, #b8860b);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.95), 0 0 0 2px #fff3b0, inset -2px -2px 0 rgba(0, 0, 0, 0.15);
+  animation: review-treat-bob 0.7s ease-in-out infinite alternate;
+}
+.word-treat.bonus-treat::after {
+  content: "✨";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.55em;
+  line-height: 1;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
 /* Yiyince ortada hafif belirip kaybolan kelime */
 .word-toast {
   position: absolute;

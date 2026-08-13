@@ -383,6 +383,12 @@ function speakUtterance(
   utterance.volume = volume;
   if (onEnd) utterance.onend = onEnd;
   if (onError) utterance.onerror = onError as any;
+  // Chrome bazen kuyruğa takılır (sessiz bekleme, 1-3 sn gecikme) - resume ile tetikle
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    try {
+      window.speechSynthesis.resume();
+    } catch {}
+  }
   window.speechSynthesis.speak(utterance);
 }
 
@@ -398,10 +404,9 @@ function cleanRussianWordForSpeech(raw: string): string {
 }
 
 /**
- * Main: Beautiful, crystal-clear EN/RU -> (pause) -> TR sequence
- * - Target word spoken slowly, clearly
- * - Short natural pause
- * - Turkish core meaning spoken warmly
+ * Main: Beautiful, crystal-clear EN/RU -> (mini-pause) -> TR sequence
+ * - Söylendiği AN yüksek hızda (rate ~1.1) okunur, bekleme yok
+ * - Türkçe anlam hemen ardından gelir
  * No overlap, no emoji, no technical notes.
  */
 export function speakWordDetails(
@@ -423,20 +428,18 @@ export function speakWordDetails(
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
   if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. For example: ${example}`;
 
-  const estimatedMs = (targetText.length + (mode === "word-tr" ? trCore.length : 0)) * 70 + 600;
+  const estimatedMs = (targetText.length + (mode === "word-tr" ? trCore.length : 0)) * 55 + 400;
   duckBgm(estimatedMs);
 
   if (mode === "word-tr") {
-    // Yenildiği AN söylensin - en hızlı şekilde, hedef dilde, ardından Türkçe
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.86, 1.02, 1, () => {
-      window.setTimeout(() => {
-        speakUtterance(trCore, "tr-TR", 0.94, 1.0, 1);
-      }, 70);
+    // HIZLI: yabancı kelime ~1.1x, Türkçe anlam beklemesiz hemen ardından ~1.2x
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.12, 1.02, 1, () => {
+      speakUtterance(trCore, "tr-TR", 1.2, 1.0);
     });
   } else if (mode === "word") {
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.86, 1.03);
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.12, 1.03);
   } else {
-    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 0.88, 1.02);
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 1.1, 1.02);
   }
 }
 
@@ -445,14 +448,14 @@ export function speakEnglishOnly(word: string) {
   window.speechSynthesis.cancel();
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  duckBgm(wordClean.length * 90 + 600);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 0.78, 1.03);
+  duckBgm(wordClean.length * 70 + 400);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.1, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  duckBgm(trCore.length * 90 + 600);
-  speakUtterance(trCore, "tr-TR", 0.88, 1.0);
+  duckBgm(trCore.length * 70 + 400);
+  speakUtterance(trCore, "tr-TR", 1.15, 1.0);
 }

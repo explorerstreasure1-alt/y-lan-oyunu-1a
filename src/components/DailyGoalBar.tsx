@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DailyGoalBarProps = {
   learnedCount: number;
@@ -6,14 +6,19 @@ type DailyGoalBarProps = {
 
 const STREAK_KEY = "snake_abc_daily_streak_v1";
 const LAST_DATE_KEY = "snake_abc_last_date_v1";
+const DAILY_COUNT_KEY = "snake_abc_daily_count_v1";
+
+const dailyKey = () => new Date().toISOString().slice(0, 10);
 
 export function DailyGoalBar({ learnedCount }: DailyGoalBarProps) {
   const [streakDays, setStreakDays] = useState(1);
   const [dailyLearnedToday, setDailyLearnedToday] = useState(0);
+  const prevLearnedRef = useRef(learnedCount);
   const dailyTarget = 10;
 
+  // Streak: her pratik gününde 1 artar, 1 gün atlanırsa sıfırlanır
   useEffect(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = dailyKey();
     const lastDate = localStorage.getItem(LAST_DATE_KEY);
     const savedStreak = Number(localStorage.getItem(STREAK_KEY)) || 1;
 
@@ -35,10 +40,35 @@ export function DailyGoalBar({ learnedCount }: DailyGoalBarProps) {
     } else {
       setStreakDays(savedStreak);
     }
+
+    // Günlük öğrenme sayacı: bugünün tarihiyle saklanır, gün atlanınca sıfırlanır
+    try {
+      const saved = JSON.parse(localStorage.getItem(DAILY_COUNT_KEY) || "null") as {
+        date: string;
+        count: number;
+      } | null;
+      if (saved && saved.date === todayStr && Number.isFinite(saved.count)) {
+        setDailyLearnedToday(Math.min(dailyTarget, saved.count));
+      } else {
+        setDailyLearnedToday(0);
+      }
+    } catch {
+      setDailyLearnedToday(0);
+    }
   }, []);
 
+  // Ancak gerçek yeni öğrenme kadar artır - sayfa açma ile şişmez
   useEffect(() => {
-    setDailyLearnedToday((prev) => Math.min(dailyTarget, prev + (learnedCount ? 1 : 0)));
+    const delta = Math.max(0, learnedCount - prevLearnedRef.current);
+    prevLearnedRef.current = learnedCount;
+    if (delta === 0) return;
+    setDailyLearnedToday((prev) => {
+      const next = Math.min(dailyTarget, prev + delta);
+      try {
+        localStorage.setItem(DAILY_COUNT_KEY, JSON.stringify({ date: dailyKey(), count: next }));
+      } catch {}
+      return next;
+    });
   }, [learnedCount]);
 
   const percent = Math.min(100, Math.round((dailyLearnedToday / dailyTarget) * 100));

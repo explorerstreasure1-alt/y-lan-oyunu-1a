@@ -1,6 +1,20 @@
+import { useRef, useState } from "react";
 import { type VocabularyWord } from "../vocabulary";
 import { type WordMastery } from "../srs";
 import { speakWordDetails, type SpeechMode } from "../audio";
+
+const BACKUP_KEYS = [
+  "snake_abc_mastery_v5_story_3000",
+  "snake_abc_mastery_v5_story_3000_ru",
+  "snake-abc-best",
+  "snake-abc-custom-words",
+  "snake_abc_achievements_v1",
+  "snake_abc_daily_streak_v1",
+  "snake-abc-settings",
+  "snake-abc-topic",
+  "snake-abc-level",
+  "snake-abc-lang",
+];
 
 type StatsModalProps = {
   isOpen: boolean;
@@ -11,6 +25,8 @@ type StatsModalProps = {
   masteryMap: Record<number, WordMastery>;
   onToggleLearned: (wordId: number) => void;
   speechMode: SpeechMode;
+  language: "en" | "ru";
+  learnedCount: number;
 };
 
 export function StatsModal({
@@ -22,8 +38,66 @@ export function StatsModal({
   masteryMap,
   onToggleLearned,
   speechMode,
+  language,
+  learnedCount,
 }: StatsModalProps) {
+  const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!isOpen) return null;
+
+  const handleShare = async () => {
+    const shareText = [
+      "🐍 SNAKE ABC 3000 - Kelime Yılanı!",
+      `🏆 Skor: ${sessionScore} | 🔥 Max Kombo: x${maxCombo} | 📚 ${sessionWords.length} kelime pratik`,
+      `${language === "ru" ? "🇷🇺" : "🇬🇧"} Toplam: ${learnedCount} kelime öğrenildi!`,
+      "Sen de dene: kelimeyi yılanla yemek hiç bu kadar eğlenceli olmamıştı!",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Kopyalamak için buraya bas (Ctrl+C):", shareText);
+    }
+  };
+
+  const handleExport = () => {
+    const data: Record<string, string> = {};
+    for (const key of BACKUP_KEYS) {
+      const value = localStorage.getItem(key);
+      if (value !== null) data[key] = value;
+    }
+    const blob = new Blob(
+      [JSON.stringify({ app: "snake-abc-3000", exportedAt: new Date().toISOString(), data }, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `snake-abc-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        const data = parsed.data as Record<string, string>;
+        if (!data || typeof data !== "object") throw new Error("bad format");
+        for (const key of Object.keys(data)) {
+          localStorage.setItem(key, data[key]);
+        }
+        alert("✅ Yedek geri yüklendi! İlerlemen güncelleniyor...");
+        window.location.reload();
+      } catch {
+        alert("❌ Geçersiz yedek dosyası. Doğru JSON dosyasını seçtiğinden emin ol.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-pop">
@@ -59,6 +133,44 @@ export function StatsModal({
             <p className="text-[10px] uppercase tracking-wider text-white/50 font-bold">YENEN KELİME</p>
             <p className="font-pixel text-2xl font-black text-[#a0c4ff] mt-0.5">{sessionWords.length}</p>
           </div>
+        </div>
+
+        {/* Share & Backup */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#1c0f38] px-6 py-3">
+          <button
+            type="button"
+            onClick={handleShare}
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition-colors ${
+              copied ? "bg-[#75d9a6] text-[#112d1e]" : "bg-[#99f5c3] text-[#17112e] hover:bg-[#b2f8d3]"
+            }`}
+          >
+            {copied ? "✔ Kopyalandı!" : "📤 Skoru Paylaş"}
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="rounded-lg border border-[#ffd96d]/40 bg-[#ffd96d]/10 px-3 py-1.5 text-[11px] font-black text-[#ffd96d] hover:bg-[#ffd96d]/20 transition-colors"
+          >
+            💾 İlerlemeyi Yedekle
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-lg border border-[#a0c4ff]/40 bg-[#a0c4ff]/10 px-3 py-1.5 text-[11px] font-black text-[#a0c4ff] hover:bg-[#a0c4ff]/20 transition-colors"
+          >
+            📂 Yedekten Geri Yükle
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportFile(file);
+              e.target.value = "";
+            }}
+          />
         </div>
 
         {/* Eaten Words List */}

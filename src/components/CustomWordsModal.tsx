@@ -5,6 +5,8 @@ type CustomWordsModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAddCustomWords: (newWords: VocabularyWord[]) => void;
+  customWords: VocabularyWord[];
+  onRemoveCustomWords: (wordId: number) => void;
 };
 
 export const PREMADE_EXAM_PACKS = [
@@ -43,7 +45,7 @@ export const PREMADE_EXAM_PACKS = [
   },
 ];
 
-export function CustomWordsModal({ isOpen, onClose, onAddCustomWords }: CustomWordsModalProps) {
+export function CustomWordsModal({ isOpen, onClose, onAddCustomWords, customWords, onRemoveCustomWords }: CustomWordsModalProps) {
   const [wordInput, setWordInput] = useState("");
   const [meaningInput, setMeaningInput] = useState("");
   const [defInput, setDefInput] = useState("");
@@ -211,6 +213,46 @@ export function CustomWordsModal({ isOpen, onClose, onAddCustomWords }: CustomWo
                 + Kelimeyi Oyuna Ekle
               </button>
             </form>
+          </div>
+
+          <div className="h-px bg-white/10" />
+
+          {/* Current Custom Words */}
+          <div>
+            <h3 className="font-pixel text-xs tracking-wider text-[#99f5c3] uppercase mb-3">
+              3. MEVCUT ÖZEL KELİMELERİN ({customWords.length})
+            </h3>
+            {customWords.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-white/15 bg-white/5 p-4 text-xs text-white/50 italic">
+                Henüz özel kelime eklemedin. Paket yükle veya aşağıdan kendi kelimeni ekle.
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {customWords.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-pixel text-xs font-bold text-white">{w.word}</span>
+                      <span className="ml-2 text-[11px] font-bold text-[#ffd96d] truncate">🇹🇷 {w.meaningTr}</span>
+                      <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-pixel text-white/60">{w.topic}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveCustomWords(w.id)}
+                      className="flex-none rounded-lg border border-[#ff84ad]/40 bg-[#ff84ad]/10 px-2 py-1 text-[10px] font-bold text-[#ff84ad] hover:bg-[#ff84ad]/25 transition-colors"
+                      title="Bu kelimeyi özel listenden çıkar"
+                    >
+                      🗑 Sil
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-[10px] leading-4 text-white/50">
+              💾 Özel kelimeler tarayıcında kalıcı olarak saklanır — sayfayı kapatsan da kaybolmaz.
+            </p>
           </div>
         </div>
       </div>
