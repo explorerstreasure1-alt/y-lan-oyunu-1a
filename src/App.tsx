@@ -8,7 +8,11 @@ import {
   recordWordFailure,
   recordWordBoost,
   toggleWordLearnedState,
+  getDailyLog,
+  addDailyActivity,
+  isWeakWord,
   type ActiveFoodItem,
+  type DailyLog,
   type LearningLanguage,
   type WordMastery,
 } from "./srs";
@@ -162,6 +166,22 @@ export default function App() {
   // Boss Battle
   const [bossBattle, setBossBattle] = useState<BossBattleState | null>(null);
   const [bossesDefeated, setBossesDefeated] = useState(0);
+  // Boss önizleme: savaş başlamadan tip + kelime gösterilir, oyun duraklar
+  const [bossPreview, setBossPreview] = useState<{ word: VocabularyWord; variant: "meaning" | "definition" } | null>(null);
+
+  // XP / Seviye (kalıcı): kelime yeme, boss ve quiz bonusuyla birikir - 100 XP = 1 seviye
+  const [xp, setXp] = useState(() => {
+    try {
+      return Math.max(0, Number(window.localStorage.getItem("snake_abc_xp_v1")) || 0);
+    } catch {
+      return 0;
+    }
+  });
+  const [levelUpBanner, setLevelUpBanner] = useState<number | null>(null);
+  const [dailyLog, setDailyLog] = useState<DailyLog>(getDailyLog);
+
+  // Zayıf kelime antrenmanı: hata defterine düşen kelimelerle kısa seans
+  const [weakTraining, setWeakTraining] = useState(false);
 
   // Filters (seçim localStorage'da kalıcı - her açılışta aynı konudan devam)
   const [selectedTopic, setSelectedTopic] = useState<string | "ALL">(() => {
@@ -270,12 +290,18 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const frameRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<Point | null>(null);
   const bossFightsCountRef = useRef(0);
+  const xpRef = useRef(xp);
+  const bossPreviewRef = useRef<{ word: VocabularyWord; variant: "meaning" | "definition" } | null>(bossPreview);
+  const weakTrainingRef = useRef(false);
+  const weakWordsRef = useRef<VocabularyWord[]>([]);
 
   masteryMapRef.current = masteryMap;
   activeFoodRef.current = activeFood;
   powerUpRef.current = powerUpOnGrid;
   bossBattleRef.current = bossBattle;
   recentUnlearnedIdsRef.current = recentUnlearnedIds;
+  xpRef.current = xp;
+  bossPreviewRef.current = bossPreview;
 
   const currentSkin = SNAKE_SKINS.find((s) => s.id === activeSkinId) || SNAKE_SKINS[0];
 
@@ -407,6 +433,8 @@ useEffect(() => {
     setActiveFood(finalItem);
     setPowerUpOnGrid(null);
     setBossBattle(null);
+    setBossPreview(null);
+    bossPreviewRef.current = null;
     setHasShield(false);
     setIsDoubleXpActive(false);
     setIsSlowBerryActive(false);
@@ -426,6 +454,9 @@ useEffect(() => {
   // Konu/seviye değişince: filtreyi uygula, imleci sıfırla, yeni kelime seç (oyunu bozmadan)
   const selectPool = useCallback(
     (topic: string | "ALL", level: WordLevel | "ALL") => {
+      // Zayıf antrenman modu havuzla sınırlıdır - filtre değişince kapanır
+      weakTrainingRef.current = false;
+      setWeakTraining(false);
       setSelectedTopic(topic);
       setSelectedLevel(level);
       try {
@@ -456,6 +487,8 @@ useEffect(() => {
   const switchLanguage = useCallback(
     (nextLang: LearningLanguage) => {
       if (nextLang === language) return;
+      weakTrainingRef.current = false;
+      setWeakTraining(false);
       try {
         window.localStorage.setItem("snake-abc-lang", nextLang);
       } catch {}
@@ -496,13 +529,59 @@ useEffect(() => {
     [language, customWordBank, selectedTopic, selectedLevel, setGameStatus]
   );
 
+  // XP ekle: seviye atlayınca banner göster, localStorage'a kalıcı yaz
+  const addXp = useCallback((amount: number) => {
+    const prev = xpRef.current;
+    const next = prev + amount;
+    xpRef.current = next;
+    setXp(next);
+    try {
+      window.localStorage.setItem("snake_abc_xp_v1", String(next));
+    } catch {}
+    const prevLevel = Math.floor(prev / 100) + 1;
+    const nextLevel = Math.floor(next / 100) + 1;
+    if (nextLevel > prevLevel) {
+      setLevelUpBanner(nextLevel);
+      window.setTimeout(() => setLevelUpBanner(null), 2600);
+    }
+  }, []);
+
+  // Zayıf kelimeler: hata defterine düşmüş veya tekrar tekrar pekişememiş
+  const weakWords = useMemo(
+    () => activePool.filter((w) => isWeakWord(masteryMap[w.id])),
+    [activePool, masteryMap]
+  );
+  weakWordsRef.current = weakWords;
+
+  // Zayıf antrenman aç/kapat: kelime havuzuna zayıf kelimeler önceden beslenir
+  const toggleWeakTraining = () => {
+    const nextEnabled = !weakTrainingRef.current;
+    weakTrainingRef.current = nextEnabled;
+    setWeakTraining(nextEnabled);
+    const pool = buildFilteredPool(selectedTopic, selectedLevel, activePool);
+    const weakExtra = nextEnabled ? weakWords : [];
+    const { item, updatedCursor } = getNextFoodItem(
+      0,
+      masteryMapRef.current,
+      eatenTotalRef.current,
+      [],
+      weakExtra,
+      pool
+    );
+    newWordCursorRef.current = updatedCursor;
+    const finalItem = maybeBonusMama(item);
+    activeFoodRef.current = finalItem;
+    setActiveFood(finalItem);
+  };
+
   const changeDirection = useCallback(
     (nextDirection: Direction) => {
       if (statusRef.current === "over") return;
       if (!isOpposite(directionRef.current, nextDirection)) {
         if (sfxEnabled && directionRef.current !== nextDirection) playTurnSfx();
         queuedDirectionRef.current = nextDirection;
-        if (statusRef.current === "ready" || statusRef.current === "paused") startGame();
+        // Boss önizlemesi açıkken yön basmak oyunu geri başlatmasın
+        if ((statusRef.current === "ready" || statusRef.current === "paused") && !bossPreviewRef.current) startGame();
       }
     },
     [sfxEnabled, startGame],
@@ -531,7 +610,7 @@ useEffect(() => {
       if (event.code === "Space") {
         event.preventDefault();
         if (statusRef.current === "playing") setGameStatus("paused");
-        else if (statusRef.current === "paused" || statusRef.current === "ready") startGame();
+        else if ((statusRef.current === "paused" || statusRef.current === "ready") && !bossPreviewRef.current) startGame();
       }
       // Shift = yılanı hızlandır (basılı tut)
       if (event.key === "Shift") {
@@ -612,6 +691,10 @@ useEffect(() => {
     const wordId = activeFood.word.id;
     const nextMap = toggleWordLearnedState(wordId, masteryMap, language);
     setMasteryMap(nextMap);
+    // Öğrendim'e geçildiğinde günlük aktiviteye işle (Unuttum geri alma sayılmaz)
+    if (!masteryMap[wordId]?.isLearned && nextMap[wordId]?.isLearned) {
+      setDailyLog(addDailyActivity("learned"));
+    }
   };
 
   // Game loop - story speed: slightly slower for vertical readability
@@ -697,6 +780,7 @@ useEffect(() => {
         if (hitBossOption.isCorrect) {
           setBossesDefeated((prev) => prev + 1);
           setScore((prev) => prev + 50);
+          addXp(25);
           if (sfxEnabled) playLevelUpSfx();
           speakWordDetails(currentBoss.word.word, currentBoss.word.meaningTr, currentBoss.word.definition, currentBoss.word.example, speechMode);
           setMasteryMap((prev) => toggleWordLearnedState(currentBoss.word.id, prev, language));
@@ -705,6 +789,7 @@ useEffect(() => {
           const nextMap = recordWordFailure(currentBoss.word.id, masteryMapRef.current, language);
           masteryMapRef.current = nextMap;
           setMasteryMap(nextMap);
+          setDailyLog(addDailyActivity("failed"));
           if (sfxEnabled) playGameOverSfx();
         }
         setBossBattle(null);
@@ -764,9 +849,15 @@ useEffect(() => {
 
         eatenTotalRef.current += 1;
 
-        if (eatenTotalRef.current % 10 === 0) {
+        if (eatenTotalRef.current % 10 === 0 && !masteryMapRef.current[currentWord.id]?.isLearned) {
+          // 👹 Boss önizleme: savaş türü önceden gösterilir, onaylanınca başlar (oyun duraklar)
+          bossPreviewRef.current = {
+            word: currentWord,
+            variant: (bossFightsCountRef.current + 1) % 2 === 1 ? "meaning" : "definition",
+          };
+          setBossPreview(bossPreviewRef.current);
           if (sfxEnabled) playLevelUpSfx();
-          triggerBossBattle(currentWord);
+          setGameStatus("paused");
         }
 
 if (Math.random() < 0.22 && !powerUpRef.current) {
@@ -795,6 +886,9 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
         scoreRef.current = nextScore;
         setScore(nextScore);
 
+        addXp(isReview ? 2 : 5);
+        setDailyLog(addDailyActivity(isReview ? "review" : "eaten"));
+
         setScoreFloat({ id: Date.now(), text: `+${scorePoints}` });
         window.setTimeout(() => setScoreFloat(null), 850);
         setWordToast({ id: Date.now(), word: currentWord, isReview });
@@ -808,8 +902,8 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
         if (sfxEnabled) playEatSfx(isReview, nextCombo);
         speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode);
 
-        // Altın mama yenildi → cümle mini-oyunu
-        if (wasBonus) {
+        // Altın mama yenildi → cümle mini-oyunu (tek harfli kelimelerde cümle anlamsız olur, atla)
+        if (wasBonus && currentWord.word.trim().length > 1) {
           const distractors = [
             ...new Set(filteredPool.filter((w) => w.id !== currentWord.id).map((w) => w.word)),
           ]
@@ -829,7 +923,8 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
           eatenTotalRef.current,
           recentUnlearnedIdsRef.current,
           customWordBank,
-          filteredPool
+          filteredPool,
+          weakTrainingRef.current ? weakWordsRef.current : []
         );
 
         newWordCursorRef.current = updatedCursor;
@@ -844,11 +939,12 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
     }, tickInterval);
 
     return () => window.clearInterval(gameLoop);
-  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, isMagnetActive, extraLives, boostRemaining, customWordBank, filteredPool, isBoosting, triggerBossBattle, setGameStatus, sessionEatenWords.length, language]);
+  }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, isMagnetActive, extraLives, boostRemaining, customWordBank, filteredPool, isBoosting, setGameStatus, sessionEatenWords.length, language, addXp]);
 
   const currentWord = activeFood.word;
   const isCurrentLearned = Boolean(masteryMap[currentWord.id]?.isLearned);
   const statusLabel = status === "playing" ? "OYUNDA" : status === "paused" ? "DURAKLATILDI" : status === "over" ? "BİTTİ" : "HAZIR";
+  const xpLevel = Math.floor(xp / 100) + 1;
 
   // Konu/seviye filtresi aktifse ilerleme çubuğu o havuza göre hesaplanır (konu başına kayıt)
   const isPoolFiltered = filteredPool.length < activePool.length;
@@ -861,6 +957,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
 
   const achievementStats: AchievementStats = {
     learnedCount,
+    level: xpLevel,
     score,
     bestScore,
     maxCombo,
@@ -909,6 +1006,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
             <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-2.5 py-1 text-[11px] font-bold text-[#99f5c3]">🌟 Günlük</button>
             <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-2.5 py-1 text-[11px] font-bold text-[#ffd96d]">🏆 Rozet</button>
             <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
+            <button type="button" onClick={() => setIsStatsOpen(true)} className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-2.5 py-1 text-[11px] font-bold text-[#a0c4ff]" title={`${xp} XP • ${xp % 100}/100`}>⚡ Lv{xpLevel}</button>
             <button type="button" onClick={() => setIsSettingsOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80" title="Ayarlar">⚙️ Ayarlar</button>
           </div>
         </header>
@@ -1049,8 +1147,32 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                       <small>{allPoolLearned ? (isPoolFiltered ? "Bu konuyu bitirdin! Yeni konu seç ve devam et" : "Tüm kelimeleri öğrendin, kelime ustasısın!") : "Ok tuşu / kaydır"}</small>
                     </div>
                   )}
-                  {status === "paused" && <div className="board-message"><span>DURDURULDU</span><small>Boşlukla devam</small></div>}
+                  {status === "paused" && !bossPreview && <div className="board-message"><span>DURDURULDU</span><small>Boşlukla devam</small></div>}
                   {status === "over" && <div className="board-message"><span>BİTTİ</span><div className="flex gap-2 mt-2"><button onClick={()=>setIsStatsOpen(true)} type="button">📊 Rapor</button><button onClick={resetGame} type="button">Yeniden</button></div></div>}
+                  {bossPreview && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40">
+                      <div className="animate-pop mx-3 w-full max-w-[260px] rounded-2xl border-2 border-[#ff84ad] bg-[#21123a] p-4 text-center shadow-2xl">
+                        <p className="font-pixel text-[10px] tracking-widest text-[#ff84ad]">👹 BOSS SAVAŞI</p>
+                        <h3 className="mt-1.5 font-pixel text-xl font-black text-white">{bossPreview.word.word}</h3>
+                        <p className="mt-1 text-[11px] text-white/70">🇹🇷 {bossPreview.word.meaningTr.split(" /")[0]}</p>
+                        <p className="mt-2 rounded-lg bg-white/5 px-2 py-1.5 text-[11px] font-bold text-[#ffd96d]">{bossPreview.variant === "meaning" ? "🇹🇷 Türkçe anlamını seç" : "🇬🇧 İngilizce tanımını seç"}</p>
+                        <p className="mt-1.5 text-[10px] leading-4 text-white/50">Yılanı doğru şıkka sürükle • 15 sn • +50 puan +25 XP</p>
+                        <div className="mt-3 flex gap-2">
+                          <button onClick={() => { triggerBossBattle(bossPreview.word); bossPreviewRef.current = null; setBossPreview(null); setGameStatus("playing"); }} type="button" className="flex-1 rounded-lg bg-[#ff84ad] py-2 text-xs font-black text-[#21123a]">⚔️ Savaş</button>
+                          <button onClick={() => { bossPreviewRef.current = null; setBossPreview(null); }} type="button" className="flex-1 rounded-lg bg-white/10 py-2 text-xs font-black text-white/80">Vazgeç</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {levelUpBanner !== null && (
+                    <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+                      <div className="animate-pop rounded-2xl border-2 border-[#ffd96d] bg-[#21123a]/95 px-6 py-4 text-center shadow-2xl">
+                        <p className="font-pixel text-[10px] tracking-widest text-[#ffd96d]">SEVİYE ATLADIN!</p>
+                        <p className="mt-1 font-pixel text-3xl font-black text-white">⚡ Lv {levelUpBanner}</p>
+                        <p className="mt-1 text-[11px] text-white/60">Her 100 XP yeni seviye • Devam et!</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex shrink-0 items-center justify-between bg-[#302052] px-3 py-2">
@@ -1059,13 +1181,13 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                   {isBoosting && <span className="font-pixel text-[9px] text-[#ff84ad] animate-pulse">⚡ HIZLI</span>}
                   {comboStreak>1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
                   <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3,"0")}</p>
-                  <button onClick={() => (status === "playing" ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
+                  <button onClick={() => (status === "playing" || bossPreview ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
                 </div>
               </div>
 
               <ArcadeControls
                 onDirectionChange={changeDirection}
-                onPauseToggle={() => (status === "playing" ? setGameStatus("paused") : startGame())}
+                onPauseToggle={() => (status === "playing" || bossPreview ? setGameStatus("paused") : startGame())}
                 isPlaying={status === "playing"}
                 isBoosting={isBoosting}
                 onBoostStart={() => setIsBoosting(true)}
@@ -1074,6 +1196,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
 
               <div className="mt-2 flex shrink-0 justify-center gap-1.5">
                 <button onClick={()=>setIsTopicsOpen(true)} type="button" className={`rounded-full px-3 py-1 text-[11px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
+                <button onClick={toggleWeakTraining} type="button" className={`rounded-full px-3 py-1 text-[11px] font-bold ${weakTraining ? "bg-[#ff84ad]/25 text-[#ff84ad] border border-[#ff84ad]/50" : "bg-white/10 text-white/70"}`} title="Hata defterine düşen zayıf kelimelerle özel antrenman">{weakTraining ? "⚠️ Zayıf AÇIK" : "⚠️ Zayıf"}</button>
                 <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
                 <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">🎰 Çark</button>
                 <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">✍️ Özel</button>
@@ -1181,7 +1304,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
       <SkinsModal isOpen={isSkinsOpen} onClose={()=>setIsSkinsOpen(false)} learnedCount={learnedCount} activeSkinId={activeSkinId} onSelectSkin={(id)=>{setActiveSkinId(id); setIsSkinsOpen(false);}} />
       <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} words={activePool} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>selectPool(t, selectedLevel)} onSelectLevel={(l)=>selectPool(selectedTopic, l)} masteryMap={masteryMap} />
       <AchievementsModal isOpen={isAchievementsOpen} onClose={()=>setIsAchievementsOpen(false)} stats={achievementStats} />
-      <CustomWordsModal isOpen={isCustomWordsOpen} onClose={()=>setIsCustomWordsOpen(false)} customWords={customWordBank} onRemoveCustomWords={(id)=>{setCustomWordsBank(p=>p.filter(w=>w.id!==id));}} onAddCustomWords={(nw)=>{setCustomWordsBank(p=>[...nw, ...p]); setIsCustomWordsOpen(false);}} />
+      <CustomWordsModal isOpen={isCustomWordsOpen} onClose={()=>setIsCustomWordsOpen(false)} customWords={customWordBank} onRemoveCustomWords={(id)=>{setCustomWordsBank(p=>p.filter(w=>w.id!==id));}} onAddCustomWords={(nw)=>{setCustomWordsBank(p=>[...nw, ...p]); setIsCustomWordsOpen(false);}} language={language} />
       <SettingsModal isOpen={isSettingsOpen} onClose={()=>setIsSettingsOpen(false)} settings={settings} onSettingsChange={(patch)=>setSettings(prev=>({...prev, ...patch}))} />
       <ArcadeWheelModal isOpen={isWheelOpen} onClose={()=>setIsWheelOpen(false)} onRewardWon={(pts)=>setScore(p=>p+pts)} />
       <MicPracticeModal isOpen={isMicOpen} onClose={()=>setIsMicOpen(false)} word={currentWord} language={language} />
@@ -1196,8 +1319,8 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
         />
       )}
       <WordOfDayModal isOpen={isWordOfDayOpen} onClose={()=>setIsWordOfDayOpen(false)} speechMode={speechMode} words={activePool} />
-      <QuizModal isOpen={isQuizOpen} onClose={()=>{setIsQuizOpen(false); setQuizzesCompletedCount(p=>p+1); setIsStatsOpen(true);}} recentWords={sessionEatenWords} onBonusEarned={(b)=>setScore(p=>p+b)} onWordFailed={(id)=>{const nextMap=recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current=nextMap; setMasteryMap(nextMap);}} />
-      <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} language={language} learnedCount={learnedCount} />
+      <QuizModal isOpen={isQuizOpen} onClose={()=>{setIsQuizOpen(false); setQuizzesCompletedCount(p=>p+1); setIsStatsOpen(true);}} recentWords={sessionEatenWords} language={language} onBonusEarned={(b)=>{setScore(p=>p+b); addXp(b);}} onWordFailed={(id)=>{const nextMap=recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current=nextMap; setMasteryMap(nextMap); setDailyLog(addDailyActivity("failed"));}} />
+      <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} language={language} learnedCount={learnedCount} words={activePool} dailyLog={dailyLog} />
     </main>
   );
 }

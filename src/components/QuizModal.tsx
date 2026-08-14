@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { type VocabularyWord } from "../vocabulary";
+import { runSpeechRecognition, similarityScore } from "./MicPracticeModal";
 
 type QuizModalProps = {
   isOpen: boolean;
@@ -7,13 +8,17 @@ type QuizModalProps = {
   recentWords: VocabularyWord[];
   onBonusEarned: (points: number) => void;
   onWordFailed: (wordId: number) => void;
+  language: "en" | "ru";
 };
 
-export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordFailed }: QuizModalProps) {
+export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordFailed, language }: QuizModalProps) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [micSpoken, setMicSpoken] = useState<string | null>(null);
+  const [micScore, setMicScore] = useState<number | null>(null);
 
   if (!isOpen || recentWords.length === 0) return null;
 
@@ -41,11 +46,48 @@ export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordF
     }
   };
 
+  // 🎤 Sözlü cevap: mikrofon tanıması şık seçmek yerine geçer (≥%60 benzerlik = doğru)
+  const handleMicAnswer = () => {
+    if (isAnswered || isListening) return;
+    setIsListening(true);
+    setMicSpoken(null);
+    setMicScore(null);
+
+    const started = runSpeechRecognition(
+      language,
+      (transcript) => {
+        setIsListening(false);
+        setMicSpoken(transcript);
+        const s = similarityScore(transcript, currentWord.word.toLowerCase().trim());
+        setMicScore(s);
+        setIsAnswered(true);
+        if (s >= 60) {
+          setSelectedOption(currentWord.meaningTr); // doğru şık yeşil parlasın
+          setScore((prev) => prev + 1);
+        } else {
+          onWordFailed(currentWord.id);
+        }
+      },
+      () => {
+        setIsListening(false);
+        setMicSpoken("Ses algılanamadı, tekrar deneyin.");
+      }
+    );
+
+    if (!started) {
+      setIsListening(false);
+      alert("Tarayıcınız mikrofonla konuşma tanımayı desteklemiyor. Google Chrome veya Edge deneyebilirsiniz.");
+    }
+  };
+
   const handleNext = () => {
     if (questionIndex + 1 < Math.min(3, recentWords.length)) {
       setQuestionIndex((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswered(false);
+      setIsListening(false);
+      setMicSpoken(null);
+      setMicScore(null);
     } else {
       // Finished Quiz
       const bonusPoints = score * 10;
@@ -53,6 +95,8 @@ export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordF
       onClose();
     }
   };
+
+  const answeredWrong = isAnswered && selectedOption !== currentWord.meaningTr;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-pop">
@@ -72,6 +116,31 @@ export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordF
             {currentWord.word}
           </h3>
           <p className="mt-1 text-xs italic text-[#ffd96d]">{currentWord.phonetic} • {currentWord.pos}</p>
+        </div>
+
+        {/* 🎤 Sözlü cevap: şık seçmeden kelimeyi yüksek sesle oku */}
+        <div className="mb-4 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={handleMicAnswer}
+            disabled={isAnswered}
+            className={`flex items-center gap-2 rounded-full border-2 px-5 py-2 text-xs font-black transition-all ${
+              isAnswered
+                ? "border-white/10 bg-white/5 text-white/40"
+                : isListening
+                ? "border-[#ff84ad] bg-[#ff84ad]/20 text-[#ff84ad] animate-pulse"
+                : "border-[#99f5c3]/50 bg-[#99f5c3]/10 text-[#99f5c3] hover:bg-[#99f5c3]/20"
+            }`}
+          >
+            <span className="text-lg leading-none">🎤</span>
+            {isListening ? "Dinleniyor... Kelimeyi söyleyin" : "Şıksız Sözlü Cevap Ver"}
+          </button>
+          {micSpoken && (
+            <p className="text-[11px] text-white/60">
+              Algılanan: <strong className="text-[#ffd96d]">"{micSpoken}"</strong>
+              {micScore !== null && <span className="ml-1 text-white/50">(%{micScore})</span>}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-2.5">
@@ -100,13 +169,20 @@ export function QuizModal({ isOpen, onClose, recentWords, onBonusEarned, onWordF
         </div>
 
         {isAnswered && (
-          <button
-            type="button"
-            onClick={handleNext}
-            className="mt-5 w-full rounded-xl bg-[#ffd96d] py-3 font-pixel text-sm font-black text-[#21123a] shadow-lg hover:bg-[#ffe073] transition-colors"
-          >
-            {questionIndex + 1 < Math.min(3, recentWords.length) ? "Sonraki Soru ➔" : "Testi Tamamla & Bonusu Al 🏆"}
-          </button>
+          <>
+            {answeredWrong && (
+              <p className="mt-4 text-center font-pixel text-sm font-bold text-[#ff84ad]">
+                ❌ Yanlış! Doğrusu: <span className="text-white">{currentWord.meaningTr}</span>
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleNext}
+              className="mt-4 w-full rounded-xl bg-[#ffd96d] py-3 font-pixel text-sm font-black text-[#21123a] shadow-lg hover:bg-[#ffe073] transition-colors"
+            >
+              {questionIndex + 1 < Math.min(3, recentWords.length) ? "Sonraki Soru ➔" : "Testi Tamamla & Bonusu Al 🏆"}
+            </button>
+          </>
         )}
       </div>
     </div>

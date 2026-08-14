@@ -16,8 +16,13 @@ export function SentenceChallengeModal({ isOpen, onClose, word, options, onCorre
   if (!isOpen) return null;
 
   // Örnek cümlede kelimeyi boşlukla maskele (geçmiyorsa olduğu gibi göster)
+  // Unicode sınırlar: yalnızca harf/rakam komşuluğu OLMAYAN tam eşleşmeler maskelenir.
+  // (JS \b ASCII'dir, Kiril "я" gibi tek harflerde yanlış davranır - \p{L} kullanıyoruz)
   const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const maskedExample = word.example.replace(new RegExp(escapeRegex(word.word), "ig"), "____");
+  const maskedExample = word.example.replace(
+    new RegExp("(?<![\\p{L}\\p{N}])" + escapeRegex(word.word) + "(?![\\p{L}\\p{N}])", "giu"),
+    "____"
+  );
   const masked = maskedExample !== word.example;
 
   const handleSelect = (opt: string) => {

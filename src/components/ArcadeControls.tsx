@@ -11,10 +11,20 @@ type ArcadeControlsProps = {
   onBoostEnd: () => void;
 };
 
+// Dokunma hissi: mobilde kısa titreme (desteklemeyen tarayıcıda sessizce yok sayılır)
+function buzz() {
+  try {
+    navigator.vibrate?.(10);
+  } catch {
+    /* haptik desteklenmiyor */
+  }
+}
+
 // PointerDown + preventDefault: dokunma anında yön değişir, click gecikmesi/hover yutması olmaz
 function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
   return (e: PointerEvent) => {
     e.preventDefault();
+    buzz();
     onDirectionChange(dir);
   };
 }
@@ -66,7 +76,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         {/* Center Pause */}
         <button
           type="button"
-          onPointerDown={(e) => { e.preventDefault(); onPauseToggle(); }}
+          onPointerDown={(e) => { e.preventDefault(); buzz(); onPauseToggle(); }}
           className="absolute inset-0 m-auto h-12 w-12 rounded-full bg-[#ffd96d] text-[10px] font-black text-[#21123a] shadow-md flex items-center justify-center active:brightness-110"
         >
           {isPlaying ? "PAUSE" : "START"}
@@ -76,7 +86,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
       {/* Boost: basılı tut = yılan hızlanır */}
       <button
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); onBoostStart(); }}
+        onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
         onPointerUp={onBoostEnd}
         onPointerLeave={onBoostEnd}
         onPointerCancel={onBoostEnd}

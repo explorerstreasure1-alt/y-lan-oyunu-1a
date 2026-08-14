@@ -1,4 +1,4 @@
-import { LEARNING_PATH, type VocabularyWord } from "./vocabulary";
+import { LEARNING_PATH, LEGACY_BASE_WORDS, LEGACY_PADDING_START, type VocabularyWord } from "./vocabulary";
 
 export type LearningLanguage = "en" | "ru";
 
@@ -28,10 +28,69 @@ export function getSavedMasteryMap(lang: LearningLanguage = "en"): Record<number
   try {
     const raw = window.localStorage.getItem(storageKeyFor(lang));
     if (!raw) return {};
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Record<number, WordMastery>;
+    if (lang === "en") {
+      const migrated = migrateLegacyEnMastery(parsed);
+      if (migrated !== parsed) {
+        saveMasteryMap(migrated, lang);
+        return migrated;
+      }
+    }
+    return parsed;
   } catch {
     return {};
   }
+}
+
+/**
+ * ESKİ EN havuzu migrasyonu: eski kod 3000'e ulaşmak için taban kelimeleri kopyalıyordu
+ * (id >= LEGACY_PADDING_START → kelime = LEGACY_BASE_WORDS[id % LEGACY_BASE_WORDS.length]).
+ * Artık havuz gerçek benzersiz kelimelerle dolu; eski kopya id'leri kanonik id'ye taşınır.
+ * İlerleme kaybolmaz, yalnızca doğru kelimeye oturur. İdempotenttir.
+ */
+export function migrateLegacyEnMastery(
+  map: Record<number, WordMastery>
+): Record<number, WordMastery> {
+  if (LEGACY_PADDING_START <= 0 || LEGACY_BASE_WORDS.length === 0) return map;
+
+  // Yeni düzende kelime -> kanonik id
+  const wordToNewId = new Map<string, number>();
+  for (const w of LEARNING_PATH) {
+    if (!wordToNewId.has(w.word)) wordToNewId.set(w.word, w.id);
+  }
+
+  let changed = false;
+  const next: Record<number, WordMastery> = {};
+
+  const merge = (target: WordMastery | undefined, incoming: WordMastery): WordMastery => {
+    if (!target) return incoming;
+    // Daha "zengin" kaydı koru: öğrenilmiş > yıldız > görülme
+    if (target.isLearned !== incoming.isLearned) return target.isLearned ? target : incoming;
+    if (target.masteryStars !== incoming.masteryStars) return target.masteryStars > incoming.masteryStars ? target : incoming;
+    return target.timesSeen >= incoming.timesSeen ? target : incoming;
+  };
+
+  for (const [idStr, mastery] of Object.entries(map)) {
+    const id = Number(idStr);
+    if (Number.isNaN(id)) continue;
+
+    if (id < LEGACY_PADDING_START) {
+      next[id] = merge(next[id], mastery);
+      continue;
+    }
+
+    // Eski padding kopyası: kanonik kelimesine eşle
+    const legacyWord = LEGACY_BASE_WORDS[id % LEGACY_BASE_WORDS.length];
+    const newId = wordToNewId.get(legacyWord);
+    if (newId === undefined || newId === id) {
+      next[id] = merge(next[id], mastery);
+      continue;
+    }
+    changed = true;
+    next[newId] = merge(next[newId], mastery);
+  }
+
+  return changed ? next : map;
 }
 
 export function saveMasteryMap(map: Record<number, WordMastery>, lang: LearningLanguage = "en") {
@@ -191,9 +250,21 @@ export function getNextFoodItem(
   eatenTotalCount: number,
   recentSessionUnlearnedIds: number[],
   extraPool: VocabularyWord[] = [],
-  basePool: VocabularyWord[] = LEARNING_PATH
+  basePool: VocabularyWord[] = LEARNING_PATH,
+  weakPool: VocabularyWord[] = []
 ): { item: ActiveFoodItem; updatedCursor: number } {
-  const fullPool = extraPool.length > 0 ? [...extraPool, ...basePool] : basePool;
+  // Zayıf antrenman: zayıf kelimeler havuzun başına öncelikli eklenir (base'de tekrar etmezler)
+  let fullPool: VocabularyWord[];
+  if (weakPool.length > 0) {
+    const weakIds = new Set(weakPool.map((w) => w.id));
+    fullPool = [
+      ...weakPool,
+      ...extraPool.filter((w) => !weakIds.has(w.id)),
+      ...basePool.filter((w) => !weakIds.has(w.id)),
+    ];
+  } else {
+    fullPool = extraPool.length > 0 ? [...extraPool, ...basePool] : basePool;
+  }
   const poolSize = fullPool.length;
 
   const cycleIndex = eatenTotalCount % 8;
@@ -252,4 +323,68 @@ export function getNextFoodItem(
     item: { word: fallbackWord, isReview: false },
     updatedCursor: (newWordCursor + 1) % poolSize,
   };
+}
+
+// --- Günlük aktivite kaydı (StatsModal "BUGÜN" özeti için) ---
+
+const DAILY_LOG_KEY = "snake_abc_daily_log_v1";
+
+export type DailyLog = {
+  date: string;
+  eaten: number; // ilk kez yenilen yeni kelimeler
+  reviews: number; // tekrar mamaları
+  learned: number; // "Öğrendim" tıklananlar
+  failed: number; // boss/quiz'de zayıflatılanlar
+};
+
+const todayLocalKey = () => {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+};
+
+const EMPTY_LOG: DailyLog = { date: "", eaten: 0, reviews: 0, learned: 0, failed: 0 };
+
+export function getDailyLog(): DailyLog {
+  if (typeof window === "undefined") return { ...EMPTY_LOG, date: todayLocalKey() };
+  try {
+    const raw = window.localStorage.getItem(DAILY_LOG_KEY);
+    if (!raw) return { ...EMPTY_LOG, date: todayLocalKey() };
+    const parsed = JSON.parse(raw) as Partial<DailyLog>;
+    if (parsed.date !== todayLocalKey()) return { ...EMPTY_LOG, date: todayLocalKey() };
+    return {
+      date: todayLocalKey(),
+      eaten: Number(parsed.eaten) || 0,
+      reviews: Number(parsed.reviews) || 0,
+      learned: Number(parsed.learned) || 0,
+      failed: Number(parsed.failed) || 0,
+    };
+  } catch {
+    return { ...EMPTY_LOG, date: todayLocalKey() };
+  }
+}
+
+export function addDailyActivity(kind: "eaten" | "review" | "learned" | "failed"): DailyLog {
+  const current = getDailyLog();
+  const next: DailyLog = {
+    ...current,
+    date: todayLocalKey(),
+    eaten: current.eaten + (kind === "eaten" ? 1 : 0),
+    reviews: current.reviews + (kind === "review" ? 1 : 0),
+    learned: current.learned + (kind === "learned" ? 1 : 0),
+    failed: current.failed + (kind === "failed" ? 1 : 0),
+  };
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(next));
+    } catch {}
+  }
+  return next;
+}
+
+/** Zayıf kelime: hata defterine düşmüş veya tekrar tekrar pekişememiş (antrenman + özet listesi için) */
+export function isWeakWord(mastery: WordMastery | undefined): boolean {
+  if (!mastery || mastery.isLearned) return false;
+  return mastery.masteryStars === 0 || (mastery.masteryStars <= 1 && mastery.timesSeen >= 2);
 }

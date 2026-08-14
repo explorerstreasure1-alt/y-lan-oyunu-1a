@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { type VocabularyWord } from "../vocabulary";
-import { type WordMastery } from "../srs";
+import { type WordMastery, type DailyLog, isWeakWord } from "../srs";
 import { speakWordDetails, type SpeechMode } from "../audio";
 
 const BACKUP_KEYS = [
@@ -27,6 +27,8 @@ type StatsModalProps = {
   speechMode: SpeechMode;
   language: "en" | "ru";
   learnedCount: number;
+  words: VocabularyWord[];
+  dailyLog: DailyLog;
 };
 
 export function StatsModal({
@@ -40,6 +42,8 @@ export function StatsModal({
   speechMode,
   language,
   learnedCount,
+  words,
+  dailyLog,
 }: StatsModalProps) {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +139,32 @@ export function StatsModal({
           </div>
         </div>
 
+        {/* BUGÜN - günlük aktivite özeti */}
+        <div className="border-b border-white/10 bg-[#1c0f38] px-6 py-3">
+          <div className="flex items-center justify-between">
+            <p className="font-pixel text-[10px] tracking-widest text-[#ffd96d]">📅 BUGÜN</p>
+            <span className="text-[10px] text-white/40">{dailyLog.date}</span>
+          </div>
+          <div className="mt-2 grid grid-cols-4 gap-2 text-center">
+            <div className="rounded-lg bg-white/5 border border-white/10 py-1.5">
+              <p className="font-pixel text-base font-black text-[#99f5c3]">{dailyLog.eaten}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/50 font-bold">Yeni</p>
+            </div>
+            <div className="rounded-lg bg-white/5 border border-white/10 py-1.5">
+              <p className="font-pixel text-base font-black text-[#ffd96d]">{dailyLog.reviews}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/50 font-bold">Tekrar</p>
+            </div>
+            <div className="rounded-lg bg-white/5 border border-white/10 py-1.5">
+              <p className="font-pixel text-base font-black text-[#75d9a6]">{dailyLog.learned}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/50 font-bold">Öğrenildi</p>
+            </div>
+            <div className="rounded-lg bg-white/5 border border-white/10 py-1.5">
+              <p className="font-pixel text-base font-black text-[#ff84ad]">{dailyLog.failed}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/50 font-bold">Zayıf</p>
+            </div>
+          </div>
+        </div>
+
         {/* Share & Backup */}
         <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#1c0f38] px-6 py-3">
           <button
@@ -175,6 +205,59 @@ export function StatsModal({
 
         {/* Eaten Words List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          {/* Zayıf kelimeler: hata defterine düşenler - önce onlarla tekrar çalış */}
+          {(() => {
+            const weakest = words
+              .filter((w) => isWeakWord(masteryMap[w.id]))
+              .sort((a, b) => {
+                const ma = masteryMap[a.id];
+                const mb = masteryMap[b.id];
+                const starsDiff = (ma?.masteryStars ?? 0) - (mb?.masteryStars ?? 0);
+                if (starsDiff !== 0) return starsDiff;
+                return (mb?.timesSeen ?? 0) - (ma?.timesSeen ?? 0);
+              })
+              .slice(0, 5);
+            if (weakest.length === 0) return null;
+            return (
+              <div className="rounded-xl border border-[#ff84ad]/40 bg-[#2d1226] p-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-pixel text-[10px] tracking-wider text-[#ff84ad] uppercase">
+                    ⚠️ ZAYIF KELİMELER - ÖNCELİK
+                  </h3>
+                  <span className="text-[9px] text-white/40">{weakest.length} adet</span>
+                </div>
+                <div className="mt-2 grid gap-1.5">
+                  {weakest.map((word) => {
+                    const mastery = masteryMap[word.id];
+                    const stars = mastery?.masteryStars ?? 0;
+                    const timesSeen = mastery?.timesSeen ?? 0;
+                    return (
+                      <div key={word.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-2.5 py-1.5">
+                        <div className="min-w-0">
+                          <span className="font-pixel text-xs font-bold text-white truncate">{word.word}</span>
+                          <span className="ml-2 text-[10px] font-bold text-[#ffd96d] truncate">🇹🇷 {word.meaningTr.split(" /")[0]}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="text-[10px] text-[#ffd96d]">{"★".repeat(stars)}{"☆".repeat(5 - stars)}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode)
+                            }
+                            className="rounded bg-[#99f5c3] px-1.5 py-0.5 text-[9px] font-bold text-[#17112e]"
+                          >
+                            🔊
+                          </button>
+                          <span className="text-[9px] text-white/40" title="Kaç kez görüldü">{timesSeen}×</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <h3 className="font-pixel text-xs tracking-wider text-[#99f5c3] uppercase">
             BU ELDE PRATİK EDİLEN KELİMELER:
           </h3>

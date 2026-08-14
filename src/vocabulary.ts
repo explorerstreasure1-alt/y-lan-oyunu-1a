@@ -1,5 +1,7 @@
 export type WordLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
+import { EXTRA_TUPLES } from "./extraTuples";
+
 export type VocabularyWord = {
   id: number;
   word: string;
@@ -52,35 +54,51 @@ function getTurkishPlural(tr: string): string {
   return base + (isKalın ? "lar" : "ler");
 }
 
-function buildDataset(): VocabularyWord[] {
+// Taban listeyi kelime bazında benzersizleştir (aynı kelime farklı konularda tekrar edebiliyor)
+const UNIQUE_BASE: BaseTuple[] = (() => {
   const map = new Map<string, BaseTuple>();
   for (const t of BASE_TUPLES) {
     const key = t[0].toLowerCase().trim();
     if (!map.has(key)) map.set(key, t);
   }
-  const unique = Array.from(map.values());
+  return Array.from(map.values());
+})();
+
+/** Eski düzen migrasyonu için: taban kelimeler sıralı (eski kopya id'leri bunlara eşlenir) */
+export const LEGACY_BASE_WORDS: string[] = UNIQUE_BASE.map((t) => t[0].toLowerCase().trim());
+
+function makeWord(word: string, tr: string, pos: string, level: WordLevel, topic: string, id: number): VocabularyWord {
+  const clean = word.trim().toLowerCase();
+  return {
+    id,
+    word: clean,
+    meaningTr: tr,
+    phonetic: `/${clean.replace(/[^a-z\\s-]/g,"").slice(0,24)}/`,
+    pos,
+    topic,
+    level,
+    definition: `${pos.toUpperCase()} - English ${level} word meaning '${tr}' in Turkish. Used in ${topic}.`,
+    example: `Example: I use "${clean}" when talking about ${topic.toLowerCase()}.`
+  };
+}
+
+/**
+ * Eski düzenin 1-3. adımları (kopyalama döngüsünden ÖNCEKİ gerçek kelimeler).
+ * Sıra/id yapısı migrasyon için birebir korunur.
+ */
+function buildCoreDataset(): VocabularyWord[] {
+  const map = new Map<string, BaseTuple>();
+  for (const t of UNIQUE_BASE) {
+    map.set(t[0].toLowerCase().trim(), t);
+  }
+  const unique = UNIQUE_BASE;
   const dataset: VocabularyWord[] = [];
   let id = 0;
-
-  const makeWord = (word: string, tr: string, pos: string, level: WordLevel, topic: string): VocabularyWord => {
-    const clean = word.trim().toLowerCase();
-    return {
-      id: id++,
-      word: clean,
-      meaningTr: tr,
-      phonetic: `/${clean.replace(/[^a-z\\s-]/g,"").slice(0,24)}/`,
-      pos,
-      topic,
-      level,
-      definition: `${pos.toUpperCase()} - English ${level} word meaning '${tr}' in Turkish. Used in ${topic}.`,
-      example: `Example: I use "${clean}" when talking about ${topic.toLowerCase()}.`
-    };
-  };
 
   // 1. Add all unique base (real) words
   for (const t of unique) {
     if (dataset.length >= 3000) break;
-    dataset.push(makeWord(t[0], t[1], t[2], t[3], t[4]));
+    dataset.push(makeWord(t[0], t[1], t[2], t[3], t[4], id++));
   }
 
   // 2. Add ONLY valid morphological variants: noun plurals and verb 3rd person s
@@ -98,14 +116,14 @@ function buildDataset(): VocabularyWord[] {
       variantTr = getTurkishPlural(tr);
       if (!map.has(variantWord)) {
         map.set(variantWord, [variantWord, variantTr, pos, lvl, topic]);
-        dataset.push(makeWord(variantWord, variantTr, pos, lvl, topic));
+        dataset.push(makeWord(variantWord, variantTr, pos, lvl, topic, id++));
       }
     } else if (pos === "verb" && !low.endsWith("s")) {
       variantWord = low+"s";
       variantTr = tr + " (3. tekil)";
       if (!map.has(variantWord)) {
         map.set(variantWord, [variantWord, variantTr, pos, lvl, topic]);
-        dataset.push(makeWord(variantWord, variantTr, pos, lvl, topic));
+        dataset.push(makeWord(variantWord, variantTr, pos, lvl, topic, id++));
       }
     }
     cursor++;
@@ -120,18 +138,36 @@ function buildDataset(): VocabularyWord[] {
     const key = t[0].toLowerCase();
     if (!map.has(key)) {
       map.set(key, t);
-      dataset.push(makeWord(t[0], t[1], t[2], t[3], t[4]));
+      dataset.push(makeWord(t[0], t[1], t[2], t[3], t[4], id++));
     }
   }
 
-  // Ensure final 3000 - if still short, duplicate base with numbers (should not happen)
-  while (dataset.length < 3000) {
-    const base = unique[dataset.length % unique.length];
-    dataset.push(makeWord(base[0], base[1], base[2], base[3], base[4]));
-  }
-
-  return dataset.slice(0,3000).map((w,i)=>({...w, id:i}));
+  return dataset;
 }
 
-export const TOTAL_WORDS = 3000;
+/** Eski düzenin kopyalama döngüsünün başladığı id (srs.ts migrasyonu için) */
+export const LEGACY_PADDING_START: number = buildCoreDataset().length;
+
+function buildDataset(): VocabularyWord[] {
+  const core = buildCoreDataset();
+  const taken = new Set<string>();
+  for (const t of BASE_TUPLES) taken.add(t[0].toLowerCase().trim());
+  for (const w of core) taken.add(w.word);
+
+  const dataset = [...core];
+
+  // 4. Havuzu 3000 GERÇEK benzersiz kelimeyle tamamla (eski düzen kopyalıyordu - artık yeni kelimeler)
+  for (const t of EXTRA_TUPLES) {
+    if (dataset.length >= 3000) break;
+    const key = t[0].toLowerCase().trim();
+    if (!taken.has(key)) {
+      taken.add(key);
+      dataset.push(makeWord(t[0], t[1], t[2], t[3], t[4], dataset.length));
+    }
+  }
+
+  return dataset.slice(0, 3000).map((w, i) => ({ ...w, id: i }));
+}
+
 export const LEARNING_PATH: VocabularyWord[] = buildDataset();
+export const TOTAL_WORDS = LEARNING_PATH.length;

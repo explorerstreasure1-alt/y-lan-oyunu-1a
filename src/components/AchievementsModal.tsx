@@ -30,9 +30,38 @@ export type AchievementStats = {
   quizzesCompleted: number;
   customWordsAdded: number;
   streakDays: number;
+  level: number;
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: "level_2",
+    icon: "⚡",
+    titleTr: "Yükselen Oyuncu",
+    descriptionTr: "XP ile Seviye 2'ye ulaş (200 XP).",
+    condition: (s) => s.level >= 2,
+  },
+  {
+    id: "level_5",
+    icon: "🔥",
+    titleTr: "Kelime Savaşçısı",
+    descriptionTr: "Seviye 5'e ulaş (500 XP).",
+    condition: (s) => s.level >= 5,
+  },
+  {
+    id: "level_10",
+    icon: "🚀",
+    titleTr: "Kelime Kaptanı",
+    descriptionTr: "Seviye 10'a ulaş (1000 XP).",
+    condition: (s) => s.level >= 10,
+  },
+  {
+    id: "level_20",
+    icon: "👑",
+    titleTr: "XP Efsanesi",
+    descriptionTr: "Seviye 20'ye ulaş (2000 XP).",
+    condition: (s) => s.level >= 20,
+  },
   {
     id: "first_bite",
     icon: "🐣",

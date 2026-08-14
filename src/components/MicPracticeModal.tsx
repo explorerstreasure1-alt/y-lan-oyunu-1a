@@ -27,7 +27,7 @@ function levenshtein(a: string, b: string): number {
 }
 
 // Algılanan ses ile hedef kelime arasındaki benzerlik skoru (0-100)
-function similarityScore(spoken: string, target: string): number {
+export function similarityScore(spoken: string, target: string): number {
   const normalize = (s: string) =>
     s
       .toLowerCase()
@@ -42,6 +42,46 @@ function similarityScore(spoken: string, target: string): number {
   return Math.max(0, Math.round((1 - distance / Math.max(t.length, a.length)) * 100));
 }
 
+/**
+ * Tarayıcı ses tanımayı başlatır (Chrome/Edge). Destek yoksa false döner.
+ * Sonuç transcript'i geri çağrıyla verilir. QuizModal ve MicPracticeModal ortak kullanır.
+ */
+export function runSpeechRecognition(
+  language: "en" | "ru",
+  onTranscript: (transcript: string) => void,
+  onError?: () => void
+): boolean {
+  const SpeechRecognition =
+    (window as unknown as { SpeechRecognition: typeof window.SpeechSynthesisUtterance }).SpeechRecognition ||
+    (window as unknown as { webkitSpeechRecognition: typeof window.SpeechSynthesisUtterance }).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) return false;
+
+  try {
+    const recognition = new (SpeechRecognition as unknown as new () => {
+      lang: string;
+      start: () => void;
+      onresult: (e: { results: Array<Array<{ transcript: string }>> }) => void;
+      onerror: () => void;
+    })();
+
+    recognition.lang = language === "ru" ? "ru-RU" : "en-US";
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      onTranscript(event.results[0][0].transcript.toLowerCase().trim());
+    };
+
+    recognition.onerror = () => {
+      onError?.();
+    };
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function MicPracticeModal({ isOpen, onClose, word, language }: MicPracticeModalProps) {
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState<string | null>(null);
@@ -50,45 +90,22 @@ export function MicPracticeModal({ isOpen, onClose, word, language }: MicPractic
   if (!isOpen) return null;
 
   const handleStartListening = () => {
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition: typeof window.SpeechSynthesisUtterance }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition: typeof window.SpeechSynthesisUtterance }).webkitSpeechRecognition;
+    setIsListening(true);
+    setSpokenText(null);
+    setMatchScore(null);
 
-    if (!SpeechRecognition) {
-      alert("Tarayıcınız mikrofonla konuşma tanımayı desteklemiyor. Google Chrome veya Edge deneyebilirsiniz.");
-      return;
-    }
-
-    try {
-      const recognition = new (SpeechRecognition as unknown as new () => {
-        lang: string;
-        start: () => void;
-        onresult: (e: { results: Array<Array<{ transcript: string }>> }) => void;
-        onerror: () => void;
-      })();
-
-      recognition.lang = language === "ru" ? "ru-RU" : "en-US";
-      setIsListening(true);
-      setSpokenText(null);
-      setMatchScore(null);
-
-      recognition.start();
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.toLowerCase().trim();
-        const target = word.word.toLowerCase().trim();
-        setIsListening(false);
-        setSpokenText(transcript);
-        setMatchScore(similarityScore(transcript, target));
-      };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-        setSpokenText("Ses algılanamadı, tekrar deneyin.");
-      };
-    } catch {
+    const started = runSpeechRecognition(language, (transcript) => {
       setIsListening(false);
-      alert("Mikrofon başlatılamadı.");
+      setSpokenText(transcript);
+      setMatchScore(similarityScore(transcript, word.word.toLowerCase().trim()));
+    }, () => {
+      setIsListening(false);
+      setSpokenText("Ses algılanamadı, tekrar deneyin.");
+    });
+
+    if (!started) {
+      setIsListening(false);
+      alert("Tarayıcınız mikrofonla konuşma tanımayı desteklemiyor. Google Chrome veya Edge deneyebilirsiniz.");
     }
   };
 

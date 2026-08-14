@@ -345,6 +345,17 @@ button { font: inherit; }
   .story-bezel { margin-left: auto; margin-right: auto; }
 }
 
+/* Çok küçük telefonlar (360px altı): yön pedi orantılı küçülür, oyun alanına yer kalır */
+@media (max-width: 380px) {
+  .arcade-pad {
+    width: 160px;
+    height: 160px;
+  }
+  .arcade-pad ~ button {
+    width: 160px;
+  }
+}
+
 /* --- New: floating "+points" popup when eating a treat --- */
 .score-float {
   position: absolute;

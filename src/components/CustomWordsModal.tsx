@@ -7,6 +7,7 @@ type CustomWordsModalProps = {
   onAddCustomWords: (newWords: VocabularyWord[]) => void;
   customWords: VocabularyWord[];
   onRemoveCustomWords: (wordId: number) => void;
+  language: "en" | "ru";
 };
 
 export const PREMADE_EXAM_PACKS = [
@@ -45,7 +46,7 @@ export const PREMADE_EXAM_PACKS = [
   },
 ];
 
-export function CustomWordsModal({ isOpen, onClose, onAddCustomWords, customWords, onRemoveCustomWords }: CustomWordsModalProps) {
+export function CustomWordsModal({ isOpen, onClose, onAddCustomWords, customWords, onRemoveCustomWords, language }: CustomWordsModalProps) {
   const [wordInput, setWordInput] = useState("");
   const [meaningInput, setMeaningInput] = useState("");
   const [defInput, setDefInput] = useState("");
@@ -66,7 +67,10 @@ export function CustomWordsModal({ isOpen, onClose, onAddCustomWords, customWord
       topic: "Özel Listem",
       level: "B1",
       definition: defInput.trim() || "Özel eklenen kelime.",
-      example: exampleInput.trim() || `Example: ${wordInput.trim()} is useful.`,
+      // Boş bırakılırsa varsayılan örnek cümle aktif dile uygun üretilir
+      example: exampleInput.trim() || (language === "ru"
+        ? `Пример: слово «${wordInput.trim()}» полезное.`
+        : `Example: ${wordInput.trim()} is useful.`),
     };
 
     onAddCustomWords([newWord]);

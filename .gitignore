@@ -16,3 +16,6 @@ Thumbs.db
 
 # Test artifacts
 .playwright-mcp/
+
+# OMO session state
+.omo/
