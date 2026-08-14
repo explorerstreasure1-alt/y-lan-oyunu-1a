@@ -39,7 +39,6 @@ import { SettingsModal } from "./components/SettingsModal";
 import { ArcadeWheelModal } from "./components/ArcadeWheelModal";
 import { MicPracticeModal } from "./components/MicPracticeModal";
 import { WordOfDayModal } from "./components/WordOfDayModal";
-import { SentenceChallengeModal } from "./components/SentenceChallengeModal";
 
 type Point = { x: number; y: number };
 type Direction = "up" | "down" | "left" | "right";
@@ -134,7 +133,7 @@ function loadSettings(): SavedSettings {
   }
 }
 
-// %15 şansla mama altın (bonus) olur - yenince cümle mini-oyunu açılır
+// %15 şansla mama altın (bonus) görünür - sadece görsel bonus, soru/modal açmaz
 function maybeBonusMama(item: ActiveFoodItem): ActiveFoodItem {
   return { ...item, isBonus: Math.random() < 0.15 };
 }
@@ -244,7 +243,6 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const [isMicOpen, setIsMicOpen] = useState(false);
   const [isWordOfDayOpen, setIsWordOfDayOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [sentenceChallenge, setSentenceChallenge] = useState<{ word: VocabularyWord; options: string[] } | null>(null);
 
   // PWA Install
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -810,7 +808,6 @@ useEffect(() => {
         const foodItem = activeFoodRef.current;
         const currentWord = foodItem.word;
         const isReview = foodItem.isReview;
-        const wasBonus = foodItem.isBonus === true;
 
         // ✨ Eğitim güç-up'ı: sonraki yemeklerde kelime +2 yıldız kazanır
         const isBoosted = boostRemaining > 0;
@@ -894,19 +891,6 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
 
         if (sfxEnabled) playEatSfx(isReview, nextCombo);
         speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode);
-
-        // Altın mama yenildi → cümle mini-oyunu (tek harfli kelimelerde cümle anlamsız olur, atla)
-        if (wasBonus && currentWord.word.trim().length > 1) {
-          const distractors = [
-            ...new Set(filteredPool.filter((w) => w.id !== currentWord.id).map((w) => w.word)),
-          ]
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 2);
-          setSentenceChallenge({
-            word: currentWord,
-            options: [currentWord.word, ...distractors].sort(() => Math.random() - 0.5),
-          });
-        }
 
         if (autoPauseOnEat) setGameStatus("paused");
 
@@ -1300,16 +1284,6 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
       <SettingsModal isOpen={isSettingsOpen} onClose={()=>setIsSettingsOpen(false)} settings={settings} onSettingsChange={(patch)=>setSettings(prev=>({...prev, ...patch}))} />
       <ArcadeWheelModal isOpen={isWheelOpen} onClose={()=>setIsWheelOpen(false)} onRewardWon={(pts)=>setScore(p=>p+pts)} />
       <MicPracticeModal isOpen={isMicOpen} onClose={()=>setIsMicOpen(false)} word={currentWord} language={language} />
-      {sentenceChallenge && (
-        <SentenceChallengeModal
-          isOpen={Boolean(sentenceChallenge)}
-          onClose={()=>setSentenceChallenge(null)}
-          word={sentenceChallenge.word}
-          options={sentenceChallenge.options}
-          onCorrect={(id)=>{setScore(p=>p+15); const { updatedMap } = recordWordEaten(id, masteryMapRef.current, language); masteryMapRef.current = updatedMap; setMasteryMap(updatedMap); setSentenceChallenge(null);}}
-          onWrong={(id)=>{const nextMap = recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current = nextMap; setMasteryMap(nextMap);}}
-        />
-      )}
       <WordOfDayModal isOpen={isWordOfDayOpen} onClose={()=>setIsWordOfDayOpen(false)} speechMode={speechMode} words={activePool} />
       <QuizModal isOpen={isQuizOpen} onClose={()=>{setIsQuizOpen(false); setQuizzesCompletedCount(p=>p+1); setIsStatsOpen(true);}} recentWords={sessionEatenWords} language={language} onBonusEarned={(b)=>{setScore(p=>p+b); addXp(b);}} onWordFailed={(id)=>{const nextMap=recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current=nextMap; setMasteryMap(nextMap); setDailyLog(addDailyActivity("failed"));}} />
       <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} language={language} learnedCount={learnedCount} words={activePool} dailyLog={dailyLog} />
