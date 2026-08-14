@@ -257,13 +257,19 @@ function speakUtterance(
   utterance.volume = volume;
   if (onEnd) utterance.onend = onEnd;
   if (onError) utterance.onerror = onError as any;
-  // Chrome bazen kuyruğa takılır (sessiz bekleme, 1-3 sn gecikme) - resume ile tetikle
-  if (typeof window !== "undefined" && "speechSynthesis" in window) {
-    try {
-      window.speechSynthesis.resume();
-    } catch {}
-  }
-  window.speechSynthesis.speak(utterance);
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const ss = window.speechSynthesis;
+  // Chrome bug'ı: cancel() hemen ardından senkron speak() 1-3 sn sessiz bekleyebilir.
+  // speak'i bir sonraki tick'e alıp cancel'in oturmasını sağla, resume ile motoru uyandır.
+  try {
+    ss.cancel();
+    window.setTimeout(() => {
+      try {
+        ss.resume();
+        ss.speak(utterance);
+      } catch {}
+    }, 0);
+  } catch {}
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
