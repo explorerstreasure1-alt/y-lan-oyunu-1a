@@ -20,7 +20,6 @@ import {
   playComboSfx,
   playEatSfx,
   playGameOverSfx,
-  playLevelUpSfx,
   playTurnSfx,
   setSpeechLanguage,
   speakWordDetails,
@@ -50,19 +49,6 @@ type PowerUpOnGrid = {
   type: PowerUpType;
   point: Point;
   emoji: string;
-};
-
-type BossOption = {
-  text: string;
-  isCorrect: boolean;
-  point: Point;
-};
-
-type BossBattleState = {
-  word: VocabularyWord;
-  options: BossOption[];
-  timeLeftSeconds: number;
-  variant: "meaning" | "definition"; // 🇹🇷 anlam eşleştirme veya 🇬🇧 tanım eşleştirme
 };
 
 // --- ULTRA STORY SIZE: 18 x 32 = tam 9:16 story, kareler olabildiğince dar, alan maksimum geniş ---
@@ -161,13 +147,7 @@ export default function App() {
   const [extraLives, setExtraLives] = useState(0);
   const [boostRemaining, setBoostRemaining] = useState(0);
 
-  // Boss Battle
-  const [bossBattle, setBossBattle] = useState<BossBattleState | null>(null);
-  const [bossesDefeated, setBossesDefeated] = useState(0);
-  // Boss önizleme: savaş başlamadan tip + kelime gösterilir, oyun duraklar
-  const [bossPreview, setBossPreview] = useState<{ word: VocabularyWord; variant: "meaning" | "definition" } | null>(null);
-
-  // XP / Seviye (kalıcı): kelime yeme, boss ve quiz bonusuyla birikir - 100 XP = 1 seviye
+  // XP / Seviye (kalıcı): kelime yeme ve quiz bonusuyla birikir - 100 XP = 1 seviye
   const [xp, setXp] = useState(() => {
     try {
       return Math.max(0, Number(window.localStorage.getItem("snake_abc_xp_v1")) || 0);
@@ -271,7 +251,6 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const snakeRef = useRef<Point[]>(STARTING_SNAKE);
   const foodPointRef = useRef<Point>(foodPoint);
   const powerUpRef = useRef<PowerUpOnGrid | null>(powerUpOnGrid);
-  const bossBattleRef = useRef<BossBattleState | null>(bossBattle);
   const directionRef = useRef<Direction>("right");
   const queuedDirectionRef = useRef<Direction>("right");
   const statusRef = useRef<GameStatus>("ready");
@@ -285,19 +264,15 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const boardRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<Point | null>(null);
-  const bossFightsCountRef = useRef(0);
   const xpRef = useRef(xp);
-  const bossPreviewRef = useRef<{ word: VocabularyWord; variant: "meaning" | "definition" } | null>(bossPreview);
   const weakTrainingRef = useRef(false);
   const weakWordsRef = useRef<VocabularyWord[]>([]);
 
   masteryMapRef.current = masteryMap;
   activeFoodRef.current = activeFood;
   powerUpRef.current = powerUpOnGrid;
-  bossBattleRef.current = bossBattle;
   recentUnlearnedIdsRef.current = recentUnlearnedIds;
   xpRef.current = xp;
-  bossPreviewRef.current = bossPreview;
 
   const currentSkin = SNAKE_SKINS.find((s) => s.id === activeSkinId) || SNAKE_SKINS[0];
 
@@ -342,64 +317,6 @@ useEffect(() => {
     setIsWordOfDayOpen(false);
   }, [setGameStatus]);
 
-  const triggerBossBattle = useCallback((targetWord: VocabularyWord) => {
-    // never boss with learned word
-    if (masteryMapRef.current[targetWord.id]?.isLearned) return;
-    const reserved: Point[] = [foodPointRef.current];
-
-    // Boss çeşitleri: dönüşümlü olarak anlam veya tanım eşleştirme sorusu
-    bossFightsCountRef.current += 1;
-    const variant: "meaning" | "definition" =
-      bossFightsCountRef.current % 2 === 1 ? "meaning" : "definition";
-
-    const truncate = (s: string) => (s.length > 26 ? s.slice(0, 26) + "…" : s);
-
-    // Gerçek kelime havuzundan çeldiriciler - eğitici, "Yanlış Anlam A" değil
-    const shuffle = (arr: string[]) => {
-      const copy = [...arr];
-      for (let i = copy.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
-    };
-
-    const correctLabel =
-      variant === "definition" ? truncate(targetWord.definition) : targetWord.meaningTr;
-    const distractorPool = filteredPool.filter((w) => w.id !== targetWord.id);
-    const distractors = shuffle(
-      distractorPool.map((w) => (variant === "definition" ? truncate(w.definition) : w.meaningTr))
-    )
-      .filter((t) => t !== correctLabel)
-      .slice(0, 3);
-    while (distractors.length < 3) {
-      distractors.push(
-        variant === "definition"
-          ? "Bu tanıma uymaz…"
-          : `Yanlış Anlam ${String.fromCharCode(65 + distractors.length)}`
-      );
-    }
-    const optionsText = shuffle([correctLabel, ...distractors]);
-
-    const bossOptions: BossOption[] = optionsText.map((t, i) => {
-      const p = findOpenCell(snakeRef.current, i * 37 + 11, reserved);
-      reserved.push(p);
-      return {
-        text: t,
-        isCorrect: t === correctLabel,
-        point: p,
-      };
-    });
-
-    const newBossState: BossBattleState = {
-      word: targetWord,
-      options: bossOptions,
-      timeLeftSeconds: 15,
-      variant,
-    };
-    setBossBattle(newBossState);
-  }, [filteredPool]);
-
   const resetGame = useCallback(() => {
     const freshSnake = STARTING_SNAKE.map((point) => ({ ...point }));
     snakeRef.current = freshSnake;
@@ -423,9 +340,6 @@ useEffect(() => {
     setFoodPoint(nextFoodPoint);
     setActiveFood(finalItem);
     setPowerUpOnGrid(null);
-    setBossBattle(null);
-    setBossPreview(null);
-    bossPreviewRef.current = null;
     setHasShield(false);
     setIsDoubleXpActive(false);
     setIsSlowBerryActive(false);
@@ -508,7 +422,6 @@ useEffect(() => {
       setRecentUnlearnedIds([]);
       recentUnlearnedIdsRef.current = [];
       setLastEaten(null);
-      setBossBattle(null);
       setComboStreak(0);
       comboStreakRef.current = 0;
       scoreRef.current = 0;
@@ -571,8 +484,7 @@ useEffect(() => {
       if (!isOpposite(directionRef.current, nextDirection)) {
         if (sfxEnabled && directionRef.current !== nextDirection) playTurnSfx();
         queuedDirectionRef.current = nextDirection;
-        // Boss önizlemesi açıkken yön basmak oyunu geri başlatmasın
-        if ((statusRef.current === "ready" || statusRef.current === "paused") && !bossPreviewRef.current) startGame();
+        if (statusRef.current === "ready" || statusRef.current === "paused") startGame();
       }
     },
     [sfxEnabled, startGame],
@@ -601,7 +513,7 @@ useEffect(() => {
       if (event.code === "Space") {
         event.preventDefault();
         if (statusRef.current === "playing") setGameStatus("paused");
-        else if ((statusRef.current === "paused" || statusRef.current === "ready") && !bossPreviewRef.current) startGame();
+        else if (statusRef.current === "paused" || statusRef.current === "ready") startGame();
       }
       // Shift = yılanı hızlandır (basılı tut)
       if (event.key === "Shift") {
@@ -735,10 +647,8 @@ useEffect(() => {
 
       const bitesFood = isSamePoint(nextHead, foodPointRef.current);
       const bitesPowerUp = powerUpRef.current && isSamePoint(nextHead, powerUpRef.current.point);
-      const currentBoss = bossBattleRef.current;
-      const hitBossOption = currentBoss?.options.find((o) => isSamePoint(nextHead, o.point));
 
-      const bodyToCheck = bitesFood || hitBossOption ? oldSnake : oldSnake.slice(0, -1);
+      const bodyToCheck = bitesFood ? oldSnake : oldSnake.slice(0, -1);
       const hitsWall = !wrapWalls && (nextX < 0 || nextX >= COLUMNS || nextY < 0 || nextY >= ROWS);
       const hitsBody = bodyToCheck.some((segment) => isSamePoint(segment, nextHead));
 
@@ -766,25 +676,6 @@ useEffect(() => {
       if (!bitesFood) nextSnake.pop();
       snakeRef.current = nextSnake;
       setSnake(nextSnake);
-
-      if (hitBossOption && currentBoss) {
-        if (hitBossOption.isCorrect) {
-          setBossesDefeated((prev) => prev + 1);
-          setScore((prev) => prev + 50);
-          addXp(25);
-          if (sfxEnabled) playLevelUpSfx();
-          speakWordDetails(currentBoss.word.word, currentBoss.word.meaningTr, currentBoss.word.definition, currentBoss.word.example, speechMode);
-          setMasteryMap((prev) => toggleWordLearnedState(currentBoss.word.id, prev, language));
-        } else {
-          // Hata defteri: yanlış şık → kelime zayıflar, tekrara daha sık girer
-          const nextMap = recordWordFailure(currentBoss.word.id, masteryMapRef.current, language);
-          masteryMapRef.current = nextMap;
-          setMasteryMap(nextMap);
-          setDailyLog(addDailyActivity("failed"));
-          if (sfxEnabled) playGameOverSfx();
-        }
-        setBossBattle(null);
-      }
 
       if (bitesPowerUp && powerUpRef.current) {
         const type = powerUpRef.current.type;
@@ -837,20 +728,9 @@ useEffect(() => {
           if (sfxEnabled) playComboSfx();
         }
 
-        eatenTotalRef.current += 1;
+eatenTotalRef.current += 1;
 
-        if (eatenTotalRef.current % 10 === 0 && !masteryMapRef.current[currentWord.id]?.isLearned) {
-          // 👹 Boss önizleme: savaş türü önceden gösterilir, onaylanınca başlar (oyun duraklar)
-          bossPreviewRef.current = {
-            word: currentWord,
-            variant: (bossFightsCountRef.current + 1) % 2 === 1 ? "meaning" : "definition",
-          };
-          setBossPreview(bossPreviewRef.current);
-          if (sfxEnabled) playLevelUpSfx();
-          setGameStatus("paused");
-        }
-
-if (Math.random() < 0.22 && !powerUpRef.current) {
+        if (Math.random() < 0.22 && !powerUpRef.current) {
           const pTypes: PowerUpType[] = ["turtle", "diamond", "shield", "magnet", "heart", "boost"];
           const pType = pTypes[Math.floor(Math.random() * pTypes.length)];
           const pEmoji =
@@ -938,7 +818,6 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
     score,
     bestScore,
     maxCombo,
-    bossesDefeated,
     quizzesCompleted: quizzesCompletedCount,
     customWordsAdded: customWordBank.length,
     streakDays: (() => {
@@ -1030,14 +909,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
           <div className="w-full max-w-[400px] flex-none">
             <div ref={frameRef} className="story-frame">
               <div className="arcade-bezel story-bezel relative overflow-hidden">
-                {bossBattle && (
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 w-[88%] animate-pop rounded-xl border-2 border-[#ff84ad] bg-[#2d0014]/95 p-2.5 text-center shadow-2xl backdrop-blur">
-                    <p className="font-pixel text-[10px] font-black tracking-widest text-[#ff84ad]">⚔️ PATRON SAVAŞI!</p>
-                    <p className="font-pixel text-xl font-extrabold text-white">{bossBattle.word.word}</p>
-                    <p className="text-[10px] text-white/80">{bossBattle.variant === "definition" ? "Doğru İngilizce tanım küresine sür!" : "Doğru Türkçe küreye sür!"}</p>
-                  </div>
-                )}
-                {showComboBanner && !bossBattle && (
+                {showComboBanner && (
                   <div className="absolute top-10 left-1/2 z-20 -translate-x-1/2 animate-pop rounded-xl border-2 border-[#ffd96d] bg-[#ffd96d] px-3 py-1 font-pixel text-xs font-black text-[#21123a] shadow-xl">🔥 COMBO x{comboStreak}!</div>
                 )}
 
@@ -1072,7 +944,6 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                     const isHead = snakeIndex === 0;
                     const isFood = isSamePoint(foodPoint, point);
                     const isPower = powerUpOnGrid && isSamePoint(powerUpOnGrid.point, point);
-                    const bossOpt = bossBattle?.options.find((o) => isSamePoint(o.point, point));
 
                     // Nokia-style thin square orientation
                     let segOrientation: "h" | "v" = "h";
@@ -1110,8 +981,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                           </div>
                         )}
                         {isPower && <div className="absolute inset-0 flex items-center justify-center text-base animate-bounce z-10">{powerUpOnGrid!.emoji}</div>}
-                        {bossOpt && <div className="absolute inset-[1px] flex items-center justify-center rounded-md border-2 border-[#ff84ad] bg-[#ff84ad] text-[#21123a] font-pixel text-[7px] font-black leading-none text-center p-0.5 z-20 animate-pulse">{bossBattle?.variant === "definition" ? "🇬🇧" : "🇹🇷"} {bossOpt.text}</div>}
-                        {isFood && !bossOpt && (
+                        {isFood && (
                           <div className={`word-treat ${activeFood.isReview ? "review-treat" : ""} ${activeFood.isBonus ? "bonus-treat" : ""}`} />
                         )}
                       </div>
@@ -1123,23 +993,8 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                       <small>{allPoolLearned ? (isPoolFiltered ? "Bu konuyu bitirdin! Yeni konu seç ve devam et" : "Tüm kelimeleri öğrendin, kelime ustasısın!") : "Ok tuşu / kaydır"}</small>
                     </div>
                   )}
-                  {status === "paused" && !bossPreview && <div className="board-message"><span>DURDURULDU</span><small>Boşlukla devam</small></div>}
+                  {status === "paused" && <div className="board-message"><span>DURDURULDU</span><small>Boşlukla devam</small></div>}
                   {status === "over" && <div className="board-message"><span>BİTTİ</span><div className="flex gap-2 mt-2"><button onClick={()=>setIsStatsOpen(true)} type="button">📊 Rapor</button><button onClick={resetGame} type="button">Yeniden</button></div></div>}
-                  {bossPreview && (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40">
-                      <div className="animate-pop mx-3 w-full max-w-[260px] rounded-2xl border-2 border-[#ff84ad] bg-[#21123a] p-4 text-center shadow-2xl">
-                        <p className="font-pixel text-[10px] tracking-widest text-[#ff84ad]">👹 BOSS SAVAŞI</p>
-                        <h3 className="mt-1.5 font-pixel text-xl font-black text-white">{bossPreview.word.word}</h3>
-                        <p className="mt-1 text-[11px] text-white/70">🇹🇷 {bossPreview.word.meaningTr.split(" /")[0]}</p>
-                        <p className="mt-2 rounded-lg bg-white/5 px-2 py-1.5 text-[11px] font-bold text-[#ffd96d]">{bossPreview.variant === "meaning" ? "🇹🇷 Türkçe anlamını seç" : "🇬🇧 İngilizce tanımını seç"}</p>
-                        <p className="mt-1.5 text-[10px] leading-4 text-white/50">Yılanı doğru şıkka sürükle • 15 sn • +50 puan +25 XP</p>
-                        <div className="mt-3 flex gap-2">
-                          <button onClick={() => { triggerBossBattle(bossPreview.word); bossPreviewRef.current = null; setBossPreview(null); setGameStatus("playing"); }} type="button" className="flex-1 rounded-lg bg-[#ff84ad] py-2 text-xs font-black text-[#21123a]">⚔️ Savaş</button>
-                          <button onClick={() => { bossPreviewRef.current = null; setBossPreview(null); }} type="button" className="flex-1 rounded-lg bg-white/10 py-2 text-xs font-black text-white/80">Vazgeç</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   {levelUpBanner !== null && (
                     <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
                       <div className="animate-pop rounded-2xl border-2 border-[#ffd96d] bg-[#21123a]/95 px-6 py-4 text-center shadow-2xl">
@@ -1157,13 +1012,13 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                   {isBoosting && <span className="font-pixel text-[9px] text-[#ff84ad] animate-pulse">⚡ HIZLI</span>}
                   {comboStreak>1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
                   <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3,"0")}</p>
-                  <button onClick={() => (status === "playing" || bossPreview ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
+                  <button onClick={() => (status === "playing" ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
                 </div>
               </div>
 
               <ArcadeControls
                 onDirectionChange={changeDirection}
-                onPauseToggle={() => (status === "playing" || bossPreview ? setGameStatus("paused") : startGame())}
+                onPauseToggle={() => (status === "playing" ? setGameStatus("paused") : startGame())}
                 isPlaying={status === "playing"}
                 isBoosting={isBoosting}
                 onBoostStart={() => setIsBoosting(true)}
@@ -1246,7 +1101,7 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
                 {allPoolLearned && (
                   <p className="mt-1.5 text-[11px] font-bold text-[#ffd96d]">🏆 {isPoolFiltered ? "Bu konuyu tamamen bitirdin! Yeni bir konu seçerek devam et." : "Muhteşem! Tüm kelimeleri öğrendin. Artık resmi bir kelime ustasısın!"}</p>
                 )}
-                <p className="mt-1.5 text-[10px] leading-4 text-white/50">💡 Öğrendim yaptığın kelime, <strong className="text-white/80">Unuttum 🔁</strong> diyene kadar oyunda, çarkta, patron savaşında ve tüm havuzda bir daha asla karşına çıkmaz. Tam kalıcı öğrenme!</p>
+                <p className="mt-1.5 text-[10px] leading-4 text-white/50">💡 Öğrendim yaptığın kelime, <strong className="text-white/80">Unuttum 🔁</strong> diyene kadar oyunda, çarkta ve tüm havuzda bir daha asla karşına çıkmaz. Tam kalıcı öğrenme!</p>
                 {isPoolFiltered && <p className="mt-1.5 text-[10px] leading-4 text-white/50">📌 {selectedTopic !== "ALL" ? `"${selectedTopic}" konusu` : "Seçili seviye"} etkin — seçimi değiştirmek için üstteki <strong className="text-white/80">📌 Konu</strong> butonunu kullan.</p>}
               </div>
 

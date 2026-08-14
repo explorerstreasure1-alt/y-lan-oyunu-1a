@@ -26,7 +26,6 @@ export type AchievementStats = {
   score: number;
   bestScore: number;
   maxCombo: number;
-  bossesDefeated: number;
   quizzesCompleted: number;
   customWordsAdded: number;
   streakDays: number;
@@ -103,20 +102,6 @@ export const ACHIEVEMENTS: Achievement[] = [
     titleTr: "Alevli Seri",
     descriptionTr: "Üst üste yanmadan 5 kelime serisi (Combo x5) yap.",
     condition: (s) => s.maxCombo >= 5,
-  },
-  {
-    id: "boss_slayer",
-    icon: "⚔️",
-    titleTr: "Patron Avcısı",
-    descriptionTr: "İlk Patron (Boss) kelime savaşını kazan.",
-    condition: (s) => s.bossesDefeated >= 1,
-  },
-  {
-    id: "boss_master",
-    icon: "🛡️",
-    titleTr: "Kelime Şampiyonu",
-    descriptionTr: "Toplam 5 Patron kelime savaşını zaferle bitir.",
-    condition: (s) => s.bossesDefeated >= 5,
   },
   {
     id: "quiz_ace",
