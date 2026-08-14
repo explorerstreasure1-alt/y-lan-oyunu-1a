@@ -298,8 +298,6 @@ export function speakWordDetails(
 ) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
-  window.speechSynthesis.cancel();
-
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const trCore = extractCoreTurkishForSpeech(meaningTr);
@@ -322,7 +320,6 @@ export function speakWordDetails(
 
 export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.03);
@@ -330,7 +327,6 @@ export function speakEnglishOnly(word: string) {
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
   const trCore = extractCoreTurkishForSpeech(meaningTr);
   speakUtterance(trCore, "tr-TR", 1.45, 1.0);
 }
