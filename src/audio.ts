@@ -1,9 +1,6 @@
 export type SpeechMode = "word-tr" | "word" | "word-def" | "word-def-ex";
 
 let audioCtx: AudioContext | null = null;
-let bgmTimer: number | null = null;
-let bgmPlaying = false;
-let bgmMasterGain: GainNode | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -127,129 +124,6 @@ export function playGameOverSfx() {
   gain.connect(ctx.destination);
   osc.start(now);
   osc.stop(now + 0.4);
-}
-
-/**
- * Sakin Lofi Ambient - ritmik beat YOK (tık tık yok!)
- * Yumuşak pad akorları + derin bas + hafif vinyl dokusu
- * Konsantrasyonu bozmaz, arka planda akar gider.
- */
-const LOFI_CHORDS: number[][] = [
-  [174.61, 220.0, 261.63, 329.63], // Fmaj7 - mutlu
-  [196.0, 246.94, 293.66, 329.63], // G - Em7 varyant neşeli
-  [146.83, 174.61, 220.0, 261.63], // Dm7 - biraz hüzünlü lofi
-  [130.81, 164.81, 196.0, 261.63], // Cmaj7 - çözülme, mutlu son
-];
-const LOFI_BASS: number[] = [87.31, 98.0, 73.42, 65.41];
-
-let lofiFilter: BiquadFilterNode | null = null;
-let vinylNode: AudioBufferSourceNode | null = null;
-
-export function toggleRetroBgm(enable: boolean) {
-  if (!enable) {
-    if (bgmTimer) {
-      window.clearInterval(bgmTimer);
-      bgmTimer = null;
-    }
-    if (vinylNode) {
-      try { vinylNode.stop(); } catch {}
-      vinylNode = null;
-    }
-    bgmPlaying = false;
-    return;
-  }
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (bgmPlaying) return;
-  bgmPlaying = true;
-
-  if (!bgmMasterGain) {
-    bgmMasterGain = ctx.createGain();
-    bgmMasterGain.gain.value = 0.5; // sakin, arka planda kalan seviye
-    lofiFilter = ctx.createBiquadFilter();
-    lofiFilter.type = "lowpass";
-    lofiFilter.frequency.value = 1100; // yumuşak, parlak değil
-    lofiFilter.Q.value = 0.3;
-    bgmMasterGain.connect(lofiFilter);
-    lofiFilter.connect(ctx.destination);
-  } else {
-    bgmMasterGain.gain.setValueAtTime(0.5, ctx.currentTime);
-  }
-
-  // Vinyl crackle - çok kısık, lo-fi dokusu (tık değil, hafif çıtırtı)
-  try {
-    const bufferSize = ctx.sampleRate * 2;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
-    vinylNode = ctx.createBufferSource();
-    vinylNode.buffer = buffer;
-    vinylNode.loop = true;
-    const vinylGain = ctx.createGain();
-    vinylGain.gain.value = 0.008; // neredeyse duyulmaz
-    const vFilter = ctx.createBiquadFilter();
-    vFilter.type = "bandpass";
-    vFilter.frequency.value = 1800;
-    vFilter.Q.value = 0.2;
-    vinylNode.connect(vFilter);
-    vFilter.connect(vinylGain);
-    vinylGain.connect(bgmMasterGain);
-    vinylNode.start();
-  } catch {}
-
-  let chordIndex = 0;
-
-  const playAmbientBar = () => {
-    if (!bgmPlaying || !bgmMasterGain || !ctx) return;
-    const now = ctx.currentTime + 0.05;
-    const chord = LOFI_CHORDS[chordIndex % LOFI_CHORDS.length];
-    const bassFreq = LOFI_BASS[chordIndex % LOFI_BASS.length];
-    chordIndex++;
-
-    // Yumuşak pad akoru - notalar BİRLİKTE çalar, uzun salınımlı, "tık" yok
-    chord.forEach((freq) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, now);
-      osc.detune.value = (Math.random() - 0.5) * 6;
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.09, now + 1.2); // yavaş yükselir
-      gain.gain.setValueAtTime(0.09, now + 2.2);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 3.6); // yumuşak söner
-      osc.connect(gain);
-      gain.connect(bgmMasterGain!);
-      osc.start(now);
-      osc.stop(now + 3.8);
-    });
-
-    // Derin, sabit bas - sakin ve dolgun
-    const bOsc = ctx.createOscillator();
-    const bGain = ctx.createGain();
-    bOsc.type = "sine";
-    bOsc.frequency.setValueAtTime(bassFreq, now);
-    bGain.gain.setValueAtTime(0.0001, now);
-    bGain.gain.linearRampToValueAtTime(0.16, now + 0.9);
-    bGain.gain.setValueAtTime(0.16, now + 2.4);
-    bGain.gain.exponentialRampToValueAtTime(0.001, now + 3.6);
-    bOsc.connect(bGain);
-    bGain.connect(bgmMasterGain!);
-    bOsc.start(now);
-    bOsc.stop(now + 3.8);
-  };
-
-  playAmbientBar();
-  bgmTimer = window.setInterval(playAmbientBar, 3800); // yavaş, nefes alan döngü
-}
-
-function duckBgm(duckDurationMs: number) {
-  const ctx = getAudioContext();
-  if (!ctx || !bgmMasterGain || !bgmPlaying) return;
-  const now = ctx.currentTime;
-  bgmMasterGain.gain.cancelScheduledValues(now);
-  bgmMasterGain.gain.setValueAtTime(bgmMasterGain.gain.value, now);
-  bgmMasterGain.gain.linearRampToValueAtTime(0.20, now + 0.06);
-  bgmMasterGain.gain.linearRampToValueAtTime(0.58, now + duckDurationMs / 1000 + 0.25);
 }
 
 /* ------------------------------------------------------------------ */
@@ -428,9 +302,6 @@ export function speakWordDetails(
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
   if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. ${isRussian ? "Например:" : "For example:"} ${example}`;
 
-  const estimatedMs = (targetText.length + (mode === "word-tr" ? trCore.length : 0)) * 55 + 400;
-  duckBgm(estimatedMs);
-
   if (mode === "word-tr") {
     // HIZLI: yabancı kelime ~1.4x, Türkçe anlam beklemesiz hemen ardından ~1.45x
     speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.02, 1, () => {
@@ -448,7 +319,6 @@ export function speakEnglishOnly(word: string) {
   window.speechSynthesis.cancel();
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  duckBgm(wordClean.length * 50 + 350);
   speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.03);
 }
 
@@ -456,6 +326,5 @@ export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  duckBgm(trCore.length * 50 + 350);
   speakUtterance(trCore, "tr-TR", 1.45, 1.0);
 }

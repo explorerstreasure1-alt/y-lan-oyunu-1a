@@ -24,7 +24,6 @@ import {
   playTurnSfx,
   setSpeechLanguage,
   speakWordDetails,
-  toggleRetroBgm,
   type SpeechMode,
 } from "./audio";
 import { WordLibraryModal } from "./WordLibraryModal";
@@ -231,7 +230,6 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   // Audio - lofi varsayılan açık, odak arttıran
   const [settings, setSettings] = useState<SavedSettings>(loadSettings);
   const { speechMode, sfxEnabled, autoPauseOnEat } = settings;
-  const [bgmEnabled, setBgmEnabled] = useState(true);
 
   // Modals & UI
   const [activeSkinId, setActiveSkinId] = useState<SnakeSkinId>("classic");
@@ -322,11 +320,6 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
     const count = Object.values(masteryMap).filter((m) => m.isLearned).length;
     setLearnedCount(count);
   }, [masteryMap]);
-
-  useEffect(() => {
-    toggleRetroBgm(bgmEnabled && status === "playing");
-    return () => toggleRetroBgm(false);
-  }, [bgmEnabled, status]);
 
   useEffect(() => {
     try {
@@ -1044,7 +1037,6 @@ if (Math.random() < 0.22 && !powerUpRef.current) {
           <div className="ml-auto flex items-center gap-1">
             <button onClick={()=>setWrapWalls(!wrapWalls)} className={`rounded px-2 py-1 text-[11px] font-bold ${wrapWalls?"bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30":"bg-white/10 text-white/50"}`}>{wrapWalls?"🌀 Sınırsız":"🧱 Duvarlı"}</button>
             <button onClick={()=>setCrtMode(!crtMode)} className={`rounded px-2 py-1 text-[11px] font-bold ${crtMode?"bg-[#ff9ebb] text-[#330012]":"bg-white/10 text-white/50"}`}>📺 CRT</button>
-            <button onClick={()=>setBgmEnabled(!bgmEnabled)} className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-bold ${bgmEnabled?"bg-[#c77dff] text-[#1a0033]":"bg-white/10 text-white/50"}`}><span>🎵</span>{bgmEnabled && status==="playing"?<span className="eq-bars"><i/><i/><i/></span>:<span>{bgmEnabled?"Açık":"Kapalı"}</span>}</button>
           </div>
         </div>
 
