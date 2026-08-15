@@ -31,7 +31,7 @@ function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
 
 export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd }: ArcadeControlsProps) {
   return (
-    <div className="mt-3 flex w-full shrink-0 flex-col items-center gap-3 sm:hidden">
+    <div className="mt-2 flex w-full shrink-0 flex-col items-center gap-2 sm:hidden">
       <div className="arcade-pad relative h-48 w-48 rounded-full border-2 border-white/10 bg-[#251646]/95 p-2 shadow-inner backdrop-blur-sm">
         {/* Up */}
         <button
@@ -90,7 +90,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         onPointerUp={onBoostEnd}
         onPointerLeave={onBoostEnd}
         onPointerCancel={onBoostEnd}
-        className={`flex h-14 w-48 select-none flex-row items-center justify-center gap-2 rounded-2xl border-2 text-sm font-black transition-colors ${
+        className={`flex h-12 w-48 select-none flex-row items-center justify-center gap-2 rounded-2xl border-2 text-sm font-black transition-colors ${
           isBoosting
             ? "border-[#ff84ad] bg-[#ff9ebb] text-[#330012] shadow-[0_0_14px_rgba(255,158,187,0.7)]"
             : "border-[#ffd96d]/50 bg-[#3a226b] text-[#ffd96d]"

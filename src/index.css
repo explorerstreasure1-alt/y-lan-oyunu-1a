@@ -8,7 +8,9 @@
 
 * { box-sizing: border-box; }
 
-button { font: inherit; }
+@layer base {
+  button { font: inherit; }
+}
 
 .font-pixel {
   font-family: "Courier New", ui-monospace, monospace;
@@ -312,6 +314,14 @@ button { font: inherit; }
 
 /* --- Mobil dokunmatik: yön pedi oyun alanının hemen altında, ikisi tek ekranda --- */
 @media (max-width: 640px) {
+  /* Konu/aksiyon şeridi tek satır, taşınca yatay kaydırma - kaydırma çubuğu gizli */
+  .topic-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .topic-scroll::-webkit-scrollbar {
+    display: none;
+  }
   .arcade-pad {
     touch-action: manipulation;
     user-select: none;
@@ -345,14 +355,14 @@ button { font: inherit; }
   .story-bezel { margin-left: auto; margin-right: auto; }
 }
 
-/* Çok küçük telefonlar (360px altı): yön pedi orantılı küçülür, oyun alanına yer kalır */
-@media (max-width: 380px) {
+/* Telefonlar: yön pedi orantılı küçülür, oyun alanına yer kalır */
+@media (max-width: 640px) {
   .arcade-pad {
-    width: 160px;
-    height: 160px;
+    width: 168px;
+    height: 168px;
   }
   .arcade-pad ~ button {
-    width: 160px;
+    width: 168px;
   }
 }
 

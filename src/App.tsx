@@ -845,8 +845,8 @@ eatenTotalRef.current += 1;
 
       <div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
         {/* Header - responsive compact for mobile */}
-        <header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
-          <div className="flex items-center gap-1.5">
+        <header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1 border-b border-white/10 pb-1">
+          <div className="hidden items-center gap-1.5 sm:flex">
             <div className="pixel-mark" aria-hidden="true"><span /></div>
             <div className="leading-tight">
               <p className="font-pixel text-[9px] tracking-[0.22em] text-[#ffd96d]">SNAKE ABC 3000</p>
@@ -854,16 +854,16 @@ eatenTotalRef.current += 1;
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-0.5">
             <div className="flex items-center gap-0.5 rounded-lg border border-white/15 bg-white/5 p-0.5">
-              <button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
-              <button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
+              <button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-1 py-0.5 text-[9px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
+              <button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-1 py-0.5 text-[9px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
             </div>
-            <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#99f5c3]">🌟 Günlük</button>
-            <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#ffd96d]">🏆 Rozet</button>
-            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
-            <button type="button" onClick={() => setIsStatsOpen(true)} className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#a0c4ff]" title={`${xp} XP • ${xp % 100}/100`}>⚡ Lv{xpLevel}</button>
-            <button type="button" onClick={() => setIsSettingsOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-white/80" title="Ayarlar">⚙️ Ayarlar</button>
+            <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-1 py-0.5 text-[9px] font-bold text-[#99f5c3]">🌟 Günlük</button>
+            <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-1 py-0.5 text-[9px] font-bold text-[#ffd96d]">🏆 Rozet</button>
+            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
+            <button type="button" onClick={() => setIsStatsOpen(true)} className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-1 py-0.5 text-[9px] font-bold text-[#a0c4ff]" title={`${xp} XP • ${xp % 100}/100`}>⚡ Lv{xpLevel}</button>
+            <button type="button" onClick={() => setIsSettingsOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80" title="Ayarlar">⚙️ Ayarlar</button>
           </div>
         </header>
 
@@ -1025,13 +1025,13 @@ eatenTotalRef.current += 1;
                 onBoostEnd={() => setIsBoosting(false)}
               />
 
-              <div className="mt-2 flex shrink-0 justify-center gap-1.5">
-                <button onClick={()=>setIsTopicsOpen(true)} type="button" className={`rounded-full px-3 py-1 text-[11px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
-                <button onClick={toggleWeakTraining} type="button" className={`rounded-full px-3 py-1 text-[11px] font-bold ${weakTraining ? "bg-[#ff84ad]/25 text-[#ff84ad] border border-[#ff84ad]/50" : "bg-white/10 text-white/70"}`} title="Hata defterine düşen zayıf kelimelerle özel antrenman">{weakTraining ? "⚠️ Zayıf AÇIK" : "⚠️ Zayıf"}</button>
-                <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
-                <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">🎰 Çark</button>
-                <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70">✍️ Özel</button>
-                <span className="self-center rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold text-white/40 select-none" title="Uygulama sürümü">v1.5</span>
+              <div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
+                <button onClick={()=>setIsTopicsOpen(true)} type="button" className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
+                <button onClick={toggleWeakTraining} type="button" className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${weakTraining ? "bg-[#ff84ad]/25 text-[#ff84ad] border border-[#ff84ad]/50" : "bg-white/10 text-white/70"}`} title="Hata defterine düşen zayıf kelimelerle özel antrenman">{weakTraining ? "⚠️ Zayıf AÇIK" : "⚠️ Zayıf"}</button>
+                <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
+                <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">🎰 Çark</button>
+                <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">✍️ Özel</button>
+                <span className="hidden self-center rounded-full bg-white/10 px-2 py-0.5 text-[8px] font-bold text-white/40 select-none sm:inline-block" title="Uygulama sürümü">v1.5</span>
               </div>
             </div>
           </div>
