@@ -197,6 +197,18 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
+  // Seçili konu yeni dilin havuzunda yoksa sessizce tüm havuza düşmesin: "ALL" a sıfırla
+  useEffect(() => {
+    if (selectedTopic === "ALL") return;
+    const pool = language === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+    if (!pool.some((w) => w.topic === selectedTopic)) {
+      setSelectedTopic("ALL");
+      try {
+        window.localStorage.setItem("snake-abc-topic", "ALL");
+      } catch {}
+    }
+  }, [language, selectedTopic]);
+
   // Streak / Combo & Visuals
   const [comboStreak, setComboStreak] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
