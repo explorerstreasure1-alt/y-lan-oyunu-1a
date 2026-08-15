@@ -238,19 +238,13 @@ function extractCoreTurkishForSpeech(raw: string): string {
   return t;
 }
 
-function speakUtterance(
+function makeUtterance(
   text: string,
   lang: "en-US" | "tr-TR" | "ru-RU",
   rate: number,
   pitch: number,
-  volume: number = 1,
-  onEnd?: () => void,
-  onError?: () => void
-) {
-  if (!text) {
-    onEnd?.();
-    return;
-  }
+  volume: number = 1
+): SpeechSynthesisUtterance {
   const utterance = new SpeechSynthesisUtterance(text);
   const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : "tr";
   const best = pickBestVoice(prefix);
@@ -259,6 +253,25 @@ function speakUtterance(
   utterance.rate = rate;
   utterance.pitch = pitch;
   utterance.volume = volume;
+  return utterance;
+}
+
+function speakUtterance(
+  text: string,
+  lang: "en-US" | "tr-TR" | "ru-RU",
+  rate: number,
+  pitch: number,
+  volume: number = 1,
+  onEnd?: () => void,
+  onError?: () => void,
+  onStart?: () => void
+) {
+  if (!text) {
+    onEnd?.();
+    return;
+  }
+  const utterance = makeUtterance(text, lang, rate, pitch, volume);
+  if (onStart) utterance.onstart = onStart;
   if (onEnd) utterance.onend = onEnd;
   if (onError) utterance.onerror = onError as any;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -331,9 +344,15 @@ export function speakWordDetails(
   const generation = ++speakGeneration;
 
   if (mode === "word-tr") {
-    // HIZLI: yabancı kelime beklemesiz, EN 1.5x (oyuna yetişsin) / RU 1.4x; Türkçe anlam hemen ardından ~1.45x
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.02, 1, () => {
-      if (generation === speakGeneration) speakUtterance(trCore, "tr-TR", 1.45, 1.0);
+    // HIZLI: kelime beklemesiz başlar; Türkçe anlam kelime BAŞLADIĞI anda kuyruğa alınır
+    // -> onEnd bekleme boşluğu ("six ... 6") kalkar, yeni yemek kuyruğu anında devralır
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.02, 1, undefined, undefined, () => {
+      if (generation !== speakGeneration) return;
+      try {
+        const ss = window.speechSynthesis;
+        ss.resume();
+        ss.speak(makeUtterance(trCore, "tr-TR", 1.45, 1.0));
+      } catch {}
     });
   } else if (mode === "word") {
     speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.03);
