@@ -261,6 +261,8 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
 
   // Refs
   const snakeRef = useRef<Point[]>(STARTING_SNAKE);
+  // Kaydırma animasyonunda duvar sarımı (teleport) anında atlansın diye önceki pozisyonlar
+  const prevSnakeRef = useRef<Point[]>(STARTING_SNAKE);
   const foodPointRef = useRef<Point>(foodPoint);
   const powerUpRef = useRef<PowerUpOnGrid | null>(powerUpOnGrid);
   const directionRef = useRef<Direction>("right");
@@ -279,6 +281,11 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   const xpRef = useRef(xp);
   const weakTrainingRef = useRef(false);
   const weakWordsRef = useRef<VocabularyWord[]>([]);
+
+  // Render'daki teleport kontrolü için bir önceki commit edilmiş yılan pozisyonları
+  useLayoutEffect(() => {
+    prevSnakeRef.current = snake;
+  }, [snake]);
 
   masteryMapRef.current = masteryMap;
   activeFoodRef.current = activeFood;
@@ -622,7 +629,10 @@ useEffect(() => {
     if (isSlowBerryActive) tickInterval += 90;
     if (isBoosting) tickInterval = Math.max(55, Math.round(tickInterval * 0.45));
 
-    const gameLoop = window.setInterval(() => {
+    // Yılan kayma animasyonu bu süreyle senkron kalsın
+    boardRef.current?.style.setProperty("--tick-ms", `${tickInterval}ms`);
+
+    const doTick = () => {
       if (statusRef.current !== "playing") return;
 
       directionRef.current = queuedDirectionRef.current;
@@ -782,6 +792,10 @@ eatenTotalRef.current += 1;
         setLastEaten({ word: currentWord, isReview, stars: newStars });
 
         if (sfxEnabled) playEatSfx(isReview, nextCombo);
+        // Mobil dokunsal geri bildirim: yeme anında minik titreşim
+        try {
+          navigator.vibrate?.(15);
+        } catch {}
         speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode);
 
         if (autoPauseOnEat) setGameStatus("paused");
@@ -805,9 +819,29 @@ eatenTotalRef.current += 1;
         foodPointRef.current = nextFoodCell;
         setFoodPoint(nextFoodCell);
       }
-    }, tickInterval);
+    };
 
-    return () => window.clearInterval(gameLoop);
+    // rAF tabanlı döngü: tick'ler tutarlı aralıklarla ateşlenir, kaydırma animasyonuyla senkron kalır
+    let rafId = 0;
+    let lastTime = performance.now();
+    let acc = 0;
+    const frame = (now: number) => {
+      if (statusRef.current === "playing") {
+        acc += now - lastTime;
+        if (acc > tickInterval * 4) acc = tickInterval; // arka sekmeye düşünce sıçrama olmasın
+        while (acc >= tickInterval && statusRef.current === "playing") {
+          acc -= tickInterval;
+          doTick();
+        }
+      } else {
+        acc = 0;
+      }
+      lastTime = now;
+      rafId = requestAnimationFrame(frame);
+    };
+    rafId = requestAnimationFrame(frame);
+
+    return () => cancelAnimationFrame(rafId);
   }, [speed, wrapWalls, autoPauseOnEat, bestScore, sfxEnabled, speechMode, isSlowBerryActive, isDoubleXpActive, hasShield, isMagnetActive, extraLives, boostRemaining, customWordBank, filteredPool, isBoosting, setGameStatus, sessionEatenWords.length, language, addXp]);
 
   const currentWord = activeFood.word;
@@ -941,7 +975,7 @@ eatenTotalRef.current += 1;
                   </div>
                 </div>
 
-                <div ref={boardRef} onTouchStart={handleBoardTouchStart} onTouchEnd={handleBoardTouchEnd} className="game-board story-board" style={{ "--columns": COLUMNS } as React.CSSProperties}>
+                <div ref={boardRef} onTouchStart={handleBoardTouchStart} onTouchEnd={handleBoardTouchEnd} className="game-board story-board" style={{ "--columns": COLUMNS, "--rows": ROWS } as React.CSSProperties}>
                   {boardFlash && <div className={`board-flash ${boardFlash}`} />}
                   {scoreFloat && <div key={scoreFloat.id} className="score-float">{scoreFloat.text}</div>}
                   {wordToast && (
@@ -950,40 +984,40 @@ eatenTotalRef.current += 1;
                       <span className="word-toast-meaning">🇹🇷 {wordToast.word.meaningTr.split(" /")[0].split(" (")[0].slice(0, 18)}</span>
                     </div>
                   )}
-                  {Array.from({ length: COLUMNS * ROWS }, (_, index) => {
-                    const point = { x: index % COLUMNS, y: Math.floor(index / COLUMNS) };
-                    const snakeIndex = snake.findIndex((s) => isSamePoint(s, point));
-                    const isHead = snakeIndex === 0;
-                    const isFood = isSamePoint(foodPoint, point);
-                    const isPower = powerUpOnGrid && isSamePoint(powerUpOnGrid.point, point);
-
-                    // Nokia-style thin square orientation
-                    let segOrientation: "h" | "v" = "h";
-                    if (snakeIndex >= 0) {
-                      if (snakeIndex === 0) {
-                        // head orientation from current direction
+                  {/* Kaydırma katmanı: 576 hücre yerine slot'lar, her tick'te transform ile kayarak hareket eder */}
+                  <div className="board-layer">
+                    {snake.map((segment, index) => {
+                      const prev = prevSnakeRef.current[index];
+                      // Nokia-style thin square orientation
+                      let segOrientation: "h" | "v" = "h";
+                      if (index === 0) {
                         const d = directionRef.current;
                         segOrientation = d === "left" || d === "right" ? "h" : "v";
                       } else {
-                        const prev = snake[snakeIndex - 1];
-                        const curr = snake[snakeIndex];
-                        // if x differs from prev, it's horizontal move
-                        segOrientation = prev.x !== curr.x ? "h" : "v";
+                        const prevSeg = snake[index - 1];
+                        segOrientation = prevSeg.x !== segment.x ? "h" : "v";
                       }
-                    }
-
-                    return (
-                      <div className="game-cell" key={`${point.x}-${point.y}`}>
-                        {snakeIndex >= 0 && (
+                      // Duvar sarımı (teleport) anında atlamalı; normalde kayma animasyonu
+                      const teleported = prev && (Math.abs(segment.x - prev.x) > 1 || Math.abs(segment.y - prev.y) > 1);
+                      return (
+                        <div
+                          // biome-ignore lint/suspicious/noArrayIndexKey: slot'lar görsel olarak özdeştir; index key'i kaydırma animasyonu için zorunludur (konum key'i her tick'te remount eder, transform transition çalışmaz)
+                          key={`snake-${index}`}
+                          className="snake-slot"
+                          style={{
+                            transform: `translate(${segment.x * 100}%, ${segment.y * 100}%)`,
+                            transitionDuration: teleported ? "0ms" : undefined,
+                          }}
+                        >
                           <div
                             className={
-                              isHead
+                              index === 0
                                 ? `snake-head ${segOrientation} snake-${directionRef.current}${hasShield ? " has-shield" : ""}`
                                 : `snake-segment ${segOrientation}`
                             }
-                            style={{ backgroundColor: isHead ? currentSkin.headBg : currentSkin.bodyBg }}
+                            style={{ backgroundColor: index === 0 ? currentSkin.headBg : currentSkin.bodyBg }}
                           >
-                            {isHead && (
+                            {index === 0 && (
                               <>
                                 <b className="eye eye-one" style={{ backgroundColor: currentSkin.eyeColor }} />
                                 <b className="eye eye-two" style={{ backgroundColor: currentSkin.eyeColor }} />
@@ -991,14 +1025,21 @@ eatenTotalRef.current += 1;
                               </>
                             )}
                           </div>
-                        )}
-                        {isPower && <div className="absolute inset-0 flex items-center justify-center text-base animate-bounce z-10">{powerUpOnGrid!.emoji}</div>}
-                        {isFood && (
-                          <div className={`word-treat ${activeFood.isReview ? "review-treat" : ""} ${activeFood.isBonus ? "bonus-treat" : ""}`} />
-                        )}
+                        </div>
+                      );
+                    })}
+                    {powerUpOnGrid && (
+                      <div
+                        className="snake-slot"
+                        style={{ transform: `translate(${powerUpOnGrid.point.x * 100}%, ${powerUpOnGrid.point.y * 100}%)` }}
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center text-base animate-bounce z-10">{powerUpOnGrid.emoji}</div>
                       </div>
-                    );
-                  })}
+                    )}
+                    <div className="snake-slot" style={{ transform: `translate(${foodPoint.x * 100}%, ${foodPoint.y * 100}%)` }}>
+                      <div className={`word-treat ${activeFood.isReview ? "review-treat" : ""} ${activeFood.isBonus ? "bonus-treat" : ""}`} />
+                    </div>
+                  </div>
                   {status === "ready" && (
                     <div className="board-message">
                       <span>{allPoolLearned ? "🎉 HEPSİ ÖĞRENİLDİ!" : "BAŞLA"}</span>

@@ -146,6 +146,22 @@
 
 .game-cell { position: relative; min-width: 0; min-height: 0; }
 
+/* Kaydırma katmanı: yılan/yem/güç-up hücrelerde değil, transform ile kayarak hareket eder */
+.board-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.snake-slot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% / var(--columns));
+  height: calc(100% / var(--rows));
+  will-change: transform;
+  transition: transform var(--tick-ms, 160ms) linear;
+}
+
 /* Nokia ince kare yılan - baş dahil ultra ince, kareler daraltıldı, alan olabildiğince geniş */
 .snake-segment, .snake-head {
   position: absolute;
