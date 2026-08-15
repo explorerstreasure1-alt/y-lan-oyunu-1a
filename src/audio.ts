@@ -185,12 +185,16 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru"): nu
 function pickBestVoice(langPrefix: "en" | "tr" | "ru"): SpeechSynthesisVoice | null {
   if (cachedVoices.length === 0) loadVoices();
   if (cachedVoices.length === 0) return null;
-  const candidates = cachedVoices
+  const scored = cachedVoices
     .map((v) => ({ v, score: scoreVoice(v, langPrefix) }))
     .filter(({ v }) => v.lang.toLowerCase().startsWith(langPrefix))
     .sort((a, b) => b.score - a.score);
-  if (candidates.length === 0) return null;
-  return candidates[0].v;
+  if (scored.length === 0) return null;
+  // Ağ sesleri (ör. "Microsoft Aria Online (Natural)") her konuşmada sunucuya
+  // stream bağlantısı kurduğu için ilk heceye kadar 1-3 sn sessiz bekletir.
+  // Anında telaffuz için önce yerel (localService) sesleri tercih et.
+  const local = scored.find(({ v }) => v.localService);
+  return (local ?? scored[0]).v;
 }
 
 // --- Text cleaners for beautiful clear speech ---
@@ -259,17 +263,24 @@ function speakUtterance(
   if (onError) utterance.onerror = onError as any;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const ss = window.speechSynthesis;
-  // Chrome bug'ı: cancel() hemen ardından senkron speak() 1-3 sn sessiz bekleyebilir.
-  // speak'i bir sonraki tick'e alıp cancel'in oturmasını sağla, resume ile motoru uyandır.
-  try {
-    ss.cancel();
-    window.setTimeout(() => {
-      try {
-        ss.resume();
-        ss.speak(utterance);
-      } catch {}
-    }, 0);
-  } catch {}
+  // Öncelik: motor boşken cancel() ile yarış yaratma - kelime ANINDA başlasın.
+  // Motor doluysa (önceki kelime/anlam hâlâ okunuyor) cancel + kısa bekleme ile devral.
+  const doSpeak = () => {
+    try {
+      ss.resume();
+      ss.speak(utterance);
+    } catch {}
+  };
+  if (ss.speaking || ss.pending) {
+    try {
+      ss.cancel();
+    } catch {}
+    // Chrome bug'ı: cancel() hemen ardından senkron speak() 1-3 sn sessiz bekletebilir.
+    // cancel'in oturması için kısa bekle, sonra devral - yeni kelime ilk önce konuşur.
+    window.setTimeout(doSpeak, 60);
+  } else {
+    doSpeak();
+  }
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
@@ -278,6 +289,12 @@ let currentSpeechLang: "en" | "ru" = "en";
 export function setSpeechLanguage(lang: "en" | "ru") {
   currentSpeechLang = lang;
 }
+
+/**
+ * Okuma talebi nesli: her speakWordDetails çağrısı bir önceki zinciri geçersiz kılar.
+ * Hızlı yemede iptal edilen kelimenin onEnd'i eski Türkçe anlamı gecikmeli okumasın.
+ */
+let speakGeneration = 0;
 
 function cleanRussianWordForSpeech(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
@@ -304,17 +321,24 @@ export function speakWordDetails(
 
   let targetText = wordClean;
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
-  if (mode === "word-def-ex") targetText = `${wordClean}. ${definition}. ${isRussian ? "Например:" : "For example:"} ${example}`;
+  if (mode === "word-def-ex") {
+    // Şablon örnekler "Example:"/"Пример:" ile başlar - çifte önek okunmasın
+    const exampleClean = example.replace(/^(Example|Пример|Например)\s*:\s*/i, "").trim();
+    targetText = `${wordClean}. ${definition}. ${isRussian ? "Например:" : "For example:"} ${exampleClean}`;
+  }
+
+  // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
+  const generation = ++speakGeneration;
 
   if (mode === "word-tr") {
-    // HIZLI: yabancı kelime ~1.4x, Türkçe anlam beklemesiz hemen ardından ~1.45x
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.02, 1, () => {
-      speakUtterance(trCore, "tr-TR", 1.45, 1.0);
+    // HIZLI: yabancı kelime beklemesiz, EN 1.5x (oyuna yetişsin) / RU 1.4x; Türkçe anlam hemen ardından ~1.45x
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.02, 1, () => {
+      if (generation === speakGeneration) speakUtterance(trCore, "tr-TR", 1.45, 1.0);
     });
   } else if (mode === "word") {
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.03);
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.03);
   } else {
-    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 1.3, 1.02);
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", isRussian ? 1.3 : 1.4, 1.02);
   }
 }
 
@@ -322,7 +346,7 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.03);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
