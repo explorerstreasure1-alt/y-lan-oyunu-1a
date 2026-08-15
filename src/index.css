@@ -114,7 +114,7 @@ button { font: inherit; }
   background-size: 100% calc(100% / 32), calc(100% / 18) 100%, auto;
 }
 
-/* Story size overrides - tam 9:16 dikey telefon çerçevesi, kareler daraltıldı */
+/* Story size overrides - dikey telefon çerçevesi, oyun alanı maksimum: dar + uzun */
 .story-frame {
   display: flex;
   flex-direction: column;
@@ -123,13 +123,13 @@ button { font: inherit; }
 }
 .story-bezel {
   width: 100%;
-  max-width: 380px;
+  max-width: 320px;
   border-radius: 22px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.4), 5px 5px 0 #6b3a9a;
   border-width: 2.5px;
 }
 .story-board {
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 9 / 20 !important;
   background-size: 100% calc(100% / 32), calc(100% / 18) 100%, auto !important;
 }
 .game-board::after {

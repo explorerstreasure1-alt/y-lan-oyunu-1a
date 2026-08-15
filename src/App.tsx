@@ -845,25 +845,25 @@ eatenTotalRef.current += 1;
 
       <div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
         {/* Header - responsive compact for mobile */}
-        <header className="order-1 mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
-          <div className="flex items-center gap-2.5">
+        <header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
+          <div className="flex items-center gap-1.5">
             <div className="pixel-mark" aria-hidden="true"><span /></div>
             <div className="leading-tight">
-              <p className="font-pixel text-[10px] tracking-[0.22em] text-[#ffd96d]">SNAKE ABC 3000</p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Story • A1-C2 • Öğrendim / Unuttum</p>
+              <p className="font-pixel text-[9px] tracking-[0.22em] text-[#ffd96d]">SNAKE ABC 3000</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/50">Story • A1-C2</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 p-0.5">
-              <button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-2 py-1 text-[11px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
-              <button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-2 py-1 text-[11px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
+          <div className="flex flex-wrap items-center gap-1">
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/15 bg-white/5 p-0.5">
+              <button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
+              <button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
             </div>
-            <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-2.5 py-1 text-[11px] font-bold text-[#99f5c3]">🌟 Günlük</button>
-            <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-2.5 py-1 text-[11px] font-bold text-[#ffd96d]">🏆 Rozet</button>
-            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
-            <button type="button" onClick={() => setIsStatsOpen(true)} className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-2.5 py-1 text-[11px] font-bold text-[#a0c4ff]" title={`${xp} XP • ${xp % 100}/100`}>⚡ Lv{xpLevel}</button>
-            <button type="button" onClick={() => setIsSettingsOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/80" title="Ayarlar">⚙️ Ayarlar</button>
+            <button type="button" onClick={() => setIsWordOfDayOpen(true)} className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#99f5c3]">🌟 Günlük</button>
+            <button type="button" onClick={() => setIsAchievementsOpen(true)} className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#ffd96d]">🏆 Rozet</button>
+            <button type="button" onClick={() => setIsLibraryOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-white/80">📖 {learnedCount}/{activePool.length}</button>
+            <button type="button" onClick={() => setIsStatsOpen(true)} className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#a0c4ff]" title={`${xp} XP • ${xp % 100}/100`}>⚡ Lv{xpLevel}</button>
+            <button type="button" onClick={() => setIsSettingsOpen(true)} className="rounded-lg border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-white/80" title="Ayarlar">⚙️ Ayarlar</button>
           </div>
         </header>
 
@@ -885,28 +885,28 @@ eatenTotalRef.current += 1;
         )}
 
         {/* Daily Goal */}
-        <div className="order-5 mb-3">
+        <div className="order-5 mb-2">
           <DailyGoalBar learnedCount={learnedCount} />
         </div>
 
         {/* Top Controls - simplified for story */}
-        <div className="order-4 mb-3 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-2">
+        <div className="order-4 mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1.5">
           <div className="flex items-center gap-1 text-[11px]">
             <span className="text-white/50">Hız:</span>
-            <button onClick={()=>setSpeed("slow")} className={`rounded px-2 py-0.5 font-bold ${speed==="slow"?"bg-[#99f5c3] text-[#17112e]":"bg-white/10 text-white/60"}`}>Yavaş</button>
-            <button onClick={()=>setSpeed("normal")} className={`rounded px-2 py-0.5 font-bold ${speed==="normal"?"bg-[#ffd96d] text-[#17112e]":"bg-white/10 text-white/60"}`}>Orta</button>
-            <button onClick={()=>setSpeed("fast")} className={`rounded px-2 py-0.5 font-bold ${speed==="fast"?"bg-[#ff84ad] text-[#17112e]":"bg-white/10 text-white/60"}`}>Hızlı</button>
+            <button onClick={()=>setSpeed("slow")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="slow"?"bg-[#99f5c3] text-[#17112e]":"bg-white/10 text-white/60"}`}>Yavaş</button>
+            <button onClick={()=>setSpeed("normal")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="normal"?"bg-[#ffd96d] text-[#17112e]":"bg-white/10 text-white/60"}`}>Orta</button>
+            <button onClick={()=>setSpeed("fast")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="fast"?"bg-[#ff84ad] text-[#17112e]":"bg-white/10 text-white/60"}`}>Hızlı</button>
           </div>
           <div className="ml-auto flex items-center gap-1">
-            <button onClick={()=>setWrapWalls(!wrapWalls)} className={`rounded px-2 py-1 text-[11px] font-bold ${wrapWalls?"bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30":"bg-white/10 text-white/50"}`}>{wrapWalls?"🌀 Sınırsız":"🧱 Duvarlı"}</button>
-            <button onClick={()=>setCrtMode(!crtMode)} className={`rounded px-2 py-1 text-[11px] font-bold ${crtMode?"bg-[#ff9ebb] text-[#330012]":"bg-white/10 text-white/50"}`}>📺 CRT</button>
+            <button onClick={()=>setWrapWalls(!wrapWalls)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls?"bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30":"bg-white/10 text-white/50"}`}>{wrapWalls?"🌀 Sınırsız":"🧱 Duvarlı"}</button>
+            <button onClick={()=>setCrtMode(!crtMode)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode?"bg-[#ff9ebb] text-[#330012]":"bg-white/10 text-white/50"}`}>📺 CRT</button>
           </div>
         </div>
 
         {/* MAIN - Story layout: mobile first, then desktop side-by-side */}
         <div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
           {/* Left/Center - Story Phone Frame */}
-          <div className="w-full max-w-[400px] flex-none">
+          <div className="w-full max-w-[330px] flex-none">
             <div ref={frameRef} className="story-frame">
               <div className="arcade-bezel story-bezel relative overflow-hidden">
                 {showComboBanner && (
