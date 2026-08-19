@@ -94,13 +94,13 @@ function buildFilteredPool(topic: string | "ALL", level: WordLevel | "ALL", pool
   return filtered.length > 0 ? filtered : pool;
 }
 
-type SavedSettings = { speechMode: SpeechMode; sfxEnabled: boolean; autoPauseOnEat: boolean };
+type SavedSettings = { speechMode: SpeechMode; sfxEnabled: boolean; autoPauseOnEat: boolean; theme: "dark" | "light"; snakeColor: "classic" | "blue" | "purple" | "orange" | "pink"; fontSize: "normal" | "large"; highContrast: boolean };
 
 // Ayarlar - localStorage kalıcı, SettingsModal'den değiştirilir
 function loadSettings(): SavedSettings {
   try {
     const raw = window.localStorage.getItem("snake-abc-settings");
-    if (!raw) return { speechMode: "word-tr", sfxEnabled: true, autoPauseOnEat: false };
+    if (!raw) return { speechMode: "word-tr", sfxEnabled: true, autoPauseOnEat: false, theme: "dark", snakeColor: "classic", fontSize: "normal", highContrast: false };
     const parsed = JSON.parse(raw) as Partial<SavedSettings>;
     const mode: SpeechMode =
       parsed.speechMode === "word" ||
@@ -109,13 +109,21 @@ function loadSettings(): SavedSettings {
         parsed.speechMode === "word-tr"
         ? parsed.speechMode
         : "word-tr";
+    const snakeColor: SavedSettings["snakeColor"] =
+      parsed.snakeColor === "blue" || parsed.snakeColor === "purple" || parsed.snakeColor === "orange" || parsed.snakeColor === "pink"
+        ? parsed.snakeColor
+        : "classic";
     return {
       speechMode: mode,
       sfxEnabled: typeof parsed.sfxEnabled === "boolean" ? parsed.sfxEnabled : true,
       autoPauseOnEat: typeof parsed.autoPauseOnEat === "boolean" ? parsed.autoPauseOnEat : false,
+      theme: parsed.theme === "light" ? "light" : "dark",
+      snakeColor,
+      fontSize: parsed.fontSize === "large" ? "large" : "normal",
+      highContrast: typeof parsed.highContrast === "boolean" ? parsed.highContrast : false,
     };
   } catch {
-    return { speechMode: "word-tr", sfxEnabled: true, autoPauseOnEat: false };
+    return { speechMode: "word-tr", sfxEnabled: true, autoPauseOnEat: false, theme: "dark", snakeColor: "classic", fontSize: "normal", highContrast: false };
   }
 }
 
@@ -324,6 +332,16 @@ export default function App() {
       window.localStorage.setItem("snake-abc-settings", JSON.stringify(settings));
     } catch { }
   }, [settings]);
+
+  // Apply theme to document
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", settings.theme);
+      document.documentElement.setAttribute("data-snake-color", settings.snakeColor);
+      document.documentElement.setAttribute("data-font-size", settings.fontSize);
+      document.documentElement.setAttribute("data-contrast", settings.highContrast ? "high" : "normal");
+    }
+  }, [settings.theme, settings.snakeColor, settings.fontSize, settings.highContrast]);
 
   const setGameStatus = useCallback((nextStatus: GameStatus) => {
     statusRef.current = nextStatus;
