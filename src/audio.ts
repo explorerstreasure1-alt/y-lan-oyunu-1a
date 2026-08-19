@@ -284,13 +284,20 @@ function speakUtterance(
       ss.speak(utterance);
     } catch { }
   };
-  if (ss.speaking || ss.pending) {
+  const hadActiveSpeech = ss.speaking || ss.pending;
+  if (hadActiveSpeech) {
     try {
       ss.cancel();
     } catch { }
   }
-  // Anında konuş - bekleme yok
-  doSpeak();
+  // Chrome: cancel()'den hemen sonra AYNI tick'te speak() çağrısı bazen YUTULUR
+  // (mama yenir ama ses hiç gelmez). Önceki okuma varsa microtask sonra başlat -
+  // fark edilmeyecek kadar kısa (0ms), ama yutulma hatasını önler.
+  if (hadActiveSpeech) {
+    window.setTimeout(doSpeak, 0);
+  } else {
+    doSpeak();
+  }
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
@@ -311,10 +318,10 @@ function cleanRussianWordForSpeech(raw: string): string {
 }
 
 /**
- * Main: Beautiful, crystal-clear EN/RU -> (mini-pause) -> TR sequence
- * - Söylendiği AN yüksek hızda (rate ~1.1) okunur, bekleme yok
- * - Türkçe anlam hemen ardından gelir
- * - Seviyeye göre hız ayarı: A1 yavaş, C2 çok hızlı
+ * Main: Beautiful, crystal-clear EN/RU -> (no pause) -> TR sequence
+ * - ORTA hızda (rate ~1.0) okunur - çok hızlı değil, telaffuz net anlaşılır
+ * - Kelime BİTER BİTMEZ Türkçe anlam hemen okunur - arada boşluk yok
+ * - Seviyeye göre hafif hız ayarı: A1 ~0.9, C2 ~1.15 (hepsi orta bantta)
  * No overlap, no emoji, no technical notes.
  */
 export function speakWordDetails(
@@ -342,21 +349,21 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // Seviyeye göre hız ayarı: A1 en yavaş, C2 en hızlı
+  // ORTA HIZ: okuma abartılı hızlı değil - A1 biraz yavaş, C2 biraz hızlı, hepsi "orta" bantta
   const levelSpeedMultiplier: Record<string, number> = {
-    "A1": 0.85,
+    "A1": 0.9,
     "A2": 0.95,
-    "B1": 1.05,
-    "B2": 1.15,
-    "C1": 1.25,
-    "C2": 1.35
+    "B1": 1.0,
+    "B2": 1.05,
+    "C1": 1.1,
+    "C2": 1.15
   };
   const speedMult = levelSpeedMultiplier[level] || 1.0;
 
   if (mode === "word-tr") {
-    // HIZLI: kelime anında başlar, Türkçe anlam kelime bitince hemen başlar - boşluk yok
-    const enRate = isRussian ? 2.2 : 2.0;
-    const trRate = 2.2;
+    // ORTA HIZ + ANINDA ANLAM: kelime başlar, kelime BİTER BİTMEZ Türkçe anlam başlar - boşluk yok
+    const enRate = 1.0;
+    const trRate = 1.0;
     speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02, 1, () => {
       if (generation !== speakGeneration) return;
       try {
@@ -366,11 +373,10 @@ export function speakWordDetails(
       } catch { }
     });
   } else if (mode === "word") {
-    const enRate = isRussian ? 2.2 : 2.0;
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.03);
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.0 * speedMult, 1.03);
   } else {
-    const enRate = isRussian ? 2.0 : 1.8;
-    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02);
+    // Tanım/örnek cümle daha uzun metin: hafif yavaş okunsun, net anlaşılsın
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 0.95 * speedMult, 1.02);
   }
 }
 
@@ -378,11 +384,11 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 2.2 : 2.0, 1.03);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.0, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  speakUtterance(trCore, "tr-TR", 2.2, 1.0);
+  speakUtterance(trCore, "tr-TR", 1.0, 1.0);
 }
