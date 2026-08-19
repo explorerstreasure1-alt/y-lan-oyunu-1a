@@ -319,9 +319,9 @@ function cleanRussianWordForSpeech(raw: string): string {
 
 /**
  * Main: Beautiful, crystal-clear EN/RU -> (no pause) -> TR sequence
- * - ORTA hızda (rate ~1.0) okunur - çok hızlı değil, telaffuz net anlaşılır
- * - Kelime BİTER BİTMEZ Türkçe anlam hemen okunur - arada boşluk yok
- * - Seviyeye göre hafif hız ayarı: A1 ~0.9, C2 ~1.15 (hepsi orta bantta)
+ * - BİRAZ HIZLI (rate ~1.25–1.55): hızlı modda 1. mama telaffuzu 2. mamadan ÖNCE tamamlanır
+ * - Kelime yeme anında BAŞLAR (erken), BİTER BİTMEZ Türkçe anlam okunur - boşluk yok
+ * - Seviyeye göre hız: A1 ~1.25 → C2 ~1.55
  * No overlap, no emoji, no technical notes.
  */
 export function speakWordDetails(
@@ -349,34 +349,33 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // ORTA HIZ: okuma abartılı hızlı değil - A1 biraz yavaş, C2 biraz hızlı, hepsi "orta" bantta
-  const levelSpeedMultiplier: Record<string, number> = {
-    "A1": 0.9,
-    "A2": 0.95,
-    "B1": 1.0,
-    "B2": 1.05,
-    "C1": 1.1,
-    "C2": 1.15
+  // BİRAZ HIZLI: hızlı modda 1. mama telaffuzu 2. mamadan ÖNCE tamamlansın diye
+  // okuma orta-üstü bantta - A1 ~1.25 (net), B1 ~1.4, C2 ~1.55 (2.0 turbo DEĞİL)
+  const levelRates: Record<string, number> = {
+    "A1": 1.25,
+    "A2": 1.3,
+    "B1": 1.4,
+    "B2": 1.45,
+    "C1": 1.5,
+    "C2": 1.55
   };
-  const speedMult = levelSpeedMultiplier[level] || 1.0;
+  const rate = levelRates[level] || 1.4;
 
   if (mode === "word-tr") {
-    // ORTA HIZ + ANINDA ANLAM: kelime başlar, kelime BİTER BİTMEZ Türkçe anlam başlar - boşluk yok
-    const enRate = 1.0;
-    const trRate = 1.0;
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02, 1, () => {
+    // ANINDA BAŞLAR + TAMAMLANIR: kelime yeme anında (erken) başlar, BİTER BİTMEZ Türkçe anlam - boşluk yok
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", rate, 1.02, 1, () => {
       if (generation !== speakGeneration) return;
       try {
         const ss = window.speechSynthesis;
         ss.resume();
-        ss.speak(makeUtterance(trCore, "tr-TR", trRate * speedMult, 1.0));
+        ss.speak(makeUtterance(trCore, "tr-TR", rate, 1.0));
       } catch { }
     });
   } else if (mode === "word") {
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.0 * speedMult, 1.03);
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", rate, 1.03);
   } else {
-    // Tanım/örnek cümle daha uzun metin: hafif yavaş okunsun, net anlaşılsın
-    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", 0.95 * speedMult, 1.02);
+    // Tanım/örnek cümle daha uzun metin: hafif yavaşça (rate - 0.1)
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", Math.max(1.15, rate - 0.1), 1.02);
   }
 }
 
@@ -384,11 +383,11 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.0, 1.03);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", 1.4, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  speakUtterance(trCore, "tr-TR", 1.0, 1.0);
+  speakUtterance(trCore, "tr-TR", 1.4, 1.0);
 }
