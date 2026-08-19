@@ -354,9 +354,9 @@ export function speakWordDetails(
   const speedMult = levelSpeedMultiplier[level] || 1.0;
 
   if (mode === "word-tr") {
-    // HIZLI: kelime anında başlar, Türkçe anlam hemen ardından gelir
-    const enRate = isRussian ? 1.8 : 1.4;
-    const trRate = 1.8;
+    // HIZLI: kelime anında başlar, Türkçe anlam kelime bitince hemen başlar - boşluk yok
+    const enRate = isRussian ? 2.2 : 2.0;
+    const trRate = 2.2;
     speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02, 1, () => {
       if (generation !== speakGeneration) return;
       try {
@@ -366,10 +366,10 @@ export function speakWordDetails(
       } catch { }
     });
   } else if (mode === "word") {
-    const enRate = isRussian ? 1.8 : 1.4;
+    const enRate = isRussian ? 2.2 : 2.0;
     speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.03);
   } else {
-    const enRate = isRussian ? 1.7 : 1.3;
+    const enRate = isRussian ? 2.0 : 1.8;
     speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02);
   }
 }
@@ -378,11 +378,11 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.8 : 1.4, 1.03);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 2.2 : 2.0, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  speakUtterance(trCore, "tr-TR", 1.8, 1.0);
+  speakUtterance(trCore, "tr-TR", 2.2, 1.0);
 }
