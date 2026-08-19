@@ -119,11 +119,10 @@ export function WordLibraryModal({
                 key={lvl}
                 type="button"
                 onClick={() => setSelectedLevel(lvl)}
-                className={`rounded-md px-2 py-1 transition-colors ${
-                  selectedLevel === lvl
+                className={`rounded-md px-2 py-1 transition-colors ${selectedLevel === lvl
                     ? "bg-[#ffe073] text-[#24123f]"
                     : "bg-white/5 text-white/70 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 {lvl}
               </button>
@@ -140,11 +139,10 @@ export function WordLibraryModal({
             return (
               <div
                 key={word.id}
-                className={`flex flex-col justify-between rounded-xl border p-3.5 transition-all ${
-                  isLearned
+                className={`flex flex-col justify-between rounded-xl border p-3.5 transition-all ${isLearned
                     ? "border-[#75d9a6]/60 bg-[#1e382b]/80 shadow-md"
                     : "border-white/10 bg-[#2b1950] hover:border-white/20"
-                }`}
+                  }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
@@ -172,11 +170,10 @@ export function WordLibraryModal({
                   <button
                     type="button"
                     onClick={() => handleToggleLearned(word.id)}
-                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                      isLearned
+                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition-colors ${isLearned
                         ? "bg-[#ff9ebb] text-[#330012] border border-[#ff9ebb]"
                         : "bg-white/10 text-white/70 hover:bg-white/20"
-                    }`}
+                      }`}
                   >
                     {isLearned ? "Unuttum 🔁 Geri Getir" : "Öğrendim ✔️ Asla Gösterme"}
                   </button>
@@ -184,7 +181,7 @@ export function WordLibraryModal({
                   <button
                     type="button"
                     onClick={() =>
-                      speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode)
+                      speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode, word.level)
                     }
                     className="flex items-center gap-1 rounded bg-[#99f5c3] px-2 py-1 text-[11px] font-bold text-[#1a0e33] hover:bg-[#b2f8d3]"
                   >

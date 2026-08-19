@@ -104,9 +104,9 @@ function loadSettings(): SavedSettings {
     const parsed = JSON.parse(raw) as Partial<SavedSettings>;
     const mode: SpeechMode =
       parsed.speechMode === "word" ||
-      parsed.speechMode === "word-def" ||
-      parsed.speechMode === "word-def-ex" ||
-      parsed.speechMode === "word-tr"
+        parsed.speechMode === "word-def" ||
+        parsed.speechMode === "word-def-ex" ||
+        parsed.speechMode === "word-tr"
         ? parsed.speechMode
         : "word-tr";
     return {
@@ -205,7 +205,7 @@ export default function App() {
       setSelectedTopic("ALL");
       try {
         window.localStorage.setItem("snake-abc-topic", "ALL");
-      } catch {}
+      } catch { }
     }
   }, [language, selectedTopic]);
 
@@ -214,7 +214,7 @@ export default function App() {
   const [maxCombo, setMaxCombo] = useState(0);
   const [showComboBanner, setShowComboBanner] = useState(false);
   const [scoreFloat, setScoreFloat] = useState<{ id: number; text: string } | null>(null);
-const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; isReview: boolean } | null>(null);
+  const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; isReview: boolean } | null>(null);
   const [boardFlash, setBoardFlash] = useState<"good" | "gold" | null>(null);
   const [showHint, setShowHint] = useState(false);
 
@@ -316,13 +316,13 @@ const [wordToast, setWordToast] = useState<{ id: number; word: VocabularyWord; i
   useEffect(() => {
     try {
       window.localStorage.setItem("snake-abc-custom-words", JSON.stringify(customWordBank));
-    } catch {}
+    } catch { }
   }, [customWordBank]);
 
-useEffect(() => {
+  useEffect(() => {
     try {
       window.localStorage.setItem("snake-abc-settings", JSON.stringify(settings));
-    } catch {}
+    } catch { }
   }, [settings]);
 
   const setGameStatus = useCallback((nextStatus: GameStatus) => {
@@ -386,7 +386,7 @@ useEffect(() => {
       try {
         window.localStorage.setItem("snake-abc-topic", topic);
         window.localStorage.setItem("snake-abc-level", level);
-      } catch {}
+      } catch { }
       const pool = buildFilteredPool(topic, level, activePool);
       const { item, updatedCursor } = getNextFoodItem(
         0,
@@ -415,7 +415,7 @@ useEffect(() => {
       setWeakTraining(false);
       try {
         window.localStorage.setItem("snake-abc-lang", nextLang);
-      } catch {}
+      } catch { }
       const newPool = nextLang === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
       const newMap = getSavedMasteryMap(nextLang);
       masteryMapRef.current = newMap;
@@ -460,7 +460,7 @@ useEffect(() => {
     setXp(next);
     try {
       window.localStorage.setItem("snake_abc_xp_v1", String(next));
-    } catch {}
+    } catch { }
     const prevLevel = Math.floor(prev / 100) + 1;
     const nextLevel = Math.floor(next / 100) + 1;
     if (nextLevel > prevLevel) {
@@ -750,7 +750,7 @@ useEffect(() => {
           if (sfxEnabled) playComboSfx();
         }
 
-eatenTotalRef.current += 1;
+        eatenTotalRef.current += 1;
 
         if (Math.random() < 0.22 && !powerUpRef.current) {
           const pTypes: PowerUpType[] = ["turtle", "diamond", "shield", "magnet", "heart", "boost"];
@@ -759,14 +759,14 @@ eatenTotalRef.current += 1;
             pType === "turtle"
               ? "🐢"
               : pType === "diamond"
-              ? "💎"
-              : pType === "shield"
-              ? "🛡️"
-              : pType === "magnet"
-              ? "🧲"
-              : pType === "heart"
-              ? "❤️"
-              : "✨";
+                ? "💎"
+                : pType === "shield"
+                  ? "🛡️"
+                  : pType === "magnet"
+                    ? "🧲"
+                    : pType === "heart"
+                      ? "❤️"
+                      : "✨";
           const pPoint = findOpenCell(nextSnake, eatenTotalRef.current * 19, [foodPointRef.current]);
           setPowerUpOnGrid({ type: pType, point: pPoint, emoji: pEmoji });
         }
@@ -795,8 +795,8 @@ eatenTotalRef.current += 1;
         // Mobil dokunsal geri bildirim: yeme anında minik titreşim
         try {
           navigator.vibrate?.(15);
-        } catch {}
-        speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode);
+        } catch { }
+        speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode, currentWord.level);
 
         if (autoPauseOnEat) setGameStatus("paused");
 
@@ -939,13 +939,13 @@ eatenTotalRef.current += 1;
         <div className="order-4 mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1.5">
           <div className="flex items-center gap-1 text-[11px]">
             <span className="text-white/50">Hız:</span>
-            <button onClick={()=>setSpeed("slow")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="slow"?"bg-[#99f5c3] text-[#17112e]":"bg-white/10 text-white/60"}`}>Yavaş</button>
-            <button onClick={()=>setSpeed("normal")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="normal"?"bg-[#ffd96d] text-[#17112e]":"bg-white/10 text-white/60"}`}>Orta</button>
-            <button onClick={()=>setSpeed("fast")} className={`rounded px-1.5 py-0.5 font-bold ${speed==="fast"?"bg-[#ff84ad] text-[#17112e]":"bg-white/10 text-white/60"}`}>Hızlı</button>
+            <button onClick={() => setSpeed("slow")} className={`rounded px-1.5 py-0.5 font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}>Yavaş</button>
+            <button onClick={() => setSpeed("normal")} className={`rounded px-1.5 py-0.5 font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}>Orta</button>
+            <button onClick={() => setSpeed("fast")} className={`rounded px-1.5 py-0.5 font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}>Hızlı</button>
           </div>
           <div className="ml-auto flex items-center gap-1">
-            <button onClick={()=>setWrapWalls(!wrapWalls)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls?"bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30":"bg-white/10 text-white/50"}`}>{wrapWalls?"🌀 Sınırsız":"🧱 Duvarlı"}</button>
-            <button onClick={()=>setCrtMode(!crtMode)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode?"bg-[#ff9ebb] text-[#330012]":"bg-white/10 text-white/50"}`}>📺 CRT</button>
+            <button onClick={() => setWrapWalls(!wrapWalls)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls ? "bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30" : "bg-white/10 text-white/50"}`}>{wrapWalls ? "🌀 Sınırsız" : "🧱 Duvarlı"}</button>
+            <button onClick={() => setCrtMode(!crtMode)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/50"}`}>📺 CRT</button>
           </div>
         </div>
 
@@ -1047,7 +1047,7 @@ eatenTotalRef.current += 1;
                     </div>
                   )}
                   {status === "paused" && <div className="board-message"><span>DURDURULDU</span><small>Boşlukla devam</small></div>}
-                  {status === "over" && <div className="board-message"><span>BİTTİ</span><div className="flex gap-2 mt-2"><button onClick={()=>setIsStatsOpen(true)} type="button">📊 Rapor</button><button onClick={resetGame} type="button">Yeniden</button></div></div>}
+                  {status === "over" && <div className="board-message"><span>BİTTİ</span><div className="flex gap-2 mt-2"><button onClick={() => setIsStatsOpen(true)} type="button">📊 Rapor</button><button onClick={resetGame} type="button">Yeniden</button></div></div>}
                   {levelUpBanner !== null && (
                     <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
                       <div className="animate-pop rounded-2xl border-2 border-[#ffd96d] bg-[#21123a]/95 px-6 py-4 text-center shadow-2xl">
@@ -1060,11 +1060,11 @@ eatenTotalRef.current += 1;
                 </div>
 
                 <div className="flex shrink-0 items-center justify-between bg-[#302052] px-3 py-2">
-                  <p className="font-pixel text-[9px] text-white/60">SKOR <strong className="text-[#99f5c3] ml-1">{String(score).padStart(3,"0")}</strong></p>
+                  <p className="font-pixel text-[9px] text-white/60">SKOR <strong className="text-[#99f5c3] ml-1">{String(score).padStart(3, "0")}</strong></p>
                   {score >= 100 && <p className="font-pixel text-[9px] text-[#a0c4ff] animate-pulse">⚡ SEVİYE {Math.min(10, Math.floor(score / 100) + 1)}</p>}
                   {isBoosting && <span className="font-pixel text-[9px] text-[#ff84ad] animate-pulse">⚡ HIZLI</span>}
-                  {comboStreak>1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
-                  <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3,"0")}</p>
+                  {comboStreak > 1 && <p className="font-pixel text-[9px] text-[#ffd96d] animate-pulse">🔥 x{comboStreak}</p>}
+                  <p className="font-pixel text-[9px] text-white/40">REKOR {String(bestScore).padStart(3, "0")}</p>
                   <button onClick={() => (status === "playing" ? setGameStatus("paused") : startGame())} type="button" className="pause-button !py-1 !px-2 !text-[10px]">{status === "playing" ? "Durdur" : "Başlat"}</button>
                 </div>
               </div>
@@ -1079,11 +1079,11 @@ eatenTotalRef.current += 1;
               />
 
               <div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
-                <button onClick={()=>setIsTopicsOpen(true)} type="button" className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
+                <button onClick={() => setIsTopicsOpen(true)} type="button" className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${selectedTopic !== "ALL" || selectedLevel !== "ALL" ? "bg-[#ffd96d]/20 text-[#ffd96d] border border-[#ffd96d]/40" : "bg-white/10 text-white/70"}`}>📌 {selectedTopic !== "ALL" ? selectedTopic : "Konu"}{selectedLevel !== "ALL" ? ` • ${selectedLevel}` : ""}</button>
                 <button onClick={toggleWeakTraining} type="button" className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${weakTraining ? "bg-[#ff84ad]/25 text-[#ff84ad] border border-[#ff84ad]/50" : "bg-white/10 text-white/70"}`} title="Hata defterine düşen zayıf kelimelerle özel antrenman">{weakTraining ? "⚠️ Zayıf AÇIK" : "⚠️ Zayıf"}</button>
-                <button onClick={()=>setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
-                <button onClick={()=>setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">🎰 Çark</button>
-                <button onClick={()=>setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">✍️ Özel</button>
+                <button onClick={() => setIsSkinsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{currentSkin.hatEmoji} Kostüm</button>
+                <button onClick={() => setIsWheelOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">🎰 Çark</button>
+                <button onClick={() => setIsCustomWordsOpen(true)} type="button" className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">✍️ Özel</button>
                 <span className="hidden self-center rounded-full bg-white/10 px-2 py-0.5 text-[8px] font-bold text-white/40 select-none sm:inline-block" title="Uygulama sürümü">v1.5</span>
               </div>
             </div>
@@ -1094,8 +1094,8 @@ eatenTotalRef.current += 1;
             <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#241743] p-2.5 text-[11px]">
               <span className="font-pixel text-[10px] text-[#99f5c3]">SEVİYE FİLTRE:</span>
               <div className="flex gap-1">
-                {(["ALL","A1","A2","B1","B2","C1","C2"] as const).map(lvl=> (
-                  <button key={lvl} onClick={()=>selectPool(selectedTopic, lvl)} className={`rounded px-1.5 py-0.5 font-pixel text-[10px] font-bold ${selectedLevel===lvl?"bg-[#ffd96d] text-[#21123a]":"bg-white/10 text-white/60"}`}>{lvl}</button>
+                {(["ALL", "A1", "A2", "B1", "B2", "C1", "C2"] as const).map(lvl => (
+                  <button key={lvl} onClick={() => selectPool(selectedTopic, lvl)} className={`rounded px-1.5 py-0.5 font-pixel text-[10px] font-bold ${selectedLevel === lvl ? "bg-[#ffd96d] text-[#21123a]" : "bg-white/10 text-white/60"}`}>{lvl}</button>
                 ))}
               </div>
             </div>
@@ -1131,13 +1131,13 @@ eatenTotalRef.current += 1;
                   <button onClick={toggleLearnedCurrentTarget} type="button" className={`flex-1 rounded-lg py-2 text-xs font-black transition-colors ${isCurrentLearned ? "bg-[#ff9ebb] text-[#330012] border border-[#ff9ebb]" : "bg-[#75d9a6] text-[#112d1e]"}`}>
                     {isCurrentLearned ? "Unuttum 🔁 Geri Getir" : "Öğrendim ✔️ Asla Gösterme"}
                   </button>
-                  <button onClick={()=>speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode)} type="button" className="rounded-lg bg-[#99f5c3] px-3 py-2 text-xs font-black text-[#17112e]">🔊 Dinle</button>
+                  <button onClick={() => speakWordDetails(currentWord.word, currentWord.meaningTr, currentWord.definition, currentWord.example, speechMode, currentWord.level)} type="button" className="rounded-lg bg-[#99f5c3] px-3 py-2 text-xs font-black text-[#17112e]">🔊 Dinle</button>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={()=>setIsMicOpen(true)} type="button" className="flex-1 rounded-lg border border-[#ff84ad]/30 bg-[#ff84ad]/10 py-1.5 text-[11px] font-bold text-[#ff84ad]">🎙️ Telaffuz Dene</button>
-                  <button onClick={()=>setShowHint(v=>!v)} type="button" className="flex-1 rounded-lg border border-white/15 bg-white/5 py-1.5 text-[11px] font-bold text-white/70">💡 {showHint?"Gizle":"İpucu"}</button>
+                  <button onClick={() => setIsMicOpen(true)} type="button" className="flex-1 rounded-lg border border-[#ff84ad]/30 bg-[#ff84ad]/10 py-1.5 text-[11px] font-bold text-[#ff84ad]">🎙️ Telaffuz Dene</button>
+                  <button onClick={() => setShowHint(v => !v)} type="button" className="flex-1 rounded-lg border border-white/15 bg-white/5 py-1.5 text-[11px] font-bold text-white/70">💡 {showHint ? "Gizle" : "İpucu"}</button>
                 </div>
-                {showHint && <div className="hint-bubble rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 p-2.5 text-xs text-[#ffe9a8]"><p>🔤 İlk harf: <strong className="text-white">{currentWord.word.charAt(0).toUpperCase()}</strong> • Harf: {currentWord.word.replace(/\s/g,"").length}</p><p className="mt-1">🧩 {currentWord.word.charAt(0).toUpperCase()+ currentWord.word.slice(1).replace(/[a-zA-Z]/g,"•")}</p></div>}
+                {showHint && <div className="hint-bubble rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 p-2.5 text-xs text-[#ffe9a8]"><p>🔤 İlk harf: <strong className="text-white">{currentWord.word.charAt(0).toUpperCase()}</strong> • Harf: {currentWord.word.replace(/\s/g, "").length}</p><p className="mt-1">🧩 {currentWord.word.charAt(0).toUpperCase() + currentWord.word.slice(1).replace(/[a-zA-Z]/g, "•")}</p></div>}
               </div>
 
               <div className="mt-4 h-px bg-white/10" />
@@ -1150,7 +1150,7 @@ eatenTotalRef.current += 1;
                   </div>
                   <span className="font-pixel text-[11px] font-bold text-[#99f5c3]">{displayPercent}%</span>
                 </div>
-                <div className="journey-track mt-2"><span style={{ width: `${Math.max(displayPercent, displayLearned?1:0)}%` }} /></div>
+                <div className="journey-track mt-2"><span style={{ width: `${Math.max(displayPercent, displayLearned ? 1 : 0)}%` }} /></div>
                 {allPoolLearned && (
                   <p className="mt-1.5 text-[11px] font-bold text-[#ffd96d]">🏆 {isPoolFiltered ? "Bu konuyu tamamen bitirdin! Yeni bir konu seçerek devam et." : "Muhteşem! Tüm kelimeleri öğrendin. Artık resmi bir kelime ustasısın!"}</p>
                 )}
@@ -1161,15 +1161,15 @@ eatenTotalRef.current += 1;
               {lastEaten && (
                 <div className="learned-note mt-4 animate-pop">
                   <div className="flex items-center justify-between">
-                    <p className="font-pixel text-[8px] tracking-widest text-[#ffd96d]">{lastEaten.isReview?"⭐ TEKRAR YENDİ!":"✨ YENİ YENDİ!"}</p>
-                    <span className="text-xs text-[#ffd96d]">{"★".repeat(lastEaten.stars)}{"☆".repeat(5-lastEaten.stars)}</span>
+                    <p className="font-pixel text-[8px] tracking-widest text-[#ffd96d]">{lastEaten.isReview ? "⭐ TEKRAR YENDİ!" : "✨ YENİ YENDİ!"}</p>
+                    <span className="text-xs text-[#ffd96d]">{"★".repeat(lastEaten.stars)}{"☆".repeat(5 - lastEaten.stars)}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <span className="font-pixel text-base font-bold text-white truncate">{lastEaten.word.word}</span>
                       <span className="ml-2 text-xs font-bold text-[#ffd96d] truncate">🇹🇷 {lastEaten.word.meaningTr.split(" /")[0]}</span>
                     </div>
-                    <button onClick={()=>speakWordDetails(lastEaten.word.word, lastEaten.word.meaningTr, lastEaten.word.definition, lastEaten.word.example, speechMode)} type="button" className="mini-hear shrink-0">Dinle</button>
+                    <button onClick={() => speakWordDetails(lastEaten.word.word, lastEaten.word.meaningTr, lastEaten.word.definition, lastEaten.word.example, speechMode, lastEaten.word.level)} type="button" className="mini-hear shrink-0">Dinle</button>
                   </div>
                 </div>
               )}
@@ -1184,17 +1184,17 @@ eatenTotalRef.current += 1;
       </div>
 
       {/* Modals */}
-      <WordLibraryModal isOpen={isLibraryOpen} onClose={()=>setIsLibraryOpen(false)} words={activePool} masteryMap={masteryMap} onMasteryChange={(m)=>setMasteryMap(m)} speechMode={speechMode} language={language} />
-      <SkinsModal isOpen={isSkinsOpen} onClose={()=>setIsSkinsOpen(false)} learnedCount={learnedCount} activeSkinId={activeSkinId} onSelectSkin={(id)=>{setActiveSkinId(id); setIsSkinsOpen(false);}} />
-      <TopicsModal isOpen={isTopicsOpen} onClose={()=>setIsTopicsOpen(false)} words={activePool} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t)=>selectPool(t, selectedLevel)} onSelectLevel={(l)=>selectPool(selectedTopic, l)} masteryMap={masteryMap} />
-      <AchievementsModal isOpen={isAchievementsOpen} onClose={()=>setIsAchievementsOpen(false)} stats={achievementStats} />
-      <CustomWordsModal isOpen={isCustomWordsOpen} onClose={()=>setIsCustomWordsOpen(false)} customWords={customWordBank} onRemoveCustomWords={(id)=>{setCustomWordsBank(p=>p.filter(w=>w.id!==id));}} onAddCustomWords={(nw)=>{setCustomWordsBank(p=>[...nw, ...p]); setIsCustomWordsOpen(false);}} language={language} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={()=>setIsSettingsOpen(false)} settings={settings} onSettingsChange={(patch)=>setSettings(prev=>({...prev, ...patch}))} />
-      <ArcadeWheelModal isOpen={isWheelOpen} onClose={()=>setIsWheelOpen(false)} onRewardWon={(pts)=>setScore(p=>p+pts)} />
-      <MicPracticeModal isOpen={isMicOpen} onClose={()=>setIsMicOpen(false)} word={currentWord} language={language} />
-      <WordOfDayModal isOpen={isWordOfDayOpen} onClose={()=>setIsWordOfDayOpen(false)} speechMode={speechMode} words={activePool} />
-      <QuizModal isOpen={isQuizOpen} onClose={()=>{setIsQuizOpen(false); setQuizzesCompletedCount(p=>p+1); setIsStatsOpen(true);}} recentWords={sessionEatenWords} language={language} onBonusEarned={(b)=>{setScore(p=>p+b); addXp(b);}} onWordFailed={(id)=>{const nextMap=recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current=nextMap; setMasteryMap(nextMap); setDailyLog(addDailyActivity("failed"));}} />
-      <StatsModal isOpen={isStatsOpen} onClose={()=>setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id)=>setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} language={language} learnedCount={learnedCount} words={activePool} dailyLog={dailyLog} />
+      <WordLibraryModal isOpen={isLibraryOpen} onClose={() => setIsLibraryOpen(false)} words={activePool} masteryMap={masteryMap} onMasteryChange={(m) => setMasteryMap(m)} speechMode={speechMode} language={language} />
+      <SkinsModal isOpen={isSkinsOpen} onClose={() => setIsSkinsOpen(false)} learnedCount={learnedCount} activeSkinId={activeSkinId} onSelectSkin={(id) => { setActiveSkinId(id); setIsSkinsOpen(false); }} />
+      <TopicsModal isOpen={isTopicsOpen} onClose={() => setIsTopicsOpen(false)} words={activePool} selectedTopic={selectedTopic} selectedLevel={selectedLevel} onSelectTopic={(t) => selectPool(t, selectedLevel)} onSelectLevel={(l) => selectPool(selectedTopic, l)} masteryMap={masteryMap} />
+      <AchievementsModal isOpen={isAchievementsOpen} onClose={() => setIsAchievementsOpen(false)} stats={achievementStats} />
+      <CustomWordsModal isOpen={isCustomWordsOpen} onClose={() => setIsCustomWordsOpen(false)} customWords={customWordBank} onRemoveCustomWords={(id) => { setCustomWordsBank(p => p.filter(w => w.id !== id)); }} onAddCustomWords={(nw) => { setCustomWordsBank(p => [...nw, ...p]); setIsCustomWordsOpen(false); }} language={language} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={settings} onSettingsChange={(patch) => setSettings(prev => ({ ...prev, ...patch }))} />
+      <ArcadeWheelModal isOpen={isWheelOpen} onClose={() => setIsWheelOpen(false)} onRewardWon={(pts) => setScore(p => p + pts)} />
+      <MicPracticeModal isOpen={isMicOpen} onClose={() => setIsMicOpen(false)} word={currentWord} language={language} />
+      <WordOfDayModal isOpen={isWordOfDayOpen} onClose={() => setIsWordOfDayOpen(false)} speechMode={speechMode} words={activePool} />
+      <QuizModal isOpen={isQuizOpen} onClose={() => { setIsQuizOpen(false); setQuizzesCompletedCount(p => p + 1); setIsStatsOpen(true); }} recentWords={sessionEatenWords} language={language} onBonusEarned={(b) => { setScore(p => p + b); addXp(b); }} onWordFailed={(id) => { const nextMap = recordWordFailure(id, masteryMapRef.current, language); masteryMapRef.current = nextMap; setMasteryMap(nextMap); setDailyLog(addDailyActivity("failed")); }} />
+      <StatsModal isOpen={isStatsOpen} onClose={() => setIsStatsOpen(false)} sessionScore={score} maxCombo={maxCombo} sessionWords={sessionEatenWords} masteryMap={masteryMap} onToggleLearned={(id) => setMasteryMap(toggleWordLearnedState(id, masteryMap, language))} speechMode={speechMode} language={language} learnedCount={learnedCount} words={activePool} dailyLog={dailyLog} />
     </main>
   );
 }

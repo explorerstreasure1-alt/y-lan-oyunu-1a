@@ -48,7 +48,7 @@ export function WordOfDayModal({ isOpen, onClose, speechMode, words }: WordOfDay
         <div className="mt-5 flex gap-3">
           <button
             type="button"
-            onClick={() => speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode)}
+            onClick={() => speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode, word.level)}
             className="flex-1 rounded-xl bg-[#99f5c3] py-2.5 font-pixel text-xs font-black text-[#17112e] hover:bg-[#b2f8d3] transition-colors"
           >
             🔊 Dinle

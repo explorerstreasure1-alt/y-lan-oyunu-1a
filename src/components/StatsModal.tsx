@@ -170,9 +170,8 @@ export function StatsModal({
           <button
             type="button"
             onClick={handleShare}
-            className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition-colors ${
-              copied ? "bg-[#75d9a6] text-[#112d1e]" : "bg-[#99f5c3] text-[#17112e] hover:bg-[#b2f8d3]"
-            }`}
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition-colors ${copied ? "bg-[#75d9a6] text-[#112d1e]" : "bg-[#99f5c3] text-[#17112e] hover:bg-[#b2f8d3]"
+              }`}
           >
             {copied ? "✔ Kopyalandı!" : "📤 Skoru Paylaş"}
           </button>
@@ -242,7 +241,7 @@ export function StatsModal({
                           <button
                             type="button"
                             onClick={() =>
-                              speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode)
+                              speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode, word.level)
                             }
                             className="rounded bg-[#99f5c3] px-1.5 py-0.5 text-[9px] font-bold text-[#17112e]"
                           >
@@ -273,11 +272,10 @@ export function StatsModal({
                 return (
                   <div
                     key={word.id}
-                    className={`flex flex-col justify-between rounded-xl border p-3 transition-all ${
-                      isLearned
-                        ? "border-[#75d9a6]/50 bg-[#1d382b]"
-                        : "border-white/10 bg-[#2d1b50]"
-                    }`}
+                    className={`flex flex-col justify-between rounded-xl border p-3 transition-all ${isLearned
+                      ? "border-[#75d9a6]/50 bg-[#1d382b]"
+                      : "border-white/10 bg-[#2d1b50]"
+                      }`}
                   >
                     <div>
                       <div className="flex items-center justify-between">
@@ -294,9 +292,8 @@ export function StatsModal({
                       <button
                         type="button"
                         onClick={() => onToggleLearned(word.id)}
-                        className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                          isLearned ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/70 hover:bg-white/20"
-                        }`}
+                        className={`rounded px-2 py-0.5 text-[10px] font-bold ${isLearned ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/70 hover:bg-white/20"
+                          }`}
                       >
                         {isLearned ? "Unuttum 🔁" : "Öğrendim ✔️"}
                       </button>
@@ -304,7 +301,7 @@ export function StatsModal({
                       <button
                         type="button"
                         onClick={() =>
-                          speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode)
+                          speakWordDetails(word.word, word.meaningTr, word.definition, word.example, speechMode, word.level)
                         }
                         className="rounded bg-[#99f5c3] px-2 py-0.5 text-[10px] font-bold text-[#17112e]"
                       >

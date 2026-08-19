@@ -205,7 +205,7 @@ function cleanEnglishWordForSpeech(raw: string): string {
   // Replace hyphens between letters with comma + space for irregular verbs
   if (t.includes("-") && !t.includes(" ")) {
     // likely irregular verb chain like buy-bought-bought
-    t = t.replace(/-/g, ", ");
+    t = t.replace(/-/g, ",");
   } else {
     t = t.replace(/-/g, " ");
   }
@@ -282,18 +282,15 @@ function speakUtterance(
     try {
       ss.resume();
       ss.speak(utterance);
-    } catch {}
+    } catch { }
   };
   if (ss.speaking || ss.pending) {
     try {
       ss.cancel();
-    } catch {}
-    // Chrome bug'ı: cancel() hemen ardından senkron speak() 1-3 sn sessiz bekletebilir.
-    // cancel'in oturması için kısa bekle, sonra devral - yeni kelime ilk önce konuşur.
-    window.setTimeout(doSpeak, 60);
-  } else {
-    doSpeak();
+    } catch { }
   }
+  // Anında konuş - bekleme yok
+  doSpeak();
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
@@ -317,6 +314,7 @@ function cleanRussianWordForSpeech(raw: string): string {
  * Main: Beautiful, crystal-clear EN/RU -> (mini-pause) -> TR sequence
  * - Söylendiği AN yüksek hızda (rate ~1.1) okunur, bekleme yok
  * - Türkçe anlam hemen ardından gelir
+ * - Seviyeye göre hız ayarı: A1 yavaş, C2 çok hızlı
  * No overlap, no emoji, no technical notes.
  */
 export function speakWordDetails(
@@ -324,7 +322,8 @@ export function speakWordDetails(
   meaningTr: string,
   definition: string,
   example: string,
-  mode: SpeechMode = "word-tr"
+  mode: SpeechMode = "word-tr",
+  level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" = "A1"
 ) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
@@ -343,21 +342,35 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
+  // Seviyeye göre hız ayarı: A1 en yavaş, C2 en hızlı
+  const levelSpeedMultiplier: Record<string, number> = {
+    "A1": 0.85,
+    "A2": 0.95,
+    "B1": 1.05,
+    "B2": 1.15,
+    "C1": 1.25,
+    "C2": 1.35
+  };
+  const speedMult = levelSpeedMultiplier[level] || 1.0;
+
   if (mode === "word-tr") {
-    // HIZLI: kelime beklemesiz başlar; Türkçe anlam kelime BAŞLADIĞI anda kuyruğa alınır
-    // -> onEnd bekleme boşluğu ("six ... 6") kalkar, yeni yemek kuyruğu anında devralır
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.02, 1, undefined, undefined, () => {
+    // HIZLI: kelime anında başlar, Türkçe anlam hemen ardından gelir
+    const enRate = isRussian ? 1.8 : 1.4;
+    const trRate = 1.8;
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02, 1, () => {
       if (generation !== speakGeneration) return;
       try {
         const ss = window.speechSynthesis;
         ss.resume();
-        ss.speak(makeUtterance(trCore, "tr-TR", 1.45, 1.0));
-      } catch {}
+        ss.speak(makeUtterance(trCore, "tr-TR", trRate * speedMult, 1.0));
+      } catch { }
     });
   } else if (mode === "word") {
-    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.03);
+    const enRate = isRussian ? 1.8 : 1.4;
+    speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.03);
   } else {
-    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", isRussian ? 1.3 : 1.4, 1.02);
+    const enRate = isRussian ? 1.7 : 1.3;
+    speakUtterance(targetText, isRussian ? "ru-RU" : "en-US", enRate * speedMult, 1.02);
   }
 }
 
@@ -365,11 +378,11 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.4 : 1.5, 1.03);
+  speakUtterance(wordClean, isRussian ? "ru-RU" : "en-US", isRussian ? 1.8 : 1.4, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  speakUtterance(trCore, "tr-TR", 1.45, 1.0);
+  speakUtterance(trCore, "tr-TR", 1.8, 1.0);
 }
