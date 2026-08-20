@@ -8,6 +8,7 @@ type AppSettings = {
   snakeColor: "classic" | "blue" | "purple" | "orange" | "pink";
   fontSize: "normal" | "large";
   highContrast: boolean;
+  repeatFrequency: 1 | 2 | 3;
 };
 
 type SettingsModalProps = {
@@ -70,6 +71,40 @@ export function SettingsModal({ isOpen, onClose, settings, onSettingsChange }: S
                     className={`text-sm ${settings.speechMode === opt.value ? "text-[#99f5c3]" : "text-white/30"}`}
                   >
                     {settings.speechMode === opt.value ? "●" : "○"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Repeat Frequency */}
+          <div>
+            <h3 className="mb-3 font-pixel text-xs tracking-wider text-[#ffd96d] uppercase">
+              🔁 KELİME TEKRAR SIKLIĞI
+            </h3>
+            <div className="grid gap-2">
+              {[
+                { value: 1 as const, label: "1x — Ara Ara", desc: "Her kelime tur başına 1 kez, uzun ve çeşitli tur" },
+                { value: 2 as const, label: "2x — Dengeli (önerilen)", desc: "Kelime yedikten sonra araya başkaları girer, sonra tekrar çıkar" },
+                { value: 3 as const, label: "3x — Yoğun Tekrar", desc: "Hızlı pekiştirme, kısa tur" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onSettingsChange({ repeatFrequency: opt.value })}
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-left transition-all ${settings.repeatFrequency === opt.value
+                    ? "border-[#99f5c3] bg-[#99f5c3]/15 ring-1 ring-[#99f5c3]/40"
+                    : "border-white/15 bg-white/5 hover:bg-white/10"
+                    }`}
+                >
+                  <div>
+                    <p className="text-xs font-black text-white">{opt.label}</p>
+                    <p className="mt-0.5 text-[11px] text-white/60">{opt.desc}</p>
+                  </div>
+                  <span
+                    className={`text-sm ${settings.repeatFrequency === opt.value ? "text-[#99f5c3]" : "text-white/30"}`}
+                  >
+                    {settings.repeatFrequency === opt.value ? "●" : "○"}
                   </span>
                 </button>
               ))}
