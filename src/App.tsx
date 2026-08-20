@@ -301,7 +301,7 @@ function loadSettings(): SavedSettings {
 	}
 }
 
-// %15 şansla mama altın (bonus) görünür - sadece görsel bonus, soru/modal açmaz
+// %15 şansla mama altın (bonus) görünür - altın yem 2x puan + 2 XP kazandırır, soru/modal açmaz
 function maybeBonusMama(item: ActiveFoodItem): ActiveFoodItem {
 	return { ...item, isBonus: Math.random() < 0.15 };
 }
@@ -1304,6 +1304,7 @@ export default function App() {
 				const foodItem = activeFoodRef.current;
 				const currentWord = foodItem.word;
 				const isReview = foodItem.isReview;
+				const isBonus = foodItem.isBonus;
 
 				// ✨ Eğitim güç-up'ı: sonraki yemeklerde kelime +2 yıldız kazanır
 				const isBoosted = boostRemaining > 0;
@@ -1380,19 +1381,20 @@ export default function App() {
 				}
 
 				let scorePoints = (isReview ? 5 : 2) * (nextCombo >= 3 ? 2 : 1);
+				if (isBonus) scorePoints *= 2; // 🐛 altın yem: 2x puan
 				if (isDoubleXpActive) scorePoints *= 2;
 
 				const nextScore = scoreRef.current + scorePoints;
 				scoreRef.current = nextScore;
 				setScore(nextScore);
 
-				addXp(isReview ? 2 : 5);
+				addXp((isReview ? 2 : 5) + (isBonus ? 2 : 0));
 				setDailyLog(addDailyActivity(isReview ? "review" : "eaten"));
 
 				setScoreFloat({ id: Date.now(), text: `+${scorePoints}` });
 				window.setTimeout(() => setScoreFloat(null), 850);
 				setWordToast({ id: Date.now(), word: currentWord, isReview });
-				setBoardFlash(isReview ? "gold" : "good");
+				setBoardFlash(isReview || isBonus ? "gold" : "good");
 				window.setTimeout(() => setBoardFlash(null), 480);
 				setShowHint(false);
 
