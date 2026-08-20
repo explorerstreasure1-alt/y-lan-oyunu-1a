@@ -590,20 +590,6 @@
 	filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.9));
 }
 
-/* 🪨 Kaya engeli - hayalet geçer, 💥 temizler */
-.rock-glyph {
-	filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.45));
-	animation: rock-bob 2.4s ease-in-out infinite alternate;
-}
-@keyframes rock-bob {
-	from {
-		transform: translateY(0);
-	}
-	to {
-		transform: translateY(-5%);
-	}
-}
-
 /* Yiyince ortada beliren kelime — yeni kelime yenene kadar sabit kalır */
 .word-toast {
 	position: absolute;
