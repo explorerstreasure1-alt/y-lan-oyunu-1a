@@ -241,17 +241,20 @@ export function isDueForReview(mastery: WordMastery, now: number = Date.now()): 
 /**
  * 3000 kelime havuzu + özel kelimeler ile akıllı mama seçici
  * - isLearned = true olan kelime ASLA havuza girmez
- * - Önce planlı aralıklı tekrar (due review), sonra oturum içi tekrar (3/8), sonra yeni kelime
+ * - Önce planlı aralıklı tekrar (due review), sonra tekrar destesi / yeni kelime
+ * - repeatCount (1x/2x/3x): her kelime tur başına N kez çıkar; kopyalar havuz boyunca
+ *   eşit aralıkla yayılır (aynı kelime üst üste ASLA gelmez, araya diğerleri girer)
  * - basePool: konu/seviye filtreli havuz (verilmezse tüm LEARNING_PATH)
  */
 export function getNextFoodItem(
   newWordCursor: number,
   masteryMap: Record<number, WordMastery>,
   eatenTotalCount: number,
-  recentSessionUnlearnedIds: number[],
+  _recentSessionUnlearnedIds: number[],
   extraPool: VocabularyWord[] = [],
   basePool: VocabularyWord[] = LEARNING_PATH,
-  weakPool: VocabularyWord[] = []
+  weakPool: VocabularyWord[] = [],
+  repeatCount: number = 1
 ): { item: ActiveFoodItem; updatedCursor: number } {
   // Zayıf antrenman: zayıf kelimeler havuzun başına öncelikli eklenir (base'de tekrar etmezler)
   let fullPool: VocabularyWord[];
@@ -266,6 +269,14 @@ export function getNextFoodItem(
     fullPool = extraPool.length > 0 ? [...extraPool, ...basePool] : basePool;
   }
   const poolSize = fullPool.length;
+  if (poolSize === 0) {
+    return { item: { word: basePool[0], isReview: false }, updatedCursor: 0 };
+  }
+
+  // Tekrar destesi: 1x/2x/3x → destede her kelimenin N kopyası var.
+  // Kopyalar poolSize hücre arayla dizili → dengeli dağılım, yığılma yok.
+  const repeats = Math.max(1, Math.min(3, Math.floor(repeatCount) || 1));
+  const deckSize = poolSize * repeats;
 
   const cycleIndex = eatenTotalCount % 8;
 
@@ -283,37 +294,20 @@ export function getNextFoodItem(
     }
   }
 
-  // 2) Oturum içi tekrar: son 5 yeni kelimeden 3'ü tekrar çıkar
-  const isReviewStep = cycleIndex >= 5 && recentSessionUnlearnedIds.length > 0;
-
-  if (isReviewStep) {
-    const candidateIds = recentSessionUnlearnedIds.filter((id) => !masteryMap[id]?.isLearned);
-    if (candidateIds.length > 0) {
-      const selectedId = candidateIds[eatenTotalCount % candidateIds.length];
-      const found = fullPool.find((w) => w.id === selectedId) || basePool[selectedId % basePool.length];
-      if (found && !masteryMap[found.id]?.isLearned) {
-        return {
-          item: { word: found, isReview: true },
-          updatedCursor: newWordCursor,
-        };
-      }
-    }
-  }
-
-  // Find next UNLEARNED word
-  let currentCursor = newWordCursor;
+  // 2) Desteden sıradaki ÖĞRENİLMEMİŞ kelime (öğrenilenler atlanır)
+  let currentPos = newWordCursor;
   let attempts = 0;
 
-  while (attempts < poolSize * 2) {
-    const candidateWord = fullPool[currentCursor % poolSize];
+  while (attempts < deckSize * 2) {
+    const candidateWord = fullPool[currentPos % poolSize];
     const mastery = masteryMap[candidateWord.id];
     if (!mastery?.isLearned) {
       return {
         item: { word: candidateWord, isReview: false },
-        updatedCursor: (currentCursor + 1) % poolSize,
+        updatedCursor: (currentPos + 1) % deckSize,
       };
     }
-    currentCursor += 1;
+    currentPos += 1;
     attempts += 1;
   }
 
@@ -321,7 +315,7 @@ export function getNextFoodItem(
   const fallbackWord = fullPool[newWordCursor % poolSize];
   return {
     item: { word: fallbackWord, isReview: false },
-    updatedCursor: (newWordCursor + 1) % poolSize,
+    updatedCursor: (newWordCursor + 1) % deckSize,
   };
 }
 
