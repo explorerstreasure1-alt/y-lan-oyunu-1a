@@ -109,6 +109,14 @@ const directionDelta: Record<Direction, Point> = {
 
 const isSamePoint = (first: Point, second: Point) =>
 	first.x === second.x && first.y === second.y;
+
+// Aynı milisaniyede iki olay (örn. fare + yem) aynı Date.now() id'sini alınca
+// React "duplicate key" uyarısı verir — modül seviyesi sayaçla benzersizleştir
+let floatIdSeq = 0;
+const nextFloatId = () => {
+	floatIdSeq = (floatIdSeq + 1) % 10;
+	return Date.now() * 10 + floatIdSeq;
+};
 const isOpposite = (first: Direction, second: Direction) =>
 	(first === "up" && second === "down") ||
 	(first === "down" && second === "up") ||
@@ -301,7 +309,7 @@ function loadSettings(): SavedSettings {
 	}
 }
 
-// %15 şansla mama altın (bonus) görünür - altın yem 2x puan + 2 XP kazandırır, soru/modal açmaz
+// %15 şansla mama altın elma (bonus) görünür - altın elma 2x puan + 2 XP kazandırır, soru/modal açmaz; tüm yemler hareketsizdir (mıknatıs gücü hariç)
 function maybeBonusMama(item: ActiveFoodItem): ActiveFoodItem {
 	return { ...item, isBonus: Math.random() < 0.15 };
 }
@@ -1027,7 +1035,7 @@ export default function App() {
 					if (distToTail <= 1) {
 						// Kuyruğa yetişti → parça kopardı, kaçış deliğine yönel
 						mouseBite = true;
-						setScoreFloat({ id: Date.now(), text: "🐀 kuyruk kopardı!" });
+						setScoreFloat({ id: nextFloatId(), text: "🐀 kuyruk kopardı!" });
 						window.setTimeout(() => setScoreFloat(null), 850);
 						// Fare parçayı "çiğner": 6 tick hareket etmez — oyuncu kafayla gelip yiyebilsin,
 						// sonra kaçış deliğine koşar
@@ -1064,7 +1072,7 @@ export default function App() {
 							flightTicks: 0,
 						});
 					} else {
-						// Kuyruğu kovalamaya devam et — fare kuyruktan hızlı koşar (2 adım/tick), yoksa yetişemez
+						// Kuyruğu kovalamaya devam et — fare yılanla aynı hızda koşar (1 adım/tick), oyuncu yetişip yakalayabilir
 						// Hedef seçimi: dikey mesafe yataydan büyükse önce kuyruğun SATIRINA in (sütunu koru).
 						// mouseStep |dx|>=|dy| iken x'i öncelediği için doğrudan kuyruğu hedeflerse yatay eksende
 						// dönüp durabilir; ayrıca rowTarget fare kuyruk satırına inince kendi üzerine düşer (dx=0,
@@ -1074,8 +1082,11 @@ export default function App() {
 							Math.abs(tail.y - currentMouse.pos.y)
 								? tail
 								: { x: currentMouse.pos.x, y: tail.y };
-						const stepA = mouseStep(currentMouse.pos, huntTarget, oldSnake);
-						const nextMousePos = mouseStep(stepA, huntTarget, oldSnake);
+						const nextMousePos = mouseStep(
+							currentMouse.pos,
+							huntTarget,
+							oldSnake,
+						);
 						mouseRef.current = {
 							pos: nextMousePos,
 							target: tail,
@@ -1182,7 +1193,8 @@ export default function App() {
 			}
 			const bitesMouse =
 				mouseRef.current !== null &&
-				isSamePoint(nextHead, mouseRef.current.pos);
+				Math.abs(nextHead.x - mouseRef.current.pos.x) <= 1 &&
+				Math.abs(nextHead.y - mouseRef.current.pos.y) <= 1;
 
 			// Mıknatıs güç-up'ı: mama her tick'te yılana 1 hücre yaklaşır
 			if (isMagnetActive && !isSamePoint(nextHead, foodPointRef.current)) {
@@ -1199,42 +1211,6 @@ export default function App() {
 				}
 			}
 
-			// Hareketli mama: kafadan 4 hücre içine girince kaçar, yoksa %25 şansla sürüklenir;
-			// yılan/duvara giremez, sıkışırsa yerinde kalır (mıknatıs aktifken kaçmaz)
-			if (!isMagnetActive) {
-				const fp = foodPointRef.current;
-				const distToHead = Math.abs(fp.x - head.x) + Math.abs(fp.y - head.y);
-				const candidates: Point[] = [];
-				if (distToHead <= 4) {
-					if (fp.x <= head.x)
-						candidates.push({ x: fp.x - 1, y: fp.y }, { x: fp.x + 1, y: fp.y });
-					else
-						candidates.push({ x: fp.x + 1, y: fp.y }, { x: fp.x - 1, y: fp.y });
-					if (fp.y <= head.y)
-						candidates.push({ x: fp.x, y: fp.y - 1 }, { x: fp.x, y: fp.y + 1 });
-					else
-						candidates.push({ x: fp.x, y: fp.y + 1 }, { x: fp.x, y: fp.y - 1 });
-				} else {
-					const dice = Math.random();
-					if (dice < 0.25) candidates.push({ x: fp.x + 1, y: fp.y });
-					else if (dice < 0.5) candidates.push({ x: fp.x - 1, y: fp.y });
-					else if (dice < 0.75) candidates.push({ x: fp.x, y: fp.y + 1 });
-					else candidates.push({ x: fp.x, y: fp.y - 1 });
-				}
-				const safeCell = (p: Point) =>
-					p.x >= 0 &&
-					p.x < COLUMNS &&
-					p.y >= 0 &&
-					p.y < ROWS &&
-					!snakeRef.current.some((s) => isSamePoint(s, p)) &&
-					!(powerUpRef.current && isSamePoint(p, powerUpRef.current.point));
-				const move = candidates.find(safeCell);
-				if (move) {
-					foodPointRef.current = move;
-					setFoodPoint(move);
-				}
-			}
-
 			const bitesFood = isSamePoint(nextHead, foodPointRef.current);
 			const bitesPowerUp =
 				powerUpRef.current && isSamePoint(nextHead, powerUpRef.current.point);
@@ -1244,7 +1220,7 @@ export default function App() {
 				const nextScore = scoreRef.current + 10;
 				scoreRef.current = nextScore;
 				setScore(nextScore);
-				setScoreFloat({ id: Date.now(), text: "+10 🐀" });
+				setScoreFloat({ id: nextFloatId(), text: "+10 🐀" });
 				window.setTimeout(() => setScoreFloat(null), 850);
 				addXp(1);
 				setMouseCount((c) => c + 1);
@@ -1391,9 +1367,9 @@ export default function App() {
 				addXp((isReview ? 2 : 5) + (isBonus ? 2 : 0));
 				setDailyLog(addDailyActivity(isReview ? "review" : "eaten"));
 
-				setScoreFloat({ id: Date.now(), text: `+${scorePoints}` });
+				setScoreFloat({ id: nextFloatId(), text: `+${scorePoints}` });
 				window.setTimeout(() => setScoreFloat(null), 850);
-				setWordToast({ id: Date.now(), word: currentWord, isReview });
+				setWordToast({ id: nextFloatId(), word: currentWord, isReview });
 				setBoardFlash(isReview || isBonus ? "gold" : "good");
 				window.setTimeout(() => setBoardFlash(null), 480);
 				setShowHint(false);
@@ -1912,7 +1888,7 @@ export default function App() {
 													{activeFood.isReview
 														? "🐹"
 														: activeFood.isBonus
-															? "🐛"
+															? "🍎"
 															: "🐭"}
 												</span>
 											</div>
@@ -2268,7 +2244,7 @@ export default function App() {
 												currentWord.level,
 											);
 											setWordToast({
-												id: Date.now(),
+												id: nextFloatId(),
 												word: currentWord,
 												isReview: activeFood.isReview,
 											});
@@ -2402,7 +2378,7 @@ export default function App() {
 													lastEaten.word.level,
 												);
 												setWordToast({
-													id: Date.now(),
+													id: nextFloatId(),
 													word: lastEaten.word,
 													isReview: lastEaten.isReview,
 												});
