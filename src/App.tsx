@@ -34,6 +34,7 @@ import {
 import { StatsModal } from "./components/StatsModal";
 import { TopicsModal } from "./components/TopicsModal";
 import { WordOfDayModal } from "./components/WordOfDayModal";
+import { startBackgroundMusic, stopBackgroundMusic } from "./music";
 import {
 	type ActiveFoodItem,
 	addDailyActivity,
@@ -76,16 +77,14 @@ type PowerUpType =
 	| "heart"
 	| "boost"
 	| "ghost"
-	| "spotlight"
-	| "blast";
+	| "spotlight";
 type ChargeKey =
 	| "turtle"
 	| "diamond"
 	| "shield"
 	| "magnet"
 	| "ghost"
-	| "spotlight"
-	| "blast";
+	| "spotlight";
 type PowerUpOnGrid = {
 	type: PowerUpType;
 	point: Point;
@@ -135,35 +134,7 @@ function findOpenCell(
 	return { x: 2, y: 2 };
 }
 
-// Kaya engelleri: sabit 6 kaya; yılan/mama/rezerve hücrelere denk gelmez (👻 hayalet geçer, 💥 temizler)
-const ROCK_COUNT = 6;
-function generateObstacles(
-	snake: Point[],
-	food: Point,
-	seed: number,
-	reserved: Point[] = [],
-): Point[] {
-	const rocks: Point[] = [];
-	let attempt = 0;
-	while (rocks.length < ROCK_COUNT && attempt < COLUMNS * ROWS * 2) {
-		const value =
-			(seed * 131 + attempt * 57 + 23) % ((COLUMNS - 2) * (ROWS - 2));
-		const point = {
-			x: (value % (COLUMNS - 2)) + 1,
-			y: Math.floor(value / (COLUMNS - 2)) + 1,
-		};
-		const isBlocked =
-			snake.some((s) => isSamePoint(s, point)) ||
-			isSamePoint(food, point) ||
-			reserved.some((r) => isSamePoint(r, point)) ||
-			rocks.some((r) => isSamePoint(r, point));
-		if (!isBlocked) rocks.push(point);
-		attempt += 1;
-	}
-	return rocks;
-}
-
-// 🐀 Fare delikleri: 4 köşe her zaman boştur (kayalar 1..16 x 1..30 aralığında üretilir)
+// 🐀 Fare delikleri: 4 köşe her zaman boştur
 const MOUSE_HOLES: Point[] = [
 	{ x: 0, y: 0 },
 	{ x: COLUMNS - 1, y: 0 },
@@ -171,13 +142,8 @@ const MOUSE_HOLES: Point[] = [
 	{ x: COLUMNS - 1, y: ROWS - 1 },
 ];
 
-// Fare bir adımı: hedef eksene önce ilerler; kaya/yılan gövdesi engellerse diğer ekseni dener
-function mouseStep(
-	from: Point,
-	target: Point,
-	snake: Point[],
-	obstacles: Point[],
-): Point {
+// Fare bir adımı: hedef eksene önce ilerler; yılan gövdesi engellerse diğer ekseni dener
+function mouseStep(from: Point, target: Point, snake: Point[]): Point {
 	const dx = Math.sign(target.x - from.x);
 	const dy = Math.sign(target.y - from.y);
 	const candidates: Point[] = [];
@@ -188,9 +154,7 @@ function mouseStep(
 		if (dy !== 0) candidates.push({ x: from.x, y: from.y + dy });
 		if (dx !== 0) candidates.push({ x: from.x + dx, y: from.y });
 	}
-	const blocked = (p: Point) =>
-		obstacles.some((r) => isSamePoint(r, p)) ||
-		snake.slice(1).some((s) => isSamePoint(s, p));
+	const blocked = (p: Point) => snake.slice(1).some((s) => isSamePoint(s, p));
 	const next = candidates.find((c) => !blocked(c));
 	return next ?? from;
 }
@@ -202,6 +166,8 @@ interface MouseState {
 	hole: Point; // kaçış deliği (flee'ye geçince target buna eşitlenir)
 	phase: "hunt" | "flee";
 	huntTicks: number; // kuyruğa yetişemezse pes edip kaçma sınırı
+	stunTicks: number; // ısırık sonrası "çiğneme" molası — hareket yok, oyuncu yetişebilsin
+	flightTicks: number; // flee'de yavaş kaçış sayacı — her 2. tick'te hareket eder
 }
 
 // Güç paneli tanımları — ❤️ Kalp ve ✨ Boost pasiftir (kutu yiyince anında uygulanır), kalanlar şarj biriktirir
@@ -224,19 +190,13 @@ const POWER_DEFS: {
 		key: "ghost",
 		emoji: "👻",
 		name: "Hayalet",
-		desc: "Duvar/kuyruk/kayadan geçer, 8sn",
+		desc: "Duvar/kuyruktan geçer, 8sn",
 	},
 	{
 		key: "spotlight",
 		emoji: "🔦",
 		name: "İpucu Işığı",
 		desc: "İpucu açılır, mama parlar, 8sn",
-	},
-	{
-		key: "blast",
-		emoji: "💥",
-		name: "Temizlik",
-		desc: "Tüm kayaları patlatır",
 	},
 ];
 const EMPTY_CHARGES: Record<ChargeKey, number> = {
@@ -246,7 +206,6 @@ const EMPTY_CHARGES: Record<ChargeKey, number> = {
 	magnet: 0,
 	ghost: 0,
 	spotlight: 0,
-	blast: 0,
 };
 
 // Konu + seviye filtreli kelime havuzu - boş dönerse tüm havuza düş
@@ -267,6 +226,7 @@ function buildFilteredPool(
 type SavedSettings = {
 	speechMode: SpeechMode;
 	sfxEnabled: boolean;
+	musicOn: boolean;
 	autoPauseOnEat: boolean;
 	theme: "dark" | "light";
 	snakeColor: "classic" | "blue" | "purple" | "orange" | "pink";
@@ -283,6 +243,7 @@ function loadSettings(): SavedSettings {
 			return {
 				speechMode: "word-tr",
 				sfxEnabled: true,
+				musicOn: true,
 				autoPauseOnEat: false,
 				theme: "dark",
 				snakeColor: "classic",
@@ -313,6 +274,7 @@ function loadSettings(): SavedSettings {
 			speechMode: mode,
 			sfxEnabled:
 				typeof parsed.sfxEnabled === "boolean" ? parsed.sfxEnabled : true,
+			musicOn: typeof parsed.musicOn === "boolean" ? parsed.musicOn : true,
 			autoPauseOnEat:
 				typeof parsed.autoPauseOnEat === "boolean"
 					? parsed.autoPauseOnEat
@@ -328,6 +290,7 @@ function loadSettings(): SavedSettings {
 		return {
 			speechMode: "word-tr",
 			sfxEnabled: true,
+			musicOn: true,
 			autoPauseOnEat: false,
 			theme: "dark",
 			snakeColor: "classic",
@@ -378,9 +341,6 @@ export default function App() {
 	>({});
 	const [nowMs, setNowMs] = useState(() => Date.now());
 	const [elapsedMs, setElapsedMs] = useState(0);
-	const [obstacles, setObstacles] = useState<Point[]>(() =>
-		generateObstacles(STARTING_SNAKE, findOpenCell(STARTING_SNAKE, 1), 7),
-	);
 
 	// 🐀 Fare: yılandan kuyruk parçası koparmak için kuyruğu kovalar, ısırınca hedef deliğe kaçar; yılan kafası yakalarsa puan
 	const [mouse, setMouse] = useState<MouseState | null>(null);
@@ -479,7 +439,8 @@ export default function App() {
 
 	// Audio - lofi varsayılan açık, odak arttıran
 	const [settings, setSettings] = useState<SavedSettings>(loadSettings);
-	const { speechMode, sfxEnabled, autoPauseOnEat, repeatFrequency } = settings;
+	const { speechMode, sfxEnabled, musicOn, autoPauseOnEat, repeatFrequency } =
+		settings;
 
 	// Modals & UI
 	const [activeSkinId, setActiveSkinId] = useState<SnakeSkinId>("classic");
@@ -553,7 +514,6 @@ export default function App() {
 	const xpRef = useRef(xp);
 	const weakTrainingRef = useRef(false);
 	const weakWordsRef = useRef<VocabularyWord[]>([]);
-	const obstaclesRef = useRef<Point[]>(obstacles);
 	const settingsRef = useRef(settings);
 	const mouseRef = useRef<MouseState | null>(null);
 	const mouseCooldownRef = useRef(20); // yeni fare çıkana kadar geçen tick sayısı
@@ -568,7 +528,6 @@ export default function App() {
 	powerUpRef.current = powerUpOnGrid;
 	recentUnlearnedIdsRef.current = recentUnlearnedIds;
 	xpRef.current = xp;
-	obstaclesRef.current = obstacles;
 	settingsRef.current = settings;
 
 	const currentSkin =
@@ -610,6 +569,13 @@ export default function App() {
 			);
 		} catch {}
 	}, [settings]);
+
+	// 🎵 Arka plan müziği: ayar açıkken melodiyi çal, kapalıyken durdur
+	// (tarayıcı ilk kullanıcı etkileşimine kadar suspend eder — müzik otomatik senkron başlar)
+	useEffect(() => {
+		if (musicOn) startBackgroundMusic();
+		else stopBackgroundMusic();
+	}, [musicOn]);
 
 	// 1sn saat: oturum süresi sayar + güç geri sayımlarını taze tutar
 	useEffect(() => {
@@ -667,8 +633,6 @@ export default function App() {
 		recentUnlearnedIdsRef.current = [];
 
 		const nextFoodPoint = findOpenCell(freshSnake, 1);
-		const freshRocks = generateObstacles(freshSnake, nextFoodPoint, 5);
-		obstaclesRef.current = freshRocks;
 		const { item, updatedCursor } = getNextFoodItem(
 			0,
 			masteryMapRef.current,
@@ -687,7 +651,6 @@ export default function App() {
 
 		setSnake(freshSnake);
 		setFoodPoint(nextFoodPoint);
-		setObstacles(freshRocks);
 		setPowerUpOnGrid(null);
 		setHasShield(false);
 		setIsDoubleXpActive(false);
@@ -744,7 +707,6 @@ export default function App() {
 			const nextFoodCell = findOpenCell(
 				snakeRef.current,
 				eatenTotalRef.current + 3,
-				obstaclesRef.current,
 			);
 			foodPointRef.current = nextFoodCell;
 			setFoodPoint(nextFoodCell);
@@ -781,11 +743,7 @@ export default function App() {
 			const finalItem = maybeBonusMama(item);
 			activeFoodRef.current = finalItem;
 			setActiveFood(finalItem);
-			const nextFoodCell = findOpenCell(
-				snakeRef.current,
-				3,
-				obstaclesRef.current,
-			);
+			const nextFoodCell = findOpenCell(snakeRef.current, 3);
 			foodPointRef.current = nextFoodCell;
 			setFoodPoint(nextFoodCell);
 			setSessionEatenWords([]);
@@ -855,17 +813,10 @@ export default function App() {
 		setActiveFood(finalItem);
 	};
 
-	// Güç paneli: şarj harca, süreli gücü başlat (💥 Temizlik anında tüm kayaları siler)
+	// Güç paneli: şarj harca, süreli gücü başlat
 	const activatePower = (type: ChargeKey) => {
 		if (charges[type] <= 0) return;
-		if (type === "blast" && obstaclesRef.current.length === 0) return;
 		setCharges((c) => ({ ...c, [type]: c[type] - 1 }));
-		if (type === "blast") {
-			obstaclesRef.current = [];
-			setObstacles([]);
-			if (sfxEnabled) playComboSfx();
-			return;
-		}
 		const durationMs =
 			type === "ghost" || type === "spotlight"
 				? 8000
@@ -1078,43 +1029,39 @@ export default function App() {
 						mouseBite = true;
 						setScoreFloat({ id: Date.now(), text: "🐀 kuyruk kopardı!" });
 						window.setTimeout(() => setScoreFloat(null), 850);
-						const nextMousePos = mouseStep(
-							currentMouse.pos,
-							currentMouse.hole,
-							oldSnake,
-							obstaclesRef.current,
-						);
-						mouseRef.current = {
+						// Fare parçayı "çiğner": 6 tick hareket etmez — oyuncu kafayla gelip yiyebilsin,
+						// sonra kaçış deliğine koşar
+						const stunnedMouse: MouseState = {
 							...currentMouse,
-							pos: nextMousePos,
 							target: currentMouse.hole,
 							phase: "flee",
+							stunTicks: 6,
+							flightTicks: 0,
 						};
-						setMouse({
-							...currentMouse,
-							pos: nextMousePos,
-							target: currentMouse.hole,
-							phase: "flee",
-						});
+						mouseRef.current = stunnedMouse;
+						setMouse(stunnedMouse);
 					} else if (currentMouse.huntTicks >= 60) {
 						// Çok uzun kovaladı → pes edip hedef deliğe kaçar
 						const nextMousePos = mouseStep(
 							currentMouse.pos,
 							currentMouse.hole,
 							oldSnake,
-							obstaclesRef.current,
 						);
 						mouseRef.current = {
 							...currentMouse,
 							pos: nextMousePos,
 							target: currentMouse.hole,
 							phase: "flee",
+							stunTicks: 0,
+							flightTicks: 0,
 						};
 						setMouse({
 							...currentMouse,
 							pos: nextMousePos,
 							target: currentMouse.hole,
 							phase: "flee",
+							stunTicks: 0,
+							flightTicks: 0,
 						});
 					} else {
 						// Kuyruğu kovalamaya devam et — fare kuyruktan hızlı koşar (2 adım/tick), yoksa yetişemez
@@ -1127,24 +1074,16 @@ export default function App() {
 							Math.abs(tail.y - currentMouse.pos.y)
 								? tail
 								: { x: currentMouse.pos.x, y: tail.y };
-						const stepA = mouseStep(
-							currentMouse.pos,
-							huntTarget,
-							oldSnake,
-							obstaclesRef.current,
-						);
-						const nextMousePos = mouseStep(
-							stepA,
-							huntTarget,
-							oldSnake,
-							obstaclesRef.current,
-						);
+						const stepA = mouseStep(currentMouse.pos, huntTarget, oldSnake);
+						const nextMousePos = mouseStep(stepA, huntTarget, oldSnake);
 						mouseRef.current = {
 							pos: nextMousePos,
 							target: tail,
 							hole: currentMouse.hole,
 							phase: "hunt",
 							huntTicks: currentMouse.huntTicks + 1,
+							stunTicks: 0,
+							flightTicks: 0,
 						};
 						setMouse({
 							pos: nextMousePos,
@@ -1152,41 +1091,75 @@ export default function App() {
 							hole: currentMouse.hole,
 							phase: "hunt",
 							huntTicks: currentMouse.huntTicks + 1,
+							stunTicks: 0,
+							flightTicks: 0,
 						});
 					}
 				} else {
-					// flee: hedef deliğe koşar; 1 hücre kala deliğe girer, kaybol
-					const distToTarget =
-						Math.abs(currentMouse.pos.x - currentMouse.target.x) +
-						Math.abs(currentMouse.pos.y - currentMouse.target.y);
-					if (distToTarget <= 1) {
-						mouseRef.current = null;
-						setMouse(null);
-						mouseCooldownRef.current = 18 + Math.floor(Math.random() * 14);
+					// flee: önce "çiğneme" molası (hareket yok), sonra YAVAŞ kaçış —
+					// her 2. tick'te bir hücre (yılan 1/tick → açık alanda yakalanır);
+					// 1 hücre kala deliğe girer, kaybol
+					if (currentMouse.stunTicks > 0) {
+						const stillMouse = {
+							...currentMouse,
+							stunTicks: currentMouse.stunTicks - 1,
+						};
+						mouseRef.current = stillMouse;
+						setMouse(stillMouse);
 					} else {
-						const nextMousePos = mouseStep(
-							currentMouse.pos,
-							currentMouse.target,
-							oldSnake,
-							obstaclesRef.current,
-						);
-						mouseRef.current = { ...currentMouse, pos: nextMousePos };
-						setMouse({ ...currentMouse, pos: nextMousePos });
+						const distToTarget =
+							Math.abs(currentMouse.pos.x - currentMouse.target.x) +
+							Math.abs(currentMouse.pos.y - currentMouse.target.y);
+						if (distToTarget <= 1) {
+							mouseRef.current = null;
+							setMouse(null);
+							mouseCooldownRef.current = 18 + Math.floor(Math.random() * 14);
+						} else if (currentMouse.flightTicks % 2 === 1) {
+							// yavaş adım — bu tick bekler, yılan yaklaşabilir
+							const waitingMouse = {
+								...currentMouse,
+								flightTicks: currentMouse.flightTicks + 1,
+							};
+							mouseRef.current = waitingMouse;
+							setMouse(waitingMouse);
+						} else {
+							const nextMousePos = mouseStep(
+								currentMouse.pos,
+								currentMouse.target,
+								oldSnake,
+							);
+							const movedMouse = {
+								...currentMouse,
+								pos: nextMousePos,
+								flightTicks: currentMouse.flightTicks + 1,
+							};
+							mouseRef.current = movedMouse;
+							setMouse(movedMouse);
+						}
 					}
 				}
 			} else if (mouseCooldownRef.current > 0) {
 				mouseCooldownRef.current -= 1;
 			} else {
-				// Cooldown bitti → rastgele iki farklı delik: çıkış ve hedef; önce kuyruğu kovalar
+				// Cooldown bitti → çıkış deliği rastgele, kaçış deliği EN UZAK olan:
+				// uzun kovalamaca + yavaş kaçış = oyuncu fareyi yakalayabilsin; önce kuyruğu kovalar
 				const shuffled = [...MOUSE_HOLES].sort(() => Math.random() - 0.5);
 				const spawn = shuffled[0];
-				const hole = shuffled[1] ?? shuffled[0];
 				// Fare deliğin hemen içinden çıkar (köşe hücresinde doğmaz)
 				const insideSpawn = {
 					x:
 						spawn.x === 0 ? 1 : spawn.x === COLUMNS - 1 ? COLUMNS - 2 : spawn.x,
 					y: spawn.y === 0 ? 1 : spawn.y === ROWS - 1 ? ROWS - 2 : spawn.y,
 				};
+				let hole = spawn;
+				for (const candidate of shuffled) {
+					const dist =
+						Math.abs(candidate.x - insideSpawn.x) +
+						Math.abs(candidate.y - insideSpawn.y);
+					const bestDist =
+						Math.abs(hole.x - insideSpawn.x) + Math.abs(hole.y - insideSpawn.y);
+					if (dist > bestDist) hole = candidate;
+				}
 				const tail = oldSnake[oldSnake.length - 1];
 				mouseRef.current = {
 					pos: insideSpawn,
@@ -1194,6 +1167,8 @@ export default function App() {
 					hole,
 					phase: "hunt",
 					huntTicks: 0,
+					stunTicks: 0,
+					flightTicks: 0,
 				};
 				setMouse({
 					pos: insideSpawn,
@@ -1201,6 +1176,8 @@ export default function App() {
 					hole,
 					phase: "hunt",
 					huntTicks: 0,
+					stunTicks: 0,
+					flightTicks: 0,
 				});
 			}
 			const bitesMouse =
@@ -1223,7 +1200,7 @@ export default function App() {
 			}
 
 			// Hareketli mama: kafadan 4 hücre içine girince kaçar, yoksa %25 şansla sürüklenir;
-			// yılan/kaya/duvara giremez, sıkışırsa yerinde kalır (mıknatıs aktifken kaçmaz)
+			// yılan/duvara giremez, sıkışırsa yerinde kalır (mıknatıs aktifken kaçmaz)
 			if (!isMagnetActive) {
 				const fp = foodPointRef.current;
 				const distToHead = Math.abs(fp.x - head.x) + Math.abs(fp.y - head.y);
@@ -1250,7 +1227,6 @@ export default function App() {
 					p.y >= 0 &&
 					p.y < ROWS &&
 					!snakeRef.current.some((s) => isSamePoint(s, p)) &&
-					!obstaclesRef.current.some((r) => isSamePoint(r, p)) &&
 					!(powerUpRef.current && isSamePoint(p, powerUpRef.current.point));
 				const move = candidates.find(safeCell);
 				if (move) {
@@ -1285,12 +1261,9 @@ export default function App() {
 			const hitsBody = bodyToCheck.some((segment) =>
 				isSamePoint(segment, nextHead),
 			);
-			const hitsRock = obstaclesRef.current.some((rock) =>
-				isSamePoint(rock, nextHead),
-			);
 
-			// 👻 Hayalet: duvar/kuyruk/kaya çarpışmaları yok sayılır
-			if ((hitsWall || hitsBody || hitsRock) && !isGhostActive) {
+			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır
+			if ((hitsWall || hitsBody) && !isGhostActive) {
 				if (hasShield) {
 					setHasShield(false);
 				} else if (extraLives > 0) {
@@ -1382,7 +1355,6 @@ export default function App() {
 						"boost",
 						"ghost",
 						"spotlight",
-						"blast",
 					];
 					const pType = pTypes[Math.floor(Math.random() * pTypes.length)];
 					const pEmoji =
@@ -1400,12 +1372,9 @@ export default function App() {
 												? "✨"
 												: pType === "ghost"
 													? "👻"
-													: pType === "spotlight"
-														? "🔦"
-														: "💥";
+													: "🔦";
 					const pPoint = findOpenCell(nextSnake, eatenTotalRef.current * 19, [
 						foodPointRef.current,
-						...obstaclesRef.current,
 					]);
 					setPowerUpOnGrid({ type: pType, point: pPoint, emoji: pEmoji });
 				}
@@ -1464,7 +1433,6 @@ export default function App() {
 				const nextFoodCell = findOpenCell(
 					nextSnake,
 					eatenTotalRef.current + nextScore * 13,
-					obstaclesRef.current,
 				);
 				foodPointRef.current = nextFoodCell;
 				setFoodPoint(nextFoodCell);
@@ -1850,19 +1818,6 @@ export default function App() {
 												</div>
 											</div>
 										)}
-										{obstacles.map((rock) => (
-											<div
-												key={`rock-${rock.x}-${rock.y}`}
-												className="snake-slot"
-												style={{
-													transform: `translate(${rock.x * 100}%, ${rock.y * 100}%)`,
-												}}
-											>
-												<div className="absolute inset-0 z-0 flex items-center justify-center text-sm rock-glyph">
-													🪨
-												</div>
-											</div>
-										))}
 										{snake.map((segment, index) => {
 											const prev = prevSnakeRef.current[index];
 											// Nokia-style thin square orientation

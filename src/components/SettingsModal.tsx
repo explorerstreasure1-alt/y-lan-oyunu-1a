@@ -3,6 +3,7 @@ import { type SpeechMode } from "../audio";
 type AppSettings = {
   speechMode: SpeechMode;
   sfxEnabled: boolean;
+  musicOn: boolean;
   autoPauseOnEat: boolean;
   theme: "dark" | "light";
   snakeColor: "classic" | "blue" | "purple" | "orange" | "pink";
@@ -245,6 +246,25 @@ export function SettingsModal({ isOpen, onClose, settings, onSettingsChange }: S
 
           {/* Toggles */}
           <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+              <div>
+                <p className="text-xs font-black text-white">🎵 Arka Plan Müziği</p>
+                <p className="mt-0.5 text-[11px] text-white/60">Şirin huzurlu melodi — oyun boyunca çalar</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSettingsChange({ musicOn: !settings.musicOn })}
+                className={`relative h-7 w-12 flex-none rounded-full transition-colors ${settings.musicOn ? "bg-[#99f5c3]" : "bg-white/20"
+                  }`}
+                aria-pressed={settings.musicOn}
+              >
+                <span
+                  className={`absolute top-1 h-5 w-5 rounded-full bg-[#17112e] transition-all ${settings.musicOn ? "left-6" : "left-1"
+                    }`}
+                />
+              </button>
+            </div>
+
             <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
               <div>
                 <p className="text-xs font-black text-white">🔔 Ses Efektleri</p>

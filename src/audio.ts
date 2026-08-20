@@ -2,7 +2,7 @@ export type SpeechMode = "word-tr" | "word" | "word-def" | "word-def-ex";
 
 let audioCtx: AudioContext | null = null;
 
-function getAudioContext(): AudioContext | null {
+export function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!audioCtx) {
     const AudioContextClass =
