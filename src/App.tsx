@@ -395,16 +395,18 @@ export default function App() {
 			return "ALL";
 		}
 	});
-	// Dil: EN veya RU - her dilin kendi havuzu + kendi kaydı (localStorage kalıcı)
+	// Dil: EN, RU veya IT - her dilin kendi havuzu + kendi kaydı (localStorage kalıcı)
 	const [language, setLanguage] = useState<LearningLanguage>(() => {
 		try {
 			const saved = window.localStorage.getItem("snake-abc-lang");
-			return saved === "ru" ? "ru" : "en";
+			if (saved === "it") return "it";
+			if (saved === "ru") return "ru";
+			return "en";
 		} catch {
 			return "en";
 		}
 	});
-	const activePool = language === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+	const activePool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : LEARNING_PATH;
 	const filteredPool = useMemo(
 		() => buildFilteredPool(selectedTopic, selectedLevel, activePool),
 		[selectedTopic, selectedLevel, activePool],

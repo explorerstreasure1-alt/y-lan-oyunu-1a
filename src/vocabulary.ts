@@ -172,3 +172,4 @@ function buildDataset(): VocabularyWord[] {
 
 export const LEARNING_PATH: VocabularyWord[] = buildDataset();
 export const TOTAL_WORDS = LEARNING_PATH.length;
+export const ITALIAN_PATH = LEARNING_PATH; // Italian words will show with English text initially
