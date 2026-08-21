@@ -1756,25 +1756,59 @@ export default function App() {
 									</div>
 								</div>
 								{/* Word Progress Indicator */}
-								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#241743] px-3 py-1.5">
-									<div className="flex items-center gap-2">
-										<span className="font-pixel text-[8px] text-white/70">
-											📚 {selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic}
-										</span>
-										{selectedLevel !== "ALL" && (
-											<span className="font-pixel text-[8px] text-[#99f5c3]">
-												{selectedLevel}
+								<div className="flex shrink-0 flex-col border-b border-white/10 bg-[#241743] px-3 py-2">
+									<div className="flex items-center justify-between mb-1.5">
+										<div className="flex items-center gap-2">
+											<span className="font-pixel text-[10px] font-bold text-white/90">
+												📚 {selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic}
 											</span>
-										)}
+											{selectedLevel !== "ALL" && (
+												<span className="font-pixel text-[10px] font-bold text-[#99f5c3]">
+													{selectedLevel}
+												</span>
+											)}
+										</div>
+										<div className="flex items-center gap-1">
+											<span className="font-pixel text-[10px] font-bold text-[#ffd96d]">
+												{sessionEatenWords.length}
+											</span>
+											<span className="font-pixel text-[10px] text-white/60">
+												/
+											</span>
+											<span className="font-pixel text-[10px] font-bold text-white/70">
+												{displayTotal}
+											</span>
+										</div>
 									</div>
-									<div className="flex items-center gap-1.5">
-										<span className="font-pixel text-[8px] text-white/60">
-											{sessionEatenWords.length}/{displayTotal}
-										</span>
-										<span className="font-pixel text-[8px] text-[#ffd96d]">
-											({Math.max(0, displayTotal - sessionEatenWords.length)} kaldı)
+									{/* Progress Bar */}
+									<div className="flex items-center gap-2">
+										<div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+											<div
+												className="h-full bg-gradient-to-r from-[#99f5c3] to-[#ffd96d] transition-all duration-300"
+												style={{ width: `${Math.min(100, (sessionEatenWords.length / displayTotal) * 100)}%` }}
+											/>
+										</div>
+										<span className="font-pixel text-[9px] font-bold text-[#ff84ad] whitespace-nowrap">
+											{Math.max(0, displayTotal - sessionEatenWords.length)} kaldı
 										</span>
 									</div>
+									{/* Last Eaten Word */}
+									{lastEaten && (
+										<div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1.5">
+											<span className="font-pixel text-[8px] text-white/50">Son:</span>
+											<span className="font-pixel text-[9px] font-bold text-[#99f5c3]">
+												{lastEaten.word.word}
+											</span>
+											<span className="font-pixel text-[8px] text-white/60">
+												{lastEaten.word.meaningTr.split(" /")[0].split(" (")[0].slice(0, 15)}
+											</span>
+											{lastEaten.stars > 0 && (
+												<span className="font-pixel text-[8px] text-[#ffd96d]">
+													{"⭐".repeat(lastEaten.stars)}
+												</span>
+											)}
+										</div>
+									)}
 								</div>
 
 								<div
