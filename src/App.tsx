@@ -185,28 +185,28 @@ const POWER_DEFS: {
 	name: string;
 	desc: string;
 }[] = [
-	{ key: "turtle", emoji: "🐢", name: "Yavaş", desc: "Yılan yavaşlar, 12sn" },
-	{ key: "diamond", emoji: "💎", name: "Çift XP", desc: "Puanlar x2, 12sn" },
-	{ key: "shield", emoji: "🛡️", name: "Kalkan", desc: "Çarpma koruması, 20sn" },
-	{
-		key: "magnet",
-		emoji: "🧲",
-		name: "Mıknatıs",
-		desc: "Mama sana yaklaşır, 12sn",
-	},
-	{
-		key: "ghost",
-		emoji: "👻",
-		name: "Hayalet",
-		desc: "Duvar/kuyruktan geçer, 8sn",
-	},
-	{
-		key: "spotlight",
-		emoji: "🔦",
-		name: "İpucu Işığı",
-		desc: "İpucu açılır, mama parlar, 8sn",
-	},
-];
+		{ key: "turtle", emoji: "🐢", name: "Yavaş", desc: "Yılan yavaşlar, 12sn" },
+		{ key: "diamond", emoji: "💎", name: "Çift XP", desc: "Puanlar x2, 12sn" },
+		{ key: "shield", emoji: "🛡️", name: "Kalkan", desc: "Çarpma koruması, 20sn" },
+		{
+			key: "magnet",
+			emoji: "🧲",
+			name: "Mıknatıs",
+			desc: "Mama sana yaklaşır, 12sn",
+		},
+		{
+			key: "ghost",
+			emoji: "👻",
+			name: "Hayalet",
+			desc: "Duvar/kuyruktan geçer, 8sn",
+		},
+		{
+			key: "spotlight",
+			emoji: "🔦",
+			name: "İpucu Işığı",
+			desc: "İpucu açılır, mama parlar, 8sn",
+		},
+	];
 const EMPTY_CHARGES: Record<ChargeKey, number> = {
 	turtle: 0,
 	diamond: 0,
@@ -262,16 +262,16 @@ function loadSettings(): SavedSettings {
 		const parsed = JSON.parse(raw) as Partial<SavedSettings>;
 		const mode: SpeechMode =
 			parsed.speechMode === "word" ||
-			parsed.speechMode === "word-def" ||
-			parsed.speechMode === "word-def-ex" ||
-			parsed.speechMode === "word-tr"
+				parsed.speechMode === "word-def" ||
+				parsed.speechMode === "word-def-ex" ||
+				parsed.speechMode === "word-tr"
 				? parsed.speechMode
 				: "word-tr";
 		const snakeColor: SavedSettings["snakeColor"] =
 			parsed.snakeColor === "blue" ||
-			parsed.snakeColor === "purple" ||
-			parsed.snakeColor === "orange" ||
-			parsed.snakeColor === "pink"
+				parsed.snakeColor === "purple" ||
+				parsed.snakeColor === "orange" ||
+				parsed.snakeColor === "pink"
 				? parsed.snakeColor
 				: "classic";
 		const repeatFrequency: SavedSettings["repeatFrequency"] =
@@ -425,7 +425,7 @@ export default function App() {
 			setSelectedTopic("ALL");
 			try {
 				window.localStorage.setItem("snake-abc-topic", "ALL");
-			} catch {}
+			} catch { }
 		}
 	}, [language, selectedTopic]);
 
@@ -566,7 +566,7 @@ export default function App() {
 				"snake-abc-custom-words",
 				JSON.stringify(customWordBank),
 			);
-		} catch {}
+		} catch { }
 	}, [customWordBank]);
 
 	useEffect(() => {
@@ -575,7 +575,7 @@ export default function App() {
 				"snake-abc-settings",
 				JSON.stringify(settings),
 			);
-		} catch {}
+		} catch { }
 	}, [settings]);
 
 	// 🎵 Arka plan müziği: ayar açıkken melodiyi çal, kapalıyken durdur
@@ -696,7 +696,7 @@ export default function App() {
 			try {
 				window.localStorage.setItem("snake-abc-topic", topic);
 				window.localStorage.setItem("snake-abc-level", level);
-			} catch {}
+			} catch { }
 			const pool = buildFilteredPool(topic, level, activePool);
 			const { item, updatedCursor } = getNextFoodItem(
 				0,
@@ -730,7 +730,7 @@ export default function App() {
 			setWeakTraining(false);
 			try {
 				window.localStorage.setItem("snake-abc-lang", nextLang);
-			} catch {}
+			} catch { }
 			const newPool = nextLang === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
 			const newMap = getSavedMasteryMap(nextLang);
 			masteryMapRef.current = newMap;
@@ -782,7 +782,7 @@ export default function App() {
 		setXp(next);
 		try {
 			window.localStorage.setItem("snake_abc_xp_v1", String(next));
-		} catch {}
+		} catch { }
 		const prevLevel = Math.floor(prev / 100) + 1;
 		const nextLevel = Math.floor(next / 100) + 1;
 		if (nextLevel > prevLevel) {
@@ -1079,7 +1079,7 @@ export default function App() {
 						// dy=0 → donar), bu yüzden aynı satıra yaklaşınca hedefi GERÇEK kuyruk yapıp yatayca kovalar.
 						const huntTarget =
 							Math.abs(tail.x - currentMouse.pos.x) >=
-							Math.abs(tail.y - currentMouse.pos.y)
+								Math.abs(tail.y - currentMouse.pos.y)
 								? tail
 								: { x: currentMouse.pos.x, y: tail.y };
 						const nextMousePos = mouseStep(
@@ -1380,7 +1380,7 @@ export default function App() {
 				// Mobil dokunsal geri bildirim: yeme anında minik titreşim
 				try {
 					navigator.vibrate?.(15);
-				} catch {}
+				} catch { }
 				speakWordDetails(
 					currentWord.word,
 					currentWord.meaningTr,
@@ -1689,6 +1689,31 @@ export default function App() {
 				<div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
 					{/* Left/Center - Story Phone Frame */}
 					<div className="w-full max-w-[330px] flex-none">
+						{/* Mobile Speed Controls - Above game board */}
+						<div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1.5 sm:hidden">
+							<span className="text-[10px] text-white/50">Hız:</span>
+							<button
+								type="button"
+								onClick={() => setSpeed("slow")}
+								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							>
+								Yavaş
+							</button>
+							<button
+								type="button"
+								onClick={() => setSpeed("normal")}
+								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							>
+								Orta
+							</button>
+							<button
+								type="button"
+								onClick={() => setSpeed("fast")}
+								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							>
+								Hızlı
+							</button>
+						</div>
 						<div ref={frameRef} className="story-frame">
 							<div className="arcade-bezel story-bezel relative overflow-hidden">
 								{showComboBanner && (
@@ -1725,6 +1750,27 @@ export default function App() {
 										)}
 										<span className="font-pixel text-[8px] text-white/50">
 											{statusLabel}
+										</span>
+									</div>
+								</div>
+								{/* Word Progress Indicator */}
+								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#241743] px-3 py-1.5">
+									<div className="flex items-center gap-2">
+										<span className="font-pixel text-[8px] text-white/70">
+											📚 {selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic}
+										</span>
+										{selectedLevel !== "ALL" && (
+											<span className="font-pixel text-[8px] text-[#99f5c3]">
+												{selectedLevel}
+											</span>
+										)}
+									</div>
+									<div className="flex items-center gap-1.5">
+										<span className="font-pixel text-[8px] text-white/60">
+											{sessionEatenWords.length}/{displayTotal}
+										</span>
+										<span className="font-pixel text-[8px] text-[#ffd96d]">
+											({Math.max(0, displayTotal - sessionEatenWords.length)} kaldı)
 										</span>
 									</div>
 								</div>
@@ -2136,11 +2182,10 @@ export default function App() {
 											onClick={() => activatePower(power.key)}
 											disabled={powerCount <= 0 && !powerActive}
 											title={`${power.name}: ${power.desc}`}
-											className={`relative flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center transition-all ${
-												powerCount > 0 || powerActive
-													? "cursor-pointer border-[#99f5c3]/40 bg-[#99f5c3]/10 hover:bg-[#99f5c3]/20"
-													: "cursor-not-allowed border-white/10 bg-white/[0.03] opacity-50"
-											}`}
+											className={`relative flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center transition-all ${powerCount > 0 || powerActive
+												? "cursor-pointer border-[#99f5c3]/40 bg-[#99f5c3]/10 hover:bg-[#99f5c3]/20"
+												: "cursor-not-allowed border-white/10 bg-white/[0.03] opacity-50"
+												}`}
 										>
 											<span className="text-sm leading-none">
 												{power.emoji}
