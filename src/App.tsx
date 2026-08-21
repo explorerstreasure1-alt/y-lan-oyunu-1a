@@ -1399,12 +1399,22 @@ export default function App() {
 				activeFoodRef.current = finalItem;
 				setActiveFood(finalItem);
 
-				const nextFoodCell = findOpenCell(
+const nextFoodCell = findOpenCell(
 					nextSnake,
 					eatenTotalRef.current + nextScore * 13,
 				);
-				foodPointRef.current = nextFoodCell;
-				setFoodPoint(nextFoodCell);
+				// Mıknatıs etkisi: yediğimiz yemeyi yılan başına doğru 1 hücre kaydır
+				let magnetFoodCell = nextFoodCell;
+				if (isMagnetActive) {
+					const fd = Math.abs(nextFoodCell.x - head.x) + Math.abs(nextFoodCell.y - head.y);
+					if (fd > 1) {
+						const nx = nextFoodCell.x + (head.x > nextFoodCell.x ? 1 : head.x < nextFoodCell.x ? -1 : 0);
+						const ny = nextFoodCell.y + (head.y > nextFoodCell.y ? 1 : head.y < nextFoodCell.y ? -1 : 0);
+						magnetFoodCell = { x: nx, y: ny };
+					}
+				}
+				foodPointRef.current = magnetFoodCell;
+				setFoodPoint(magnetFoodCell);
 			}
 		};
 
