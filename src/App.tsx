@@ -993,11 +993,11 @@ export default function App() {
 		// Zorluk eğrisi: her 100 puanda hız kademeli artar (kademe başına -8ms, alt sınır 80ms)
 		const difficultyCut = Math.min(Math.floor(scoreRef.current / 100) * 8, 100);
 		let tickInterval =
-			(speed === "slow" ? 280 : speed === "normal" ? 200 : 135) - difficultyCut;
+			(speed === "slow" ? 240 : speed === "normal" ? 160 : 95) - difficultyCut;
 		tickInterval = Math.max(80, tickInterval);
-		if (isSlowBerryActive) tickInterval += 90;
+		if (isSlowBerryActive) tickInterval += 50;
 		if (isBoosting)
-			tickInterval = Math.max(55, Math.round(tickInterval * 0.45));
+			tickInterval = Math.max(30, Math.round(tickInterval * 0.35));
 
 		// Yılan kayma animasyonu bu süreyle senkron kalsın
 		boardRef.current?.style.setProperty("--tick-ms", `${tickInterval}ms`);
