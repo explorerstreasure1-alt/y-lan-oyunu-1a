@@ -1474,11 +1474,17 @@ export default function App() {
 		(w) => masteryMap[w.id]?.isLearned,
 	).length;
 	const allPoolLearned = poolTotal > 0 && poolLearned === poolTotal;
-	const displayTotal = isPoolFiltered ? poolTotal : activePool.length;
-	const displayLearned = isPoolFiltered ? poolLearned : learnedCount;
+	// Topic/seviye filtresinin aktif olup olmadığını pool boyutuna göre değil,
+	// açıkça "ALL" dışı seçili olup olmadığına bakarak belirle.
+	// buildFilteredPool "Eşleşme yoksa" full pool'a geri dönebilir, bu yüzden
+	// size karşılaştırması yanlış sonuç verir.
+	const topicLevelFilterActive =
+		selectedTopic !== "ALL" || selectedLevel !== "ALL";
+	const displayTotal = topicLevelFilterActive ? poolTotal : activePool.length;
+	const displayLearned = topicLevelFilterActive ? poolLearned : learnedCount;
 	const displayPercent = Math.min(
 		100,
-		Math.round((displayLearned / displayTotal) * 100),
+		Math.round((displayLearned / Math.max(1, displayTotal)) * 100),
 	);
 
 	// Oturum takibi: bu havuzda en az bir kez YENEN kelime sayısı (kalıcı, dil bazlı kayıt)
