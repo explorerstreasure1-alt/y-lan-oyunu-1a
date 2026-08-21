@@ -1271,7 +1271,9 @@ export default function App() {
 				// ❤️ Kalp ve ✨ Boost pasiftir: anında uygulanır; diğerleri şarj olarak birikir (panelden kullanılır)
 				if (type === "heart") setExtraLives((l) => l + 1);
 				else if (type === "boost") setBoostRemaining((b) => b + 1);
-				else setCharges((c) => ({ ...c, [type]: (c[type] ?? 0) + 1 }));
+				else if (type === "turtle" || type === "diamond" || type === "shield" || type === "magnet" || type === "ghost" || type === "spotlight") {
+					setCharges((c) => ({ ...c, [type]: (c[type] ?? 0) + 1 }));
+				}
 				if (sfxEnabled) playComboSfx();
 				setPowerUpOnGrid(null);
 			}
