@@ -1636,27 +1636,27 @@ export default function App() {
 				</div>
 
 				{/* Top Controls - simplified for story */}
-				<div className="order-4 mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1.5">
-					<div className="flex items-center gap-1 text-[11px]">
+				<div className="order-4 mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1">
+					<div className="flex items-center gap-1 text-[10px]">
 						<span className="text-white/50">Hız:</span>
 						<button
 							type="button"
 							onClick={() => setSpeed("slow")}
-							className={`rounded px-1.5 py-0.5 font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 						>
 							Yavaş
 						</button>
 						<button
 							type="button"
 							onClick={() => setSpeed("normal")}
-							className={`rounded px-1.5 py-0.5 font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 						>
 							Orta
 						</button>
 						<button
 							type="button"
 							onClick={() => setSpeed("fast")}
-							className={`rounded px-1.5 py-0.5 font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 						>
 							Hızlı
 						</button>
@@ -1682,28 +1682,28 @@ export default function App() {
 				{/* MAIN - Story layout: mobile first, then desktop side-by-side */}
 				<div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
 					{/* Left/Center - Story Phone Frame */}
-					<div className="w-full max-w-[330px] flex-none">
+					<div className="w-full max-w-[420px] flex-none">
 						{/* Mobile Speed Controls - Above game board */}
-						<div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1.5 sm:hidden">
-							<span className="text-[10px] text-white/50">Hız:</span>
+						<div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1 sm:hidden">
+							<span className="text-[9px] text-white/50">Hız:</span>
 							<button
 								type="button"
 								onClick={() => setSpeed("slow")}
-								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 							>
 								Yavaş
 							</button>
 							<button
 								type="button"
 								onClick={() => setSpeed("normal")}
-								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 							>
 								Orta
 							</button>
 							<button
 								type="button"
 								onClick={() => setSpeed("fast")}
-								className={`rounded px-2 py-0.5 text-[10px] font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
 							>
 								Hızlı
 							</button>
@@ -2125,7 +2125,7 @@ export default function App() {
 					</div>
 
 					{/* Right - Word Detail & Progress - responsive */}
-					<div className="w-full max-w-[400px] flex-1 lg:max-w-[380px]">
+					<div className="w-full max-w-[520px] flex-1 lg:max-w-[480px]">
 						<div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#241743] p-2.5 text-[11px]">
 							<span className="font-pixel text-[10px] text-[#99f5c3]">
 								SEVİYE FİLTRE:
