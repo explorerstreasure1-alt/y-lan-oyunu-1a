@@ -1297,10 +1297,7 @@ export default function App() {
 				}
 
 				setSessionEatenWords((prev) =>
-					[currentWord, ...prev.filter((w) => w.id !== currentWord.id)].slice(
-						0,
-						20,
-					),
+					[currentWord, ...prev.filter((w) => w.id !== currentWord.id)],
 				);
 
 				const nextCombo = comboStreakRef.current + 1;
