@@ -1107,8 +1107,8 @@ export default function App() {
 						});
 					}
 				} else {
-					// flee: önce "çiğneme" molası (hareket yok), sonra YAVAŞ kaçış —
-					// her 2. tick'te bir hücre (yılan 1/tick → açık alanda yakalanır);
+					// flee: önce "çiğneme" molası (hareket yok), sonra HIZLI kaçış —
+					// her tick'te bir hücre (yılanla aynı hız → daha zor yakalanır);
 					// 1 hücre kala deliğe girer, kaybol
 					if (currentMouse.stunTicks > 0) {
 						const stillMouse = {
@@ -1125,14 +1125,6 @@ export default function App() {
 							mouseRef.current = null;
 							setMouse(null);
 							mouseCooldownRef.current = 18 + Math.floor(Math.random() * 14);
-						} else if (currentMouse.flightTicks % 2 === 1) {
-							// yavaş adım — bu tick bekler, yılan yaklaşabilir
-							const waitingMouse = {
-								...currentMouse,
-								flightTicks: currentMouse.flightTicks + 1,
-							};
-							mouseRef.current = waitingMouse;
-							setMouse(waitingMouse);
 						} else {
 							const nextMousePos = mouseStep(
 								currentMouse.pos,
