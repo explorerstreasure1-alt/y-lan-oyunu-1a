@@ -1014,12 +1014,16 @@ export default function App() {
 	const changeDirection = useCallback(
 		(nextDirection: Direction) => {
 			if (statusRef.current === "over") return;
-			if (!isOpposite(directionRef.current, nextDirection)) {
-				if (sfxEnabled && directionRef.current !== nextDirection) playTurnSfx();
-				queuedDirectionRef.current = nextDirection;
-				if (statusRef.current === "ready" || statusRef.current === "paused")
-					startGame();
+			// queued'e göre kontrol — hızlı ardışık swipe'lar yutulmasın, akıcı dönüş
+			const baseDir = queuedDirectionRef.current;
+			if (isOpposite(baseDir, nextDirection)) return;
+			if (baseDir !== nextDirection) {
+				if (sfxEnabled) playTurnSfx();
+				try { navigator.vibrate?.(8); } catch {}
 			}
+			queuedDirectionRef.current = nextDirection;
+			if (statusRef.current === "ready" || statusRef.current === "paused")
+				startGame();
 		},
 		[sfxEnabled, startGame],
 	);
@@ -1107,9 +1111,25 @@ export default function App() {
 		};
 	}, []);
 
-	// Mobil: oyun alanında kaydırma (swipe) ile yön değiştir
+	// Mobil: oyun alanında swipe — hassasiyet artırıldı (14px), move sırasında erken tepki, akıcı
 	const handleBoardTouchStart = (event: React.TouchEvent) => {
 		const touch = event.touches[0];
+		touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+	};
+
+	const handleBoardTouchMove = (event: React.TouchEvent) => {
+		const start = touchStartRef.current;
+		if (!start) return;
+		const touch = event.touches[0];
+		const dx = touch.clientX - start.x;
+		const dy = touch.clientY - start.y;
+		if (Math.max(Math.abs(dx), Math.abs(dy)) < 14) return;
+		// erken yön kilidi — parmak kayar kaymaz dön
+		if (Math.abs(dx) > Math.abs(dy)) {
+			changeDirection(dx > 0 ? "right" : "left");
+		} else {
+			changeDirection(dy > 0 ? "down" : "up");
+		}
 		touchStartRef.current = { x: touch.clientX, y: touch.clientY };
 	};
 
@@ -1120,7 +1140,7 @@ export default function App() {
 		const touch = event.changedTouches[0];
 		const dx = touch.clientX - start.x;
 		const dy = touch.clientY - start.y;
-		if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return; // dokunma, kaydırma değil
+		if (Math.max(Math.abs(dx), Math.abs(dy)) < 14) return;
 		if (Math.abs(dx) > Math.abs(dy)) {
 			changeDirection(dx > 0 ? "right" : "left");
 		} else {
@@ -1935,6 +1955,7 @@ const nextFoodCell = findOpenCell(
 								<div
 									ref={boardRef}
 									onTouchStart={handleBoardTouchStart}
+									onTouchMove={handleBoardTouchMove}
 									onTouchEnd={handleBoardTouchEnd}
 									className={`game-board story-board ${isSpotlightActive ? "spotlight-on" : ""}`}
 									style={

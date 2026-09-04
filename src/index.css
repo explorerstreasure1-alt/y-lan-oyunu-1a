@@ -213,7 +213,7 @@ button:focus-visible {
 .snake-slot {
   position:absolute; left:0; top:0;
   width: calc(100% / var(--columns)); height: calc(100% / var(--rows));
-  will-change: transform; transition: transform var(--tick-ms, 160ms) linear;
+  will-change: transform; transition: transform var(--tick-ms, 160ms) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .snake-segment, .snake-head {
   position:absolute; z-index:2; background: var(--snake-body);
@@ -353,6 +353,6 @@ button:focus-visible {
   .story-bezel{ max-width: 560px; }
 }
 @media (max-width:640px){
-  .arcade-pad{ width:168px; height:168px; }
-  .arcade-pad ~ button{ width:168px; }
+  .arcade-pad{ width:208px; height:208px; }
+  .arcade-pad ~ button{ width:208px; }
 }
