@@ -24,11 +24,17 @@ const LEVEL_META: Record<WordLevel, { label: string; dot: string; ring: string }
 
 export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, completedSet, onSelectSeries, onCompletedChange, onClearSeries }: Props) {
   const [levelFilter, setLevelFilter] = useState<WordLevel | "ALL">("ALL");
+  const [pendingId, setPendingId] = useState<string | null>(selectedSeriesId);
   const allSeries = useMemo(() => getSeriesForLanguage(language), [language]);
   const filtered = useMemo(() => {
     if (levelFilter === "ALL") return allSeries;
     return allSeries.filter((s) => s.level === levelFilter);
   }, [allSeries, levelFilter]);
+
+  // keep pending in sync when modal opens or language/selection changes
+  useEffect(() => {
+    if (isOpen) setPendingId(selectedSeriesId);
+  }, [isOpen, selectedSeriesId, language]);
 
   const grouped = useMemo(() => {
     const map = new Map<WordLevel, Series[]>();
@@ -80,6 +86,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
 
   const totalDone = allSeries.filter((s) => completedSet.has(s.id)).length;
   const progress = allSeries.length ? Math.round((totalDone / allSeries.length) * 100) : 0;
+  const pendingSeries = pendingId ? allSeries.find((s) => s.id === pendingId) ?? null : null;
 
   return (
     <div
@@ -196,13 +203,14 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                   <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {series.map((s) => {
                       const isCompleted = completedSet.has(s.id);
+                      const isPending = pendingId === s.id;
                       const isActive = selectedSeriesId === s.id;
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          aria-pressed={isActive}
-                          aria-label={`${s.label} ${s.rangeLabel} ${isCompleted ? "tamamlandı" : ""} ${isActive ? "aktif" : ""}`}
+                          aria-pressed={isPending}
+                          aria-label={`${s.label} ${s.rangeLabel} ${isCompleted ? "tamamlandı" : ""} ${isPending ? "seçili" : ""}`}
                           onMouseDown={() => startPress(s.id)}
                           onMouseUp={cancelPress}
                           onMouseLeave={cancelPress}
@@ -211,24 +219,27 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                           onTouchCancel={cancelPress}
                           onClick={() => {
                             if (longPressed.current) { longPressed.current = false; return; }
-                            onSelectSeries(s);
+                            setPendingId(s.id);
                           }}
                           onContextMenu={(e) => e.preventDefault()}
                           className={`group relative flex flex-col items-start gap-2 rounded-[18px] border p-4 text-left backdrop-blur focus-visible:ring-2 focus-visible:ring-[var(--accent-1-ring)] focus-visible:ring-offset-0 transition-[transform,box-shadow,border-color,background-color] duration-200 select-none
-                            ${isActive
-                              ? "border-[var(--accent-1)] bg-[rgba(0,255,163,0.11)] shadow-[0_12px_28px_rgba(0,255,163,0.18),0_0_0_1px_rgba(0,255,163,0.22)] scale-[1.01]"
-                              : isCompleted
-                                ? "border-white/10 bg-white/[0.045] hover:border-white/15 hover:bg-white/[0.07] opacity-[0.96]"
-                                : "border-white/[0.08] bg-[rgba(255,255,255,0.045)] hover:border-white/15 hover:bg-white/[0.07] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] hover:-translate-y-[1px]"
+                            ${isPending
+                              ? "border-[var(--accent-1)] bg-[rgba(0,255,163,0.13)] shadow-[0_12px_28px_rgba(0,255,163,0.20),0_0_0_1px_rgba(0,255,163,0.28)] scale-[1.02] ring-1 ring-[var(--accent-1-ring)]"
+                              : isActive && !isPending
+                                ? "border-white/12 bg-white/[0.055] hover:border-white/20"
+                                : isCompleted
+                                  ? "border-white/10 bg-white/[0.045] hover:border-white/15 hover:bg-white/[0.07] opacity-[0.96]"
+                                  : "border-white/[0.08] bg-[rgba(255,255,255,0.045)] hover:border-white/15 hover:bg-white/[0.07] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] hover:-translate-y-[1px]"
                             }`}
                         >
-                          <span className={`absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full border text-[12px] font-black shadow-sm transition ${isCompleted ? "bg-[var(--accent-1)] border-[var(--accent-1)] text-[#071a12]" : "bg-[#1a1740] border-white/12 text-white/35 group-hover:text-white/55"}`} aria-hidden="true">
-                            {isCompleted ? "✔" : "○"}
+                          <span className={`absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full border text-[12px] font-black shadow-sm transition ${isCompleted ? "bg-[var(--accent-1)] border-[var(--accent-1)] text-[#071a12]" : isPending ? "bg-white border-white text-[#0a0a12]" : "bg-[#1a1740] border-white/12 text-white/35 group-hover:text-white/55"}`} aria-hidden="true">
+                            {isCompleted ? "✔" : isPending ? "●" : "○"}
                           </span>
 
                           <span className="inline-flex items-center gap-2">
                             <span className="font-[var(--font-mono)] text-[12px] font-black tracking-[-0.01em] text-white">{s.label}</span>
-                            {isActive && <span className="rounded-full bg-[var(--accent-1)] px-2 py-0.5 text-[10px] font-black leading-none text-[#071a12]">AKTİF</span>}
+                            {isPending && <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black leading-none text-[#0a0a12]">SEÇİLİ</span>}
+                            {isActive && !isPending && <span className="rounded-full bg-white/15 border border-white/20 px-2 py-0.5 text-[10px] font-bold leading-none text-white/70">AKTİF</span>}
                           </span>
 
                           <span className="text-[12px] font-semibold leading-none text-white/55">Kelime {s.rangeLabel} <span className="text-white/30">· {s.words.length} kelime</span></span>
@@ -237,11 +248,11 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                             {s.words.slice(0, 3).map((w) => w.word).join("  •  ")} …
                           </span>
 
-                          <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition ${isActive ? "bg-white text-[#0a0a12]" : isCompleted ? "bg-white/10 text-white/65 border border-white/10" : "bg-[var(--accent-2)] text-[#1a1200] shadow-[0_4px_12px_rgba(255,183,0,0.25)] group-hover:shadow-[0_6px_16px_rgba(255,183,0,0.3)]"}`}>
-                            {isActive ? "▶ Oynatılıyor" : isCompleted ? "↺ Tekrar oyna" : "▶ Başla"}
+                          <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition ${isPending ? "bg-[var(--accent-1)] text-[#071a12] shadow-[0_6px_16px_rgba(0,255,163,0.3)]" : isActive ? "bg-white/10 text-white/70 border border-white/15" : isCompleted ? "bg-white/10 text-white/65 border border-white/10" : "bg-white/[0.06] text-white/65 border border-white/10 group-hover:bg-white group-hover:text-[#0a0a12]"}`}>
+                            {isPending ? "◎ Seçili" : "○ Seç"}
                           </span>
 
-                          {isCompleted && !isActive && <span className="text-[10px] font-semibold text-white/35">Basılı tut → tiki kaldır</span>}
+                          {isCompleted && <span className="text-[10px] font-semibold text-white/35">Basılı tut → tiki kaldır</span>}
                         </button>
                       );
                     })}
@@ -252,13 +263,23 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-white/[0.07] bg-[rgba(12,10,28,0.72)] px-5 sm:px-7 py-4 backdrop-blur">
-          <p className="hidden sm:block text-[11.5px] leading-4 text-white/45 max-w-[520px]">
-            Seri oyunu sadece o 50 kelimeyle sınırlar — <span className="text-white/80 font-semibold">tekrar ve SRS yine aktif</span>. Oyun sonunda otomatik ✔, uzun basış ile manuel.
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-white/[0.07] bg-[rgba(12,10,28,0.78)] px-5 sm:px-7 py-4 backdrop-blur">
+          <p className="hidden sm:block text-[11.5px] leading-4 text-white/45 max-w-[460px]">
+            Bir seriyi <b className="text-white">seç</b>, sonra <b className="text-[var(--accent-1)]">Başla</b> ile oyna — oyun sonunda otomatik ✔ olur.
           </p>
-          <button type="button" onClick={onClose} className="ml-auto inline-flex shrink-0 items-center justify-center rounded-full bg-white px-6 py-2.5 text-[13px] font-black tracking-[-0.01em] text-[#0a0a12] shadow-[0_8px_20px_rgba(0,0,0,0.28)] hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/40">
-            Kapat
-          </button>
+          <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
+            <button type="button" onClick={onClose} className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-full border border-white/12 bg-white/[0.06] px-5 py-2.5 text-[13px] font-bold text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/20">
+              Kapat
+            </button>
+            <button
+              type="button"
+              disabled={!pendingSeries}
+              onClick={() => { if (pendingSeries) onSelectSeries(pendingSeries); }}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-full px-7 py-2.5 text-[13px] font-black tracking-[-0.01em] shadow-[0_8px_20px_rgba(0,0,0,0.28)] transition focus-visible:ring-2 focus-visible:ring-[var(--accent-1-ring)] ${pendingSeries ? "bg-[var(--accent-1)] text-[#071a12] hover:bg-[var(--accent-1-strong)] hover:shadow-[0_10px_24px_rgba(0,255,163,0.32)]" : "bg-white/10 text-white/35 cursor-not-allowed border border-white/5"}`}
+            >
+              ▶ Başla {pendingSeries ? `— ${pendingSeries.label}` : ""}
+            </button>
+          </div>
         </div>
       </div>
     </div>

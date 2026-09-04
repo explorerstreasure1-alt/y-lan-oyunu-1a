@@ -1660,18 +1660,18 @@ const nextFoodCell = findOpenCell(
 			<div className="arcade-stars" aria-hidden="true" />
 
 			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
-				{/* Header — premium editorial */}
-				<header className="order-1 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-white/[0.07] bg-[rgba(255,255,255,0.04)] px-3 py-2.5 backdrop-blur-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.06)]">
-					<div className="flex items-center gap-2.5">
-						<div className="pixel-mark" aria-hidden="true">
+				{/* Header — ultra kompakt, oyun alanına yer aç */}
+				<header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1.5 rounded-[14px] border border-white/[0.06] bg-[rgba(255,255,255,0.035)] px-2.5 py-1.5 backdrop-blur-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.05)]">
+					<div className="flex items-center gap-2">
+						<div className="pixel-mark header-mark" aria-hidden="true">
 							<span />
 						</div>
-						<div className="leading-tight">
-							<p className="font-[var(--font-display)] text-[13px] font-black tracking-[-0.02em] leading-none text-white">
-								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[10px] font-bold tracking-[0.14em] text-white/45 align-super">3000</span>
+						<div className="leading-none">
+							<p className="font-[var(--font-display)] text-[11px] font-black tracking-[-0.02em] leading-none text-white">
+								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8.5px] font-bold tracking-[0.12em] text-white/40 align-super">3000</span>
 							</p>
-							<p className="font-[var(--font-mono)] text-[9px] font-bold uppercase tracking-[0.14em] text-white/45">
-								Story • A1 — C2 • 3000 words
+							<p className="font-[var(--font-mono)] text-[8px] font-bold uppercase tracking-[0.13em] text-white/35 leading-none mt-[2px]">
+								A1 — C2
 							</p>
 						</div>
 					</div>
@@ -1773,13 +1773,13 @@ const nextFoodCell = findOpenCell(
 					</div>
 				)}
 
-				{/* Daily Goal */}
-				<div className="order-5 mb-2">
+				{/* Daily Goal — kompakt */}
+				<div className="order-5 mb-1.5">
 					<DailyGoalBar learnedCount={learnedCount} />
 				</div>
 
-				{/* Top Controls - simplified for story */}
-				<div className="order-4 mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1">
+				{/* Top Controls — ince şerit */}
+				<div className="order-4 mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border border-white/[0.06] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur">
 					<div className="flex items-center gap-1 text-[10px]">
 						<span className="text-white/50">Hız:</span>
 						<button
