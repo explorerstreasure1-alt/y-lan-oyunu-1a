@@ -190,7 +190,7 @@ button:focus-visible {
 .story-frame { display:flex; flex-direction:column; align-items:center; width:100%; }
 .story-bezel {
   position: relative;
-  width:100%; max-width: 520px;
+  width:100%; max-width: 480px;
   border-radius: 26px;
   background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent) , var(--bg-secondary);
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.07), 0 16px 48px rgba(0,0,0,0.50), 0 0 32px rgba(120,90,255,0.10);
@@ -202,7 +202,7 @@ button:focus-visible {
   -webkit-mask-composite: xor; mask-composite: exclude;
   pointer-events:none; opacity:0.9;
 }
-.story-board { aspect-ratio: 9/22 !important; }
+.story-board { aspect-ratio: 9/21 !important; }
 
 /* Kompakt header için küçük logo — daha zarif */
 .header-mark { width: 26px !important; height: 26px !important; border-radius: 8px !important; }
@@ -372,12 +372,12 @@ button:focus-visible {
 }
 @media (min-width:1024px){
   .story-frame{ align-items:stretch; }
-  .story-bezel{ margin-left:auto; margin-right:auto; max-width: 560px; }
+  .story-bezel{ margin-left:auto; margin-right:auto; max-width: 520px; }
 }
 @media (min-width:1280px){
-  .story-bezel{ max-width: 640px; }
+  .story-bezel{ max-width: 580px; }
 }
 @media (max-width:640px){
-  .arcade-pad{ width:144px; height:144px; }
-  .arcade-pad ~ button{ width:144px; }
+  .arcade-pad{ width:176px; height:176px; }
+  .arcade-pad ~ button{ width:176px; }
 }
