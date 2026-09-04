@@ -51,12 +51,22 @@ import {
 	type WordMastery,
 } from "./srs";
 import {
+	ITALIAN_PATH,
 	LEARNING_PATH,
 	type VocabularyWord,
 	type WordLevel,
 } from "./vocabulary";
 import { RUSSIAN_PATH } from "./vocabularyRu";
 import { WordLibraryModal } from "./WordLibraryModal";
+import { SeriesModal } from "./components/SeriesModal";
+import {
+  getCompletedSeries,
+  getSelectedSeriesId,
+  getSeriesForLanguage,
+  markSeriesCompleted,
+  saveSelectedSeriesId,
+  type Series,
+} from "./series";
 
 // PWA yükleme istemi — standart DOM lib'inde tanımlı olmayan olay tipi
 interface BeforeInstallPromptEvent extends Event {
@@ -412,6 +422,18 @@ export default function App() {
 		[selectedTopic, selectedLevel, activePool],
 	);
 
+	// --- 50'li Seri sistemi ---
+	const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(() => getSelectedSeriesId());
+	const [completedSeries, setCompletedSeries] = useState<Set<string>>(() => getCompletedSeries());
+	const [isSeriesOpen, setIsSeriesOpen] = useState(false);
+	const activeSeries: Series | null = useMemo(() => {
+		if (!selectedSeriesId) return null;
+		const all = getSeriesForLanguage(language as LearningLanguage);
+		return all.find((s) => s.id === selectedSeriesId) ?? null;
+	}, [selectedSeriesId, language]);
+	// Seri seçiliyse oyun sadece o 50 kelimeyle oynanır, yoksa konu/seviye filtresi geçerli
+	const effectivePool = activeSeries ? activeSeries.words : filteredPool;
+
 	// Dil değişince: ses dilini ayarla + o güne ait kayıt haritasını yükle
 	useEffect(() => {
 		setSpeechLanguage(language);
@@ -489,9 +511,18 @@ export default function App() {
 	const [masteryMap, setMasteryMap] = useState<Record<number, WordMastery>>(
 		() => getSavedMasteryMap(language),
 	);
-	const [activeFood, setActiveFood] = useState<ActiveFoodItem>(() =>
-		maybeBonusMama({ word: activePool[0], isReview: false }),
-	);
+	const [activeFood, setActiveFood] = useState<ActiveFoodItem>(() => {
+		// Kayıtlı seri varsa onun ilk kelimesiyle başla
+		try {
+			const savedId = getSelectedSeriesId();
+			if (savedId) {
+				const all = getSeriesForLanguage(language);
+				const found = all.find((s) => s.id === savedId);
+				if (found && found.words[0]) return maybeBonusMama({ word: found.words[0], isReview: false });
+			}
+		} catch {}
+		return maybeBonusMama({ word: activePool[0], isReview: false });
+	});
 	const [lastEaten, setLastEaten] = useState<{
 		word: VocabularyWord;
 		isReview: boolean;
@@ -620,6 +651,16 @@ export default function App() {
 		settings.highContrast,
 	]);
 
+	// Scroll-lock when any modal is open — prevents background scroll, keeps premium feel
+	useEffect(() => {
+		const anyOpen = isSeriesOpen || isLibraryOpen || isSkinsOpen || isTopicsOpen || isQuizOpen || isStatsOpen || isAchievementsOpen || isCustomWordsOpen || isWheelOpen || isMicOpen || isSettingsOpen || isWordOfDayOpen;
+		if (anyOpen) {
+			const prev = document.body.style.overflow;
+			document.body.style.overflow = "hidden";
+			return () => { document.body.style.overflow = prev; };
+		}
+	}, [isSeriesOpen, isLibraryOpen, isSkinsOpen, isTopicsOpen, isQuizOpen, isStatsOpen, isAchievementsOpen, isCustomWordsOpen, isWheelOpen, isMicOpen, isSettingsOpen, isWordOfDayOpen]);
+
 	const setGameStatus = useCallback((nextStatus: GameStatus) => {
 		statusRef.current = nextStatus;
 		setStatus(nextStatus);
@@ -649,7 +690,7 @@ export default function App() {
 			0,
 			[],
 			customWordBank,
-			filteredPool,
+			effectivePool,
 			[],
 			settingsRef.current.repeatFrequency,
 		);
@@ -685,11 +726,16 @@ export default function App() {
 		setMouse(null);
 		mouseCooldownRef.current = 20;
 		setGameStatus("ready");
-	}, [customWordBank, filteredPool, setGameStatus]);
+	}, [customWordBank, effectivePool, setGameStatus]);
 
 	// Konu/seviye değişince: filtreyi uygula, imleci sıfırla, yeni kelime seç (oyunu bozmadan)
 	const selectPool = useCallback(
 		(topic: string | "ALL", level: WordLevel | "ALL") => {
+			// Seri modu topic/level ile çakışır — seri temizle
+			if (selectedSeriesId) {
+				setSelectedSeriesId(null);
+				saveSelectedSeriesId(null);
+			}
 			// Zayıf antrenman modu havuzla sınırlıdır - filtre değişince kapanır
 			weakTrainingRef.current = false;
 			setWeakTraining(false);
@@ -721,7 +767,7 @@ export default function App() {
 			foodPointRef.current = nextFoodCell;
 			setFoodPoint(nextFoodCell);
 		},
-		[customWordBank, activePool],
+		[customWordBank, activePool, selectedSeriesId],
 	);
 
 	// Dil değiştirme: kaydı, havuzu, mama kelimesini ve oyunu yeni dile göre sıfırla
@@ -730,6 +776,9 @@ export default function App() {
 			if (nextLang === language) return;
 			weakTrainingRef.current = false;
 			setWeakTraining(false);
+			// Dil değişince seri sıfırlanır (seri id dil içerir)
+			setSelectedSeriesId(null);
+			saveSelectedSeriesId(null);
 			try {
 				window.localStorage.setItem("snake-abc-lang", nextLang);
 			} catch { }
@@ -805,7 +854,7 @@ export default function App() {
 		const nextEnabled = !weakTrainingRef.current;
 		weakTrainingRef.current = nextEnabled;
 		setWeakTraining(nextEnabled);
-		const pool = buildFilteredPool(selectedTopic, selectedLevel, activePool);
+		const pool = activeSeries ? activeSeries.words : buildFilteredPool(selectedTopic, selectedLevel, activePool);
 		const weakExtra = nextEnabled ? weakWords : [];
 		const { item, updatedCursor } = getNextFoodItem(
 			0,
@@ -822,6 +871,77 @@ export default function App() {
 		activeFoodRef.current = finalItem;
 		setActiveFood(finalItem);
 	};
+
+	// Seri seç: sadece o 50 kelime havuzuyla oyna
+	const handleSelectSeries = useCallback((series: Series) => {
+		weakTrainingRef.current = false;
+		setWeakTraining(false);
+		setSelectedSeriesId(series.id);
+		saveSelectedSeriesId(series.id);
+		setIsSeriesOpen(false);
+		// Yeni seriyle yemleri sıfırla
+		eatenTotalRef.current = 0;
+		newWordCursorRef.current = 0;
+		recentUnlearnedIdsRef.current = [];
+		setRecentUnlearnedIds([]);
+		const { item, updatedCursor } = getNextFoodItem(
+			0,
+			masteryMapRef.current,
+			0,
+			[],
+			customWordBank,
+			series.words,
+			[],
+			settingsRef.current.repeatFrequency,
+		);
+		newWordCursorRef.current = updatedCursor;
+		const finalItem = maybeBonusMama(item);
+		activeFoodRef.current = finalItem;
+		setActiveFood(finalItem);
+		const nextFoodCell = findOpenCell(snakeRef.current, 3);
+		foodPointRef.current = nextFoodCell;
+		setFoodPoint(nextFoodCell);
+		setSessionEatenWords([]);
+		setLastEaten(null);
+		setComboStreak(0);
+		comboStreakRef.current = 0;
+		setGameStatus("ready");
+	}, [customWordBank, setGameStatus]);
+
+	const handleClearSeries = useCallback(() => {
+		setSelectedSeriesId(null);
+		saveSelectedSeriesId(null);
+		setIsSeriesOpen(false);
+		// Eski konu/seviye havuzuna dön
+		const pool = buildFilteredPool(selectedTopic, selectedLevel, activePool);
+		const { item, updatedCursor } = getNextFoodItem(
+			0,
+			masteryMapRef.current,
+			eatenTotalRef.current,
+			recentUnlearnedIdsRef.current,
+			customWordBank,
+			pool,
+			[],
+			settingsRef.current.repeatFrequency,
+		);
+		newWordCursorRef.current = updatedCursor;
+		const finalItem = maybeBonusMama(item);
+		activeFoodRef.current = finalItem;
+		setActiveFood(finalItem);
+		const nextFoodCell = findOpenCell(snakeRef.current, eatenTotalRef.current + 3);
+		foodPointRef.current = nextFoodCell;
+		setFoodPoint(nextFoodCell);
+	}, [activePool, selectedTopic, selectedLevel, customWordBank]);
+
+	// Oyun bitince seri otomatik ✔
+	useEffect(() => {
+		if (status === "over" && activeSeries && selectedSeriesId) {
+			if (!completedSeries.has(selectedSeriesId)) {
+				const next = markSeriesCompleted(selectedSeriesId);
+				setCompletedSeries(new Set(next));
+			}
+		}
+	}, [status, activeSeries, selectedSeriesId, completedSeries]);
 
 	// Güç paneli: şarj harca, süreli gücü başlat
 	const activatePower = (type: ChargeKey) => {
@@ -1391,7 +1511,7 @@ export default function App() {
 					eatenTotalRef.current,
 					recentUnlearnedIdsRef.current,
 					customWordBank,
-					filteredPool,
+					effectivePool,
 					weakTrainingRef.current ? weakWordsRef.current : [],
 					settingsRef.current.repeatFrequency,
 				);
@@ -1455,7 +1575,7 @@ const nextFoodCell = findOpenCell(
 		extraLives,
 		boostRemaining,
 		customWordBank,
-		filteredPool,
+		effectivePool,
 		isBoosting,
 		setGameStatus,
 		sessionEatenWords.length,
@@ -1476,10 +1596,10 @@ const nextFoodCell = findOpenCell(
 					: "HAZIR";
 	const xpLevel = Math.floor(xp / 100) + 1;
 
-	// Konu/seviye filtresi aktifse ilerleme çubuğu o havuza göre hesaplanır (konu başına kayıt)
-	const isPoolFiltered = filteredPool.length < activePool.length;
-	const poolTotal = filteredPool.length;
-	const poolLearned = filteredPool.filter(
+	// Seri aktifse ilerleme sadece o 50 kelimeye göre, yoksa konu/seviye filtresi
+	const isPoolFiltered = activeSeries ? true : filteredPool.length < activePool.length;
+	const poolTotal = activeSeries ? activeSeries.words.length : filteredPool.length;
+	const poolLearned = (activeSeries ? activeSeries.words : filteredPool).filter(
 		(w) => masteryMap[w.id]?.isLearned,
 	).length;
 	const allPoolLearned = poolTotal > 0 && poolLearned === poolTotal;
@@ -1488,16 +1608,17 @@ const nextFoodCell = findOpenCell(
 	// buildFilteredPool "Eşleşme yoksa" full pool'a geri dönebilir, bu yüzden
 	// size karşılaştırması yanlış sonuç verir.
 	const topicLevelFilterActive =
-		selectedTopic !== "ALL" || selectedLevel !== "ALL";
-	const displayTotal = topicLevelFilterActive ? poolTotal : activePool.length;
-	const displayLearned = topicLevelFilterActive ? poolLearned : learnedCount;
+		Boolean(activeSeries) || selectedTopic !== "ALL" || selectedLevel !== "ALL";
+	// Seri aktifse gösterge seriye göre, yoksa filtreye göre
+	const displayTotal = activeSeries ? activeSeries.words.length : (topicLevelFilterActive ? poolTotal : activePool.length);
+	const displayLearned = activeSeries ? poolLearned : (topicLevelFilterActive ? poolLearned : learnedCount);
 	const displayPercent = Math.min(
 		100,
 		Math.round((displayLearned / Math.max(1, displayTotal)) * 100),
 	);
 
 	// Oturum takibi: bu havuzda en az bir kez YENEN kelime sayısı (kalıcı, dil bazlı kayıt)
-	const poolSeenCount = filteredPool.filter(
+	const poolSeenCount = (activeSeries ? activeSeries.words : filteredPool).filter(
 		(w) => (masteryMap[w.id]?.timesSeen ?? 0) > 0,
 	).length;
 	const poolRemaining = Math.max(0, displayTotal - poolSeenCount);
@@ -1534,23 +1655,23 @@ const nextFoodCell = findOpenCell(
 
 	return (
 		<main
-			className={`min-h-screen overflow-x-hidden bg-[#17112e] px-3 py-3 text-[#fff7e8] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
+			className={`min-h-screen overflow-x-hidden bg-transparent px-3 py-3 text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
 		>
 			<div className="arcade-stars" aria-hidden="true" />
 
 			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
-				{/* Header - responsive compact for mobile */}
-				<header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1 border-b border-white/10 pb-1">
-					<div className="hidden items-center gap-1.5 sm:flex">
+				{/* Header — premium editorial */}
+				<header className="order-1 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-white/[0.07] bg-[rgba(255,255,255,0.04)] px-3 py-2.5 backdrop-blur-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.06)]">
+					<div className="flex items-center gap-2.5">
 						<div className="pixel-mark" aria-hidden="true">
 							<span />
 						</div>
 						<div className="leading-tight">
-							<p className="font-pixel text-[9px] tracking-[0.22em] text-[#ffd96d]">
-								SNAKE ABC 3000
+							<p className="font-[var(--font-display)] text-[13px] font-black tracking-[-0.02em] leading-none text-white">
+								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[10px] font-bold tracking-[0.14em] text-white/45 align-super">3000</span>
 							</p>
-							<p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/50">
-								Story • A1-C2
+							<p className="font-[var(--font-mono)] text-[9px] font-bold uppercase tracking-[0.14em] text-white/45">
+								Story • A1 — C2 • 3000 words
 							</p>
 						</div>
 					</div>
@@ -1572,6 +1693,13 @@ const nextFoodCell = findOpenCell(
 								🇷🇺 RU
 							</button>
 						</div>
+						<button
+							type="button"
+							onClick={() => setIsSeriesOpen(true)}
+							className={`rounded-lg border px-1.5 py-0.5 text-[9px] font-black ${activeSeries ? "border-[#99f5c3] bg-[#99f5c3] text-[#17112e]" : "border-[#ffd96d]/40 bg-[#ffd96d]/15 text-[#ffd96d] hover:bg-[#ffd96d]/25"}`}
+						>
+							📚 {activeSeries ? activeSeries.label : "Seriye Başla"} {activeSeries && completedSeries.has(activeSeries.id) ? "✔" : ""}
+						</button>
 						<button
 							type="button"
 							onClick={() => setIsWordOfDayOpen(true)}
@@ -1735,7 +1863,7 @@ const nextFoodCell = findOpenCell(
 									<div className="flex items-center gap-1.5">
 										<span className={`status-light status-${status}`} />
 										<span className="font-pixel text-[9px] tracking-wider text-[#ffe99f] truncate max-w-[120px]">
-											{currentWord.level} • {currentWord.topic}
+											{activeSeries ? `📚 ${activeSeries.label}` : `${currentWord.level} • ${currentWord.topic}`}
 										</span>
 									</div>
 									<div className="flex items-center gap-2">
@@ -1764,12 +1892,18 @@ const nextFoodCell = findOpenCell(
 								</div>
 								{/* Word Progress Indicator */}
 								<div className="flex shrink-0 flex-col border-b border-white/10 bg-[#241743] px-3 py-2">
+									{activeSeries && (
+										<div className="mb-1.5 flex items-center justify-between rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-2 py-1">
+											<span className="font-pixel text-[9px] font-black text-[#99f5c3]">📚 {activeSeries.label} • {activeSeries.rangeLabel}</span>
+											<span className="text-[9px] font-bold text-white/60">{completedSeries.has(activeSeries.id) ? "✔ Tamamlandı" : "🎯 Aktif Seri"}</span>
+										</div>
+									)}
 									<div className="flex items-center justify-between mb-1.5">
 										<div className="flex items-center gap-2">
 											<span className="font-pixel text-[10px] font-bold text-white/90">
-												📚 {selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic}
+												{activeSeries ? `📚 ${activeSeries.label}` : (selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic)}
 											</span>
-											{selectedLevel !== "ALL" && (
+											{!activeSeries && selectedLevel !== "ALL" && (
 												<span className="font-pixel text-[10px] font-bold text-[#99f5c3]">
 													{selectedLevel}
 												</span>
@@ -2092,6 +2226,13 @@ const nextFoodCell = findOpenCell(
 							/>
 
 							<div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
+								<button
+									onClick={() => setIsSeriesOpen(true)}
+									type="button"
+									className={`rounded-full px-2 py-0.5 text-[9px] font-black border ${activeSeries ? "bg-[#99f5c3] text-[#11402a] border-[#99f5c3]" : "bg-[#ffd96d]/20 text-[#ffd96d] border-[#ffd96d]/50"}`}
+								>
+									📚 {activeSeries ? `${activeSeries.label} ✔` : "Seriye Başla"}
+								</button>
 								<button
 									onClick={() => setIsTopicsOpen(true)}
 									type="button"
@@ -2608,6 +2749,16 @@ const nextFoodCell = findOpenCell(
 				learnedCount={learnedCount}
 				words={activePool}
 				dailyLog={dailyLog}
+			/>
+			<SeriesModal
+				isOpen={isSeriesOpen}
+				onClose={() => setIsSeriesOpen(false)}
+				language={language}
+				selectedSeriesId={selectedSeriesId}
+				completedSet={completedSeries}
+				onSelectSeries={handleSelectSeries}
+				onCompletedChange={setCompletedSeries}
+				onClearSeries={handleClearSeries}
 			/>
 		</main>
 	);
