@@ -288,18 +288,16 @@ button:focus-visible {
 .mouse-facing-left{transform:scaleX(1)} .mouse-facing-right{transform:scaleX(-1)}
 @keyframes mouse-run { 0%{translate:0 0} 100%{translate:0 -12%} }
 
-/* Word toast — centered, glass */
+/* Word toast — üstte, şeffaf, yılanı kapatmaz */
 .word-toast {
-  position:absolute; z-index:20; left:50%; top:44%; display:flex; flex-direction:column; align-items:center; gap:4px;
+  position:absolute; z-index:20; left:50%; top:14%; display:flex; flex-direction:column; align-items:center; gap:2px;
   transform: translate(-50%,-50%); pointer-events:none;
-  background: rgba(14,12,30,0.62); border: 1px solid rgba(255,255,255,0.10);
-  backdrop-filter: blur(10px) saturate(1.2); padding: 8px 12px; border-radius: 14px;
-  box-shadow: var(--shadow-md);
-  animation: word-toast-pop 0.38s var(--ease-out) forwards;
+  background: transparent; border: none; backdrop-filter: none; padding: 0; box-shadow: none;
+  animation: word-toast-pop 0.34s var(--ease-out) forwards;
 }
-.word-toast-word { font-family: var(--font-mono); font-size: clamp(13px, 2.4vw, 18px); font-weight: 800; color: #fff7cc; letter-spacing:-0.02em; }
-.word-toast-meaning { font-family: var(--font-body); font-size: clamp(10px, 1.4vw, 11px); font-weight: 700; color: rgba(255,255,255,0.72); }
-@keyframes word-toast-pop { 0%{opacity:0; transform:translate(-50%,-50%) scale(0.86)} 100%{opacity:1; transform:translate(-50%,-50%) scale(1)} }
+.word-toast-word { font-family: var(--font-mono); font-size: clamp(12px, 2.2vw, 16px); font-weight: 800; color: #fff7cc; letter-spacing:-0.02em; text-shadow: 0 1px 6px rgba(0,0,0,0.55), 0 2px 12px rgba(0,0,0,0.35); }
+.word-toast-meaning { font-family: var(--font-body); font-size: clamp(9px, 1.3vw, 10px); font-weight: 700; color: rgba(255,255,255,0.88); text-shadow: 0 1px 4px rgba(0,0,0,0.55); background: rgba(0,0,0,0.18); padding: 1px 6px; border-radius: 99px; backdrop-filter: blur(4px); }
+@keyframes word-toast-pop { 0%{opacity:0; transform:translate(-50%,-50%) scale(0.92) translateY(4px)} 100%{opacity:1; transform:translate(-50%,-50%) scale(1) translateY(0)} }
 
 .board-message { position:absolute; z-index:5; top:50%; left:50%; display:flex; flex-direction:column; align-items:center; gap:8px; width:min(86%,340px); color:var(--text-primary); text-align:center; transform:translate(-50%,-50%); }
 .board-message span { font-family: var(--font-display); font-size: clamp(16px, 2.2vw, 22px); font-weight:900; letter-spacing:-0.02em; text-shadow: 0 2px 16px rgba(0,0,0,0.45); }

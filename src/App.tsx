@@ -1536,6 +1536,7 @@ export default function App() {
 				setScoreFloat({ id: nextFloatId(), text: `+${scorePoints}` });
 				window.setTimeout(() => setScoreFloat(null), 850);
 				setWordToast({ id: nextFloatId(), word: currentWord, isReview });
+				window.setTimeout(() => setWordToast(null), 1100);
 				setBoardFlash(isReview || isBonus ? "gold" : "good");
 				window.setTimeout(() => setBoardFlash(null), 480);
 				setShowHint(false);
