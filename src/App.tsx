@@ -1748,37 +1748,29 @@ const nextFoodCell = findOpenCell(
 						</div>
 					</button>
 
-					<div className="flex flex-wrap items-center gap-0.5">
-						<div className="flex items-center gap-0.5 rounded-lg border border-white/15 bg-white/5 p-0.5">
-							<button type="button" onClick={() => switchLanguage("en")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "en" ? "bg-[#99f5c3] text-[#17112e]" : "text-white/60"}`}>🇬🇧 EN</button>
-							<button type="button" onClick={() => switchLanguage("ru")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "ru" ? "bg-[#ff9ebb] text-[#330012]" : "text-white/60"}`}>🇷🇺 RU</button>
-							<button type="button" onClick={() => switchLanguage("it")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "it" ? "bg-[#7affce] text-[#0a1a12]" : "text-white/60"}`}>🇮🇹 IT</button>
-							<button type="button" onClick={() => switchLanguage("es")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "es" ? "bg-[#ffd96d] text-[#1a1200]" : "text-white/60"}`}>🇪🇸 ES</button>
-							<button type="button" onClick={() => switchLanguage("pt")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "pt" ? "bg-[#6ee7ff] text-[#0a1a12]" : "text-white/60"}`}>🇵🇹 PT</button>
-							<button type="button" onClick={() => switchLanguage("fr")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "fr" ? "bg-[#a78bfa] text-[#1a0a2e]" : "text-white/60"}`}>🇫🇷 FR</button>
-							<button type="button" onClick={() => switchLanguage("de")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "de" ? "bg-[#f472b6] text-[#1a0a12]" : "text-white/60"}`}>🇩🇪 DE</button>
+					<div className="flex flex-wrap items-center gap-1">
+						<div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur">
+							{[
+								{ c: "en", f: "🇬🇧", a: "bg-white text-[#0a0a12]" },
+								{ c: "ru", f: "🇷🇺", a: "bg-white text-[#0a0a12]" },
+								{ c: "it", f: "🇮🇹", a: "bg-white text-[#0a0a12]" },
+								{ c: "es", f: "🇪🇸", a: "bg-white text-[#0a0a12]" },
+								{ c: "pt", f: "🇵🇹", a: "bg-white text-[#0a0a12]" },
+								{ c: "fr", f: "🇫🇷", a: "bg-white text-[#0a0a12]" },
+								{ c: "de", f: "🇩🇪", a: "bg-white text-[#0a0a12]" },
+							].map((l) => (
+								<button key={l.c} type="button" onClick={() => switchLanguage(l.c as LearningLanguage)} aria-label={l.c}
+									className={`h-6 w-6 grid place-items-center rounded-full text-[11px] leading-none transition ${language === l.c ? l.a + " shadow-sm" : "text-white/55 hover:text-white hover:bg-white/10"}`}>{l.f}</button>
+							))}
 						</div>
-						<button
-							type="button"
-							onClick={() => setIsSeriesOpen(true)}
-							className={`rounded-lg border px-1.5 py-0.5 text-[9px] font-black ${activeSeries ? "border-[#99f5c3] bg-[#99f5c3] text-[#17112e]" : "border-[#ffd96d]/40 bg-[#ffd96d]/15 text-[#ffd96d] hover:bg-[#ffd96d]/25"}`}
-						>
-							📚 {activeSeries ? activeSeries.label : "Seriye Başla"} {activeSeries && completedSeries.has(activeSeries.id) ? "✔" : ""}
+						<button type="button" onClick={() => setIsSeriesOpen(true)}
+							className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition ${activeSeries ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)] shadow-sm" : "bg-white/[0.05] text-white/70 border-white/10 hover:bg-white/10 hover:text-white"}`}>
+							{activeSeries ? `📚 ${activeSeries.label}` : "Seriye Başla"}
 						</button>
-						<button
-							type="button"
-							onClick={() => setIsWordOfDayOpen(true)}
-							className="rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-1 py-0.5 text-[9px] font-bold text-[#99f5c3]"
-						>
-							🌟 Günlük
-						</button>
-						<button
-							type="button"
-							onClick={() => setIsAchievementsOpen(true)}
-							className="rounded-lg border border-[#ffd96d]/30 bg-[#ffd96d]/10 px-1 py-0.5 text-[9px] font-bold text-[#ffd96d]"
-						>
-							🏆 Rozet
-						</button>
+						<div className="hidden sm:flex items-center gap-1">
+							<button type="button" onClick={() => setIsWordOfDayOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Günlük">🌟</button>
+							<button type="button" onClick={() => setIsAchievementsOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Rozet">🏆</button>
+						</div>
 						<button
 							type="button"
 							onClick={() => setIsLibraryOpen(true)}
@@ -2303,126 +2295,67 @@ const nextFoodCell = findOpenCell(
 						</div>
 					</div>
 
-					{/* Right - Word Detail & Progress - responsive */}
-					<div className="w-full max-w-[520px] flex-1 lg:max-w-[480px]">
-						<div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#241743] p-2.5 text-[11px]">
-							<span className="font-pixel text-[10px] text-[#99f5c3]">
-								SEVİYE FİLTRE:
-							</span>
+					{/* Right — minimal zarif, nefes alan */}
+					<div className="w-full max-w-[480px] flex-1 lg:max-w-[420px] space-y-3">
+						{/* Seviye — segmented pill, mor tema korunuyor */}
+						<div className="glass-panel rounded-2xl px-3 py-2.5 flex items-center justify-between">
+							<span className="text-[10px] font-bold tracking-[0.14em] text-white/35 uppercase">Seviye</span>
 							<div className="flex gap-1">
-								{(["ALL", "A1", "A2", "B1", "B2", "C1", "C2"] as const).map(
-									(lvl) => (
-										<button
-											key={lvl}
-											type="button"
-											onClick={() => selectPool(selectedTopic, lvl)}
-											className={`rounded px-1.5 py-0.5 font-pixel text-[10px] font-bold ${selectedLevel === lvl ? "bg-[#ffd96d] text-[#21123a]" : "bg-white/10 text-white/60"}`}
-										>
-											{lvl}
-										</button>
-									),
-								)}
+								{(["ALL", "A1", "A2", "B1", "B2", "C1", "C2"] as const).map((lvl) => (
+									<button key={lvl} type="button" onClick={() => selectPool(selectedTopic, lvl)}
+										className={`h-6 min-w-[28px] rounded-full px-2 text-[10px] font-black transition ${selectedLevel === lvl ? "bg-white text-[#1a1440] shadow-sm" : "bg-white/[0.06] text-white/60 border border-white/10 hover:bg-white/10 hover:text-white"}`}>{lvl}</button>
+								))}
 							</div>
 						</div>
 
-						{/* Oyun takibi: Toplam / Yenen / Kalan + tekrar frekansı + süre */}
-						<div className="mb-3 rounded-xl border border-white/10 bg-[#241743] p-2.5 text-[11px]">
-							<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-								<span className="font-pixel text-[9px] tracking-widest text-[#ffd96d]">
-									🐭 OYUN TAKİBİ
-								</span>
-								<span>
-									<strong className="text-white">{poolSeenCount}</strong>{" "}
-									<span className="text-white/50">Yenen</span>
-								</span>
-								<span className="text-white/30">/</span>
-								<span>
-									<strong className="text-white">{displayTotal}</strong>{" "}
-									<span className="text-white/50">Toplam</span>
-								</span>
-								<span className="ml-auto font-bold text-[#ff9ebb]">
-									Kalan {poolRemaining}
-								</span>
-							</div>
-							<div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-white/70">
-									🔁 x{repeatFrequency}
-								</span>
-								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-white/70">
-									⏱️ {elapsedLabel}
-								</span>
-								{isGhostActive && (
-									<span className="rounded bg-[#a78bfa]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#c4b5fd]">
-										👻 Hayalet
-									</span>
-								)}
-								{isSpotlightActive && (
-									<span className="rounded bg-[#fbbf24]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#fcd34d]">
-										🔦 İpucu Işığı
-									</span>
-								)}
-							</div>
-						</div>
-
-						{/* Güçler: kutuyu ye → şarj birikir, tıkla → kullanılır */}
-						<div className="mb-3 rounded-xl border border-[#99f5c3]/25 bg-[#1d1138] p-2.5">
+						{/* Oyun takibi — tek satır + ince bar */}
+						<div className="glass-panel rounded-2xl p-3">
 							<div className="flex items-center justify-between">
-								<p className="font-pixel text-[9px] tracking-widest text-[#99f5c3]">
-									⚡ GÜÇLER
-								</p>
-								<p className="text-[9px] text-white/40">
-									Kutu ye, şarj kazan, tıkla kullan
-								</p>
+								<span className="text-[10px] font-bold tracking-[0.12em] text-white/30 uppercase">Oyun</span>
+								<span className="font-mono text-[11px] font-bold text-white tabular-nums">{poolSeenCount}<span className="text-white/25">/{displayTotal}</span> <span className="text-white/20">·</span> <span className="text-[var(--accent-1)]">{poolRemaining} kaldı</span></span>
 							</div>
-							<div className="mt-2 grid grid-cols-4 gap-1.5">
+							<div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+								<div className="h-full rounded-full bg-gradient-to-r from-[var(--accent-1)] to-white transition-all duration-500" style={{ width: `${Math.min(100, (poolSeenCount / Math.max(1, displayTotal)) * 100)}%` }} />
+							</div>
+							<div className="mt-2 flex flex-wrap items-center gap-1.5">
+								<span className="rounded-full bg-white/[0.06] border border-white/10 px-2 py-0.5 text-[10px] font-bold text-white/60">🔁 ×{repeatFrequency}</span>
+								<span className="rounded-full bg-white/[0.06] border border-white/10 px-2 py-0.5 text-[10px] font-bold text-white/60">⏱ {elapsedLabel}</span>
+								{isGhostActive && <span className="rounded-full bg-[#a78bfa]/15 border border-[#a78bfa]/20 px-2 py-0.5 text-[10px] font-bold text-[#c4b5fd]">👻 Hayalet</span>}
+								{isSpotlightActive && <span className="rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/20 px-2 py-0.5 text-[10px] font-bold text-[#fcd34d]">🔦 Işık</span>}
+								<span className="ml-auto hidden sm:inline text-[10px] text-white/25">{displayPercent}%</span>
+							</div>
+						</div>
+
+						{/* Güçler — dokunsal, 3×2 mor cam */}
+						<div className="glass-panel topic-mor rounded-2xl p-3">
+							<div className="flex items-center justify-between mb-2">
+								<span className="text-[10px] font-bold tracking-[0.14em] text-white/40 uppercase">Güçler</span>
+								<span className="text-[10px] text-white/25">kutuyu ye → dokun kullan</span>
+							</div>
+							<div className="grid grid-cols-3 gap-2">
 								{POWER_DEFS.map((power) => {
 									const powerCount = charges[power.key] ?? 0;
 									const powerUntil = powerExpiry[power.key] ?? 0;
 									const powerActive = powerUntil > nowMs;
-									const leftSec = powerActive
-										? Math.max(1, Math.ceil((powerUntil - nowMs) / 1000))
-										: 0;
+									const leftSec = powerActive ? Math.max(1, Math.ceil((powerUntil - nowMs) / 1000)) : 0;
 									return (
-										<button
-											key={power.key}
-											type="button"
-											onClick={() => activatePower(power.key)}
-											disabled={powerCount <= 0 && !powerActive}
-											title={`${power.name}: ${power.desc}`}
-											className={`relative flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center transition-all ${powerCount > 0 || powerActive
-												? "cursor-pointer border-[#99f5c3]/40 bg-[#99f5c3]/10 hover:bg-[#99f5c3]/20"
-												: "cursor-not-allowed border-white/10 bg-white/[0.03] opacity-50"
-												}`}
-										>
-											<span className="text-sm leading-none">
-												{power.emoji}
-											</span>
-											<span className="text-[8px] font-bold leading-none text-white/70">
-												{power.name}
-											</span>
-											<span
-												className={`absolute -top-1.5 -right-1 rounded-full px-1 text-[8px] font-black ${powerActive ? "bg-[#ffd96d] text-[#17112e]" : powerCount > 0 ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/40"}`}
-											>
-												{powerActive ? `${leftSec}sn` : powerCount}
-											</span>
+										<button key={power.key} type="button" onClick={() => activatePower(power.key)} disabled={powerCount <= 0 && !powerActive} title={`${power.name}: ${power.desc}`}
+											className={`group relative flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-all hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] ${powerCount > 0 || powerActive ? "bg-white/[0.06] border-white/12 hover:bg-white/10 hover:border-white/15 hover:shadow-md cursor-pointer" : "bg-white/[0.02] border-white/5 opacity-45 cursor-not-allowed"}`}>
+											<span className="text-[16px] leading-none transition group-active:scale-95">{power.emoji}</span>
+											<span className="text-[9px] font-bold tracking-wide text-white/65">{power.name}</span>
+											<span className={`absolute -top-1.5 -right-1 min-w-[18px] text-center rounded-full px-1 py-0.5 text-[10px] font-black leading-none border ${powerActive ? "bg-[#ffd96d] text-[#1a0e33] border-[#ffd96d] shadow" : powerCount > 0 ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)]" : "bg-white/10 text-white/40 border-white/10"}`}>{powerActive ? `${leftSec}s` : powerCount}</span>
 										</button>
 									);
 								})}
 							</div>
 							<div className="mt-2 flex items-center gap-1.5">
-								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-white/70">
-									❤️ Can x{extraLives}
-								</span>
-								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-white/70">
-									✨ Boost x{boostRemaining}
-								</span>
-								<span className="ml-auto text-[9px] text-white/40">
-									Pasif: yiyince anında
-								</span>
+								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">❤️ ×{extraLives}</span>
+								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">✨ ×{boostRemaining}</span>
+								<span className="ml-auto text-[10px] text-white/25">pasif → anında</span>
 							</div>
 						</div>
 
-						<div className="rounded-2xl border-2 border-[#ffd96d]/35 bg-[#251745] p-4 shadow-lg">
+						<div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur p-4 sm:p-5 shadow-[0_12px_32px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">
 							<div className="flex items-start justify-between gap-2">
 								<div className="min-w-0 flex-1">
 									<div className="flex flex-wrap items-center gap-1.5">

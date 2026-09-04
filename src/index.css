@@ -189,9 +189,18 @@ button:focus-visible {
 }
 .story-frame { display:flex; flex-direction:column; align-items:center; width:100%; }
 .story-bezel {
+  position: relative;
   width:100%; max-width: 520px;
   border-radius: 26px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.07), 0 12px 40px rgba(0,0,0,0.45);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent) , var(--bg-secondary);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.07), 0 16px 48px rgba(0,0,0,0.50), 0 0 32px rgba(120,90,255,0.10);
+}
+.story-bezel::before {
+  content:""; position:absolute; inset:-1px; border-radius: 26px; padding:1px;
+  background: linear-gradient(135deg, rgba(0,255,163,0.18), rgba(255,183,0,0.14), rgba(120,90,255,0.14));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events:none; opacity:0.9;
 }
 .story-board { aspect-ratio: 9/22 !important; }
 

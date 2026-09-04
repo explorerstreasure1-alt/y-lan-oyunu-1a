@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { VocabularyWord, WordLevel } from "../vocabulary";
 import type { WordMastery } from "../srs";
 
@@ -22,7 +23,33 @@ export function TopicsModal({
   onSelectLevel,
   masteryMap,
 }: TopicsModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
+
+  // Empty dataset guard
+  if (!words || words.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-pop" role="dialog" aria-modal="true" aria-label="Konu filtresi" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1a1440] p-8 text-center shadow-2xl">
+          <p className="text-3xl mb-3">📭</p>
+          <h3 className="font-bold text-white">Henüz kelime yok</h3>
+          <p className="mt-1 text-sm text-white/60">Bu dilde kelime havuzu boş. Lütfen başka dil seçin veya kelime ekleyin.</p>
+          <button type="button" onClick={onClose} className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-black text-[#1a0e33] hover:bg-white/90">Kapat</button>
+        </div>
+      </div>
+    );
+  }
 
   // Extract unique topics from dataset
   const allTopicsSet = new Set<string>();
@@ -40,8 +67,8 @@ export function TopicsModal({
   const allLearned = Array.from(topicStats.values()).reduce((sum, s) => sum + s.learned, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-pop">
-      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border-2 border-[#ffecad] bg-[#231542] text-[#fff7e8] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-pop" role="dialog" aria-modal="true" aria-label="Konu ve seviye filtresi" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={dialogRef} tabIndex={-1} className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border border-white/10 bg-[#1a1440] text-[#fff7e8] shadow-2xl outline-none">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
           <div>
@@ -107,7 +134,13 @@ export function TopicsModal({
                 </span>
               </button>
 
-              {topicsList.map((top) => {
+              {topicsList.length === 0 ? (
+                <div className="col-span-full rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center">
+                  <p className="text-sm font-bold text-white/70">Bu seviyede konu yok</p>
+                  <p className="mt-1 text-xs text-white/45">Seviye filtresini değiştirin veya Tüm Seviyeler seçin.</p>
+                  <button type="button" onClick={() => onSelectLevel("ALL")} className="mt-3 rounded-full bg-white px-4 py-1.5 text-xs font-black text-[#1a0e33] hover:bg-white/90">Tüm Seviyeler</button>
+                </div>
+              ) : topicsList.map((top) => {
                 const stat = topicStats.get(top) || { total: 0, learned: 0 };
                 const done = stat.total > 0 && stat.learned === stat.total;
                 return (
@@ -115,8 +148,7 @@ export function TopicsModal({
                     key={top}
                     type="button"
                     onClick={() => onSelectTopic(top)}
-                    className={`rounded-xl border p-3 text-left font-bold text-xs transition-all ${
-                      selectedTopic === top
+                    className={`rounded-xl border p-3 text-left font-bold text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd96d]/50 ${selectedTopic === top
                         ? "border-[#ffd96d] bg-[#ffd96d]/20 text-[#ffd96d] shadow"
                         : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
                     }`}
