@@ -1,6 +1,6 @@
 import { LEARNING_PATH, LEGACY_BASE_WORDS, LEGACY_PADDING_START, type VocabularyWord } from "./vocabulary";
 
-export type LearningLanguage = "en" | "ru" | "it" | "es" | "pt" | "fr";
+export type LearningLanguage = "en" | "ru" | "it" | "es" | "pt" | "fr" | "de";
 
 export type WordMastery = {
   wordId: number;
@@ -22,6 +22,7 @@ const MASTERY_STORAGE_KEY_IT = "snake_abc_mastery_v5_story_3000_it";
 const MASTERY_STORAGE_KEY_ES = "snake_abc_mastery_v5_story_3000_es";
 const MASTERY_STORAGE_KEY_PT = "snake_abc_mastery_v5_story_3000_pt";
 const MASTERY_STORAGE_KEY_FR = "snake_abc_mastery_v5_story_3000_fr";
+const MASTERY_STORAGE_KEY_DE = "snake_abc_mastery_v5_story_3000_de";
 
 function storageKeyFor(lang: LearningLanguage): string {
   if (lang === "ru") return MASTERY_STORAGE_KEY_RU;
@@ -29,6 +30,7 @@ function storageKeyFor(lang: LearningLanguage): string {
   if (lang === "es") return MASTERY_STORAGE_KEY_ES;
   if (lang === "pt") return MASTERY_STORAGE_KEY_PT;
   if (lang === "fr") return MASTERY_STORAGE_KEY_FR;
+  if (lang === "de") return MASTERY_STORAGE_KEY_DE;
   return MASTERY_STORAGE_KEY;
 }
 

@@ -144,7 +144,7 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   setTimeout(loadVoices, 500);
 }
 
-function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr"): number {
+function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr" | "de"): number {
   const name = v.name.toLowerCase();
   const lang = v.lang.toLowerCase();
   let s = 0;
@@ -199,6 +199,14 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "i
     if (name.includes("natural") || name.includes("neural")) s += 35;
     if (name.includes("denise") || name.includes("henri") || name.includes("celine")) s += 25;
     if (name.includes("espeak")) s -= 20;
+  } else if (targetLang === "de") {
+    if (lang === "de-de") s += 100;
+    else if (lang.startsWith("de")) s += 80;
+    if (name.includes("google") && lang.includes("de")) s += 60;
+    if (name.includes("microsoft") && lang.includes("de")) s += 30;
+    if (name.includes("natural") || name.includes("neural")) s += 35;
+    if (name.includes("katja") || name.includes("conrad") || name.includes("hedda")) s += 25;
+    if (name.includes("espeak")) s -= 20;
   } else {
     // Russian
     if (lang === "ru-ru") s += 100;
@@ -214,7 +222,7 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "i
   return s;
 }
 
-function pickBestVoice(langPrefix: "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr"): SpeechSynthesisVoice | null {
+function pickBestVoice(langPrefix: "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr" | "de"): SpeechSynthesisVoice | null {
   if (cachedVoices.length === 0) loadVoices();
   if (cachedVoices.length === 0) return null;
   const scored = cachedVoices
@@ -271,14 +279,14 @@ function extractCoreTurkishForSpeech(raw: string): string {
 
 function makeUtterance(
   text: string,
-  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR",
+  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE",
   rate: number,
   pitch: number,
   volume: number = 1
 ): SpeechSynthesisUtterance {
   const utterance = new SpeechSynthesisUtterance(text);
-  const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : lang.startsWith("it") ? "it" : lang.startsWith("es") ? "es" : lang.startsWith("pt") ? "pt" : lang.startsWith("fr") ? "fr" : "tr";
-  const best = pickBestVoice(prefix as "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr");
+  const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : lang.startsWith("it") ? "it" : lang.startsWith("es") ? "es" : lang.startsWith("pt") ? "pt" : lang.startsWith("fr") ? "fr" : lang.startsWith("de") ? "de" : "tr";
+  const best = pickBestVoice(prefix as "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr" | "de");
   if (best) utterance.voice = best;
   utterance.lang = lang;
   utterance.rate = rate;
@@ -289,7 +297,7 @@ function makeUtterance(
 
 function speakUtterance(
   text: string,
-  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR",
+  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE",
   rate: number,
   pitch: number,
   volume: number = 1,
@@ -332,14 +340,14 @@ function speakUtterance(
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
-let currentSpeechLang: "en" | "ru" | "it" | "es" | "pt" | "fr" = "en";
+let currentSpeechLang: "en" | "ru" | "it" | "es" | "pt" | "fr" | "de" = "en";
 
 // Okuma ayarları — SettingsModal'den kontrol edilir
 let speechSpeed: "slow" | "normal" | "fast" | "turbo" = "fast";
 let speechGap: "tight" | "normal" = "tight";
 let speechClarityBoost = true;
 
-export function setSpeechLanguage(lang: "en" | "ru" | "it" | "es" | "pt" | "fr") {
+export function setSpeechLanguage(lang: "en" | "ru" | "it" | "es" | "pt" | "fr" | "de") {
   currentSpeechLang = lang;
 }
 export function setSpeechSettings(opts: { speed?: typeof speechSpeed; gap?: typeof speechGap; clarity?: boolean }) {
@@ -369,6 +377,9 @@ function cleanPortugueseWordForSpeech(raw: string): string {
 function cleanFrenchWordForSpeech(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }
+function cleanGermanWordForSpeech(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ");
+}
 
 /**
  * Main: Beautiful, crystal-clear EN/RU -> (no pause) -> TR sequence
@@ -392,15 +403,16 @@ export function speakWordDetails(
   const isSpanish = currentSpeechLang === "es";
   const isPortuguese = currentSpeechLang === "pt";
   const isFrench = currentSpeechLang === "fr";
-  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : cleanEnglishWordForSpeech(word);
+  const isGerman = currentSpeechLang === "de";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : isGerman ? cleanGermanWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const trCore = extractCoreTurkishForSpeech(meaningTr);
 
   let targetText = wordClean;
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
   if (mode === "word-def-ex") {
-    // Şablon örnekler "Example:"/"Пример:"/"Esempio:"/"Ejemplo:"/"Exemplo:"/"Exemple:" ile başlar - çifte önek okunmasın
-    const exampleClean = example.replace(/^(Example|Пример|Например|Esempio|Ejemplo|Exemplo|Exemple)\s*:\s*/i, "").trim();
-    const forExample = isRussian ? "Например:" : isItalian ? "Per esempio:" : isSpanish ? "Por ejemplo:" : isPortuguese ? "Por exemplo:" : isFrench ? "Par exemple:" : "For example:";
+    // Şablon örnekler "Example:"/"Пример:"/"Esempio:"/"Ejemplo:"/"Exemplo:"/"Exemple:"/"Beispiel:" ile başlar - çifte önek okunmasın
+    const exampleClean = example.replace(/^(Example|Пример|Например|Esempio|Ejemplo|Exemplo|Exemple|Beispiel)\s*:\s*/i, "").trim();
+    const forExample = isRussian ? "Например:" : isItalian ? "Per esempio:" : isSpanish ? "Por ejemplo:" : isPortuguese ? "Por exemplo:" : isFrench ? "Par exemple:" : isGerman ? "Zum Beispiel:" : "For example:";
     targetText = `${wordClean}. ${definition}. ${forExample} ${exampleClean}`;
   }
 
@@ -425,7 +437,7 @@ export function speakWordDetails(
   const trRate = Math.min(2.35, rate * 1.04); // TR yabancıdan %4 daha hızlı — hemen yetişir
   const gapMs = speechGap === "tight" ? 0 : 22;
 
-  const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : "en-US";
+  const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
   if (mode === "word-tr") {
     // Yabancı kelime → TR: hız ve boşluk ayara göre, TR net ve tok
     speakUtterance(wordClean, wordLang, rate, wordPitch, 1, () => {
@@ -453,8 +465,9 @@ export function speakEnglishOnly(word: string) {
   const isSpanish = currentSpeechLang === "es";
   const isPortuguese = currentSpeechLang === "pt";
   const isFrench = currentSpeechLang === "fr";
-  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  const wl: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : "en-US";
+  const isGerman = currentSpeechLang === "de";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : isGerman ? cleanGermanWordForSpeech(word) : cleanEnglishWordForSpeech(word);
+  const wl: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
   speakUtterance(wordClean, wl, 1.72, 1.03);
 }
 

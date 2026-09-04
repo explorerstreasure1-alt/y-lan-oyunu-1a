@@ -176,3 +176,4 @@ export { ITALIAN_PATH } from "./vocabularyIt";
 export { SPANISH_PATH } from "./vocabularyEs";
 export { PORTUGUESE_PATH } from "./vocabularyPt";
 export { FRENCH_PATH } from "./vocabularyFr";
+export { GERMAN_PATH } from "./vocabularyDe";

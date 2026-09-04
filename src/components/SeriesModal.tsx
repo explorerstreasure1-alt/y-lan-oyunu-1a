@@ -120,7 +120,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                 </span>
               </div>
               <h2 id="series-title" className="mt-2 font-[var(--font-display)] text-[22px] sm:text-[26px] font-black tracking-[-0.02em] leading-none text-white">
-                {language === "ru" ? "🇷🇺" : language === "it" ? "🇮🇹" : language === "es" ? "🇪🇸" : language === "pt" ? "🇵🇹" : language === "fr" ? "🇫🇷" : "🇬🇧"} Seriler <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 50'li paketler</span>
+                {language === "ru" ? "🇷🇺" : language === "it" ? "🇮🇹" : language === "es" ? "🇪🇸" : language === "pt" ? "🇵🇹" : language === "fr" ? "🇫🇷" : language === "de" ? "🇩🇪" : "🇬🇧"} Seriler <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 50'li paketler</span>
               </h2>
               <p className="mt-2 max-w-[560px] text-[12.5px] leading-5 text-white/58">
                 Her seri tam <b className="text-white font-bold">50 kelime</b> — seviye içinde sıralı. Bitirince otomatik <span className="inline-flex items-center rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[10px] font-black text-[#071a12]">✔</span> olur. Yanlışsa <b className="text-[var(--accent-2)]">basılı tut</b> ile geri al.

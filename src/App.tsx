@@ -53,6 +53,7 @@ import {
 } from "./srs";
 import {
 	FRENCH_PATH,
+	GERMAN_PATH,
 	ITALIAN_PATH,
 	LEARNING_PATH,
 	PORTUGUESE_PATH,
@@ -424,10 +425,11 @@ export default function App() {
 			return "ALL";
 		}
 	});
-	// Dil: EN, RU, IT, ES, PT, FR - her dilin kendi havuzu + kendi kaydı (localStorage kalıcı)
+	// Dil: EN, RU, IT, ES, PT, FR, DE - her dilin kendi havuzu + kendi kaydı (localStorage kalıcı)
 	const [language, setLanguage] = useState<LearningLanguage>(() => {
 		try {
 			const saved = window.localStorage.getItem("snake-abc-lang");
+			if (saved === "de") return "de";
 			if (saved === "fr") return "fr";
 			if (saved === "pt") return "pt";
 			if (saved === "es") return "es";
@@ -438,7 +440,7 @@ export default function App() {
 			return "en";
 		}
 	});
-	const activePool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : LEARNING_PATH;
+	const activePool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : language === "de" ? GERMAN_PATH : LEARNING_PATH;
 	const filteredPool = useMemo(
 		() => buildFilteredPool(selectedTopic, selectedLevel, activePool),
 		[selectedTopic, selectedLevel, activePool],
@@ -466,7 +468,7 @@ export default function App() {
 	// Seçili konu yeni dilin havuzunda yoksa sessizce tüm havuza düşmesin: "ALL" a sıfırla
 	useEffect(() => {
 		if (selectedTopic === "ALL") return;
-		const pool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : LEARNING_PATH;
+		const pool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : language === "de" ? GERMAN_PATH : LEARNING_PATH;
 		if (!pool.some((w) => w.topic === selectedTopic)) {
 			setSelectedTopic("ALL");
 			try {
@@ -813,7 +815,7 @@ export default function App() {
 			try {
 				window.localStorage.setItem("snake-abc-lang", nextLang);
 			} catch { }
-			const newPool = nextLang === "ru" ? RUSSIAN_PATH : nextLang === "it" ? ITALIAN_PATH : nextLang === "es" ? SPANISH_PATH : nextLang === "pt" ? PORTUGUESE_PATH : nextLang === "fr" ? FRENCH_PATH : LEARNING_PATH;
+			const newPool = nextLang === "ru" ? RUSSIAN_PATH : nextLang === "it" ? ITALIAN_PATH : nextLang === "es" ? SPANISH_PATH : nextLang === "pt" ? PORTUGUESE_PATH : nextLang === "fr" ? FRENCH_PATH : nextLang === "de" ? GERMAN_PATH : LEARNING_PATH;
 			const newMap = getSavedMasteryMap(nextLang);
 			masteryMapRef.current = newMap;
 			setMasteryMap(newMap);
@@ -1735,6 +1737,7 @@ const nextFoodCell = findOpenCell(
 							<button type="button" onClick={() => switchLanguage("es")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "es" ? "bg-[#ffd96d] text-[#1a1200]" : "text-white/60"}`}>🇪🇸 ES</button>
 							<button type="button" onClick={() => switchLanguage("pt")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "pt" ? "bg-[#6ee7ff] text-[#0a1a12]" : "text-white/60"}`}>🇵🇹 PT</button>
 							<button type="button" onClick={() => switchLanguage("fr")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "fr" ? "bg-[#a78bfa] text-[#1a0a2e]" : "text-white/60"}`}>🇫🇷 FR</button>
+							<button type="button" onClick={() => switchLanguage("de")} className={`rounded-md px-1 py-0.5 text-[7px] font-black ${language === "de" ? "bg-[#f472b6] text-[#1a0a12]" : "text-white/60"}`}>🇩🇪 DE</button>
 						</div>
 						<button
 							type="button"
@@ -2784,7 +2787,8 @@ const nextFoodCell = findOpenCell(
 							<button type="button" onClick={() => switchLanguage("es")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="es" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>ES</button>
 							<button type="button" onClick={() => switchLanguage("pt")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="pt" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>PT</button>
 							<button type="button" onClick={() => switchLanguage("fr")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="fr" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>FR</button>
-							<span className="ml-1 text-[11px] text-white/25">· 6 dil · 3000</span>
+							<button type="button" onClick={() => switchLanguage("de")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="de" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>DE</button>
+							<span className="ml-1 text-[11px] text-white/25">· 7 dil · 3000</span>
 						</div>
 
 						<div className="px-6 sm:px-8 pb-7 grid gap-2.5">
