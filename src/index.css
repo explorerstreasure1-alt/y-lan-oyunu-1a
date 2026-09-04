@@ -173,15 +173,18 @@ button:focus-visible {
 }
 .story-frame { display:flex; flex-direction:column; align-items:center; width:100%; }
 .story-bezel {
-  width:100%; max-width: 392px;
+  width:100%; max-width: 460px;
   border-radius: 26px;
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.07), 0 12px 40px rgba(0,0,0,0.45);
 }
-.story-board { aspect-ratio: 9/21 !important; }
+.story-board { aspect-ratio: 9/20.5 !important; }
 
-/* Kompakt header için küçük logo */
-.header-mark { width: 30px !important; height: 30px !important; border-radius: 9px !important; }
-.header-mark::before { font-size: 13px !important; }
+/* Kompakt header için küçük logo — daha zarif */
+.header-mark { width: 26px !important; height: 26px !important; border-radius: 8px !important; }
+.header-mark::before { font-size: 11px !important; }
+
+/* Konu seçimi — mor tema korunuyor (zarif) */
+.topic-mor { background: linear-gradient(180deg, #221845, #1b1340) !important; border-color: rgba(180,160,255,0.14) !important; }
 
 .game-board {
   position: relative; display:block;
@@ -344,7 +347,10 @@ button:focus-visible {
 }
 @media (min-width:1024px){
   .story-frame{ align-items:stretch; }
-  .story-bezel{ margin-left:auto; margin-right:auto; }
+  .story-bezel{ margin-left:auto; margin-right:auto; max-width: 520px; }
+}
+@media (min-width:1280px){
+  .story-bezel{ max-width: 560px; }
 }
 @media (max-width:640px){
   .arcade-pad{ width:168px; height:168px; }

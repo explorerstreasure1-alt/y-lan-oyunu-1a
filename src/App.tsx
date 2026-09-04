@@ -1663,18 +1663,18 @@ const nextFoodCell = findOpenCell(
 			<div className="arcade-stars" aria-hidden="true" />
 
 			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
-				{/* Header — ultra kompakt, oyun alanına yer aç */}
-				<header className="order-1 mb-2 flex flex-wrap items-center justify-between gap-1.5 rounded-[14px] border border-white/[0.06] bg-[rgba(255,255,255,0.035)] px-2.5 py-1.5 backdrop-blur-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.05)]">
-					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-2 rounded-lg px-1 py-0.5 hover:bg-white/5 transition" aria-label="Ana sayfa">
+				{/* Header — minimal & zarif, ultra kompakt */}
+				<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
+					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/[0.04] transition" aria-label="Ana sayfa">
 						<div className="pixel-mark header-mark" aria-hidden="true">
 							<span />
 						</div>
 						<div className="leading-none text-left">
-							<p className="font-[var(--font-display)] text-[11px] font-black tracking-[-0.02em] leading-none text-white">
-								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8.5px] font-bold tracking-[0.12em] text-white/40 align-super">3000</span>
+							<p className="font-[var(--font-display)] text-[10.5px] font-black tracking-[-0.02em] leading-none text-white">
+								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8px] font-bold tracking-[0.1em] text-white/35 align-super">3000</span>
 							</p>
-							<p className="font-[var(--font-mono)] text-[8px] font-bold uppercase tracking-[0.13em] text-white/35 leading-none mt-[2px]">
-								A1 — C2
+							<p className="hidden sm:block font-[var(--font-mono)] text-[7.5px] font-bold uppercase tracking-[0.12em] text-white/30 leading-none mt-[1px]">
+								A1 — C2 • 3000
 							</p>
 						</div>
 					</button>
@@ -1781,8 +1781,8 @@ const nextFoodCell = findOpenCell(
 					<DailyGoalBar learnedCount={learnedCount} />
 				</div>
 
-				{/* Top Controls — ince şerit */}
-				<div className="order-4 mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border border-white/[0.06] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur">
+				{/* Top Controls — mor zarif şerit */}
+				<div className="topic-mor order-4 mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border px-2 py-1 backdrop-blur">
 					<div className="flex items-center gap-1 text-[10px]">
 						<span className="text-white/50">Hız:</span>
 						<button
@@ -2764,59 +2764,44 @@ const nextFoodCell = findOpenCell(
 				onClearSeries={handleClearSeries}
 			/>
 
-			{/* Landing / Ana Sayfa — seçim alanı, direkt oyuna dalma yok */}
+			{/* Landing — minimal & zarif */}
 			{showLanding && (
 				<div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 animate-fade-in" role="dialog" aria-modal="true" aria-label="Ana sayfa">
-					<div className="absolute inset-0 bg-[#050410]/82 backdrop-blur-[16px]" aria-hidden="true" />
-					<div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(0,255,163,0.12),transparent_60%),radial-gradient(800px_500px_at_90%_10%,rgba(255,183,0,0.10),transparent_55%)] pointer-events-none" aria-hidden="true" />
-					<div className="relative w-full max-w-[640px] max-h-[92vh] overflow-auto rounded-[28px] border border-white/10 bg-[rgba(19,16,46,0.98)] shadow-[0_24px_64px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[18px] animate-pop">
-						{/* hero */}
-						<div className="relative px-6 sm:px-8 pt-7 sm:pt-8 pb-6 border-b border-white/[0.07] bg-gradient-to-b from-white/[0.05] to-transparent text-center">
-							<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-1)] text-[#071a12] text-xl font-black shadow-[0_10px_24px_rgba(0,255,163,0.28)]">◆</div>
-							<h1 className="mt-3 font-[var(--font-display)] text-[28px] sm:text-[32px] font-black tracking-[-0.03em] leading-none text-white">
-								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[13px] align-super text-white/40">3000</span>
+					<div className="absolute inset-0 bg-[#08071A]/72 backdrop-blur-[12px]" aria-hidden="true" />
+					<div className="absolute inset-0 bg-[radial-gradient(700px_400px_at_50%_0%,rgba(120,90,255,0.10),transparent_60%)] pointer-events-none" aria-hidden="true" />
+					<div className="relative w-full max-w-[480px] max-h-[92vh] overflow-auto rounded-[20px] border border-white/[0.07] bg-[#15122E] shadow-[0_20px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)] animate-pop">
+						<div className="px-7 sm:px-8 pt-8 pb-6 text-center">
+							<div className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] border border-white/10 text-white/70 text-[14px]">◆</div>
+							<h1 className="mt-3 font-[var(--font-display)] text-[26px] font-[800] tracking-[-0.03em] leading-none text-white">
+								Snake <span className="font-[300] text-white/55">ABC</span> <span className="font-[var(--font-mono)] text-[11px] font-bold text-white/30 align-super">3000</span>
 							</h1>
-							<p className="mt-1 font-[var(--font-mono)] text-[11px] font-bold tracking-[0.14em] uppercase text-white/40">Story • A1 — C2 • TR destekli</p>
-							<p className="mx-auto mt-3 max-w-[420px] text-[13px] leading-5 text-white/60">
-								3000 kelime, 50'li seriler, yılan oyunu ile ezberle. Önce modunu seç, sonra başla — hop diye oyuna dalma yok.
-							</p>
-							<div className="mt-4 flex flex-wrap justify-center gap-1.5">
-								<span className="rounded-full bg-white text-[#0a0a12] px-3 py-1 text-xs font-black">3000 kelime</span>
-								<span className="rounded-full border border-white/12 bg-white/5 px-3 py-1 text-xs font-bold text-white/70">A1 → C2</span>
-								<span className="rounded-full border border-white/12 bg-white/5 px-3 py-1 text-xs font-bold text-white/70">EN • RU • IT</span>
-								<span className="rounded-full border border-[var(--accent-1)]/30 bg-[var(--accent-1)]/10 px-3 py-1 text-xs font-bold text-[var(--accent-1)]">50'li seri</span>
-							</div>
+							<p className="mt-1.5 text-[12.5px] leading-5 text-white/45 font-[400]">Yılanla kelime ezberle — sakin, zarif, odak.</p>
+							<div className="mx-auto mt-4 h-px w-12 bg-white/10" />
 						</div>
 
-						{/* language picker */}
-						<div className="px-6 sm:px-8 py-4 flex flex-wrap items-center justify-center gap-2 border-b border-white/[0.06] bg-[rgba(12,10,28,0.4)]">
-							<span className="text-[11px] font-bold tracking-wide uppercase text-white/35">Dil seç</span>
-							<button type="button" onClick={() => switchLanguage("en")} className={`rounded-full px-4 py-1.5 text-xs font-black border ${language==="en" ? "bg-white text-[#0a0a12] border-white" : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"}`}>🇬🇧 İngilizce</button>
-							<button type="button" onClick={() => switchLanguage("ru")} className={`rounded-full px-4 py-1.5 text-xs font-black border ${language==="ru" ? "bg-white text-[#0a0a12] border-white" : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"}`}>🇷🇺 Rusça</button>
-							<button type="button" onClick={() => { try{window.localStorage.setItem("snake-abc-lang","it")}catch{}; setLanguage("it" as LearningLanguage); setSpeechLanguage("it" as LearningLanguage); }} className={`rounded-full px-4 py-1.5 text-xs font-black border ${language==="it" ? "bg-white text-[#0a0a12] border-white" : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"}`}>🇮🇹 İtalyanca</button>
+						<div className="px-6 sm:px-8 pb-5 flex items-center justify-center gap-1.5">
+							<button type="button" onClick={() => switchLanguage("en")} className={`rounded-full px-3.5 py-1 text-[11.5px] font-semibold border transition ${language==="en" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>EN</button>
+							<button type="button" onClick={() => switchLanguage("ru")} className={`rounded-full px-3.5 py-1 text-[11.5px] font-semibold border transition ${language==="ru" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>RU</button>
+							<button type="button" onClick={() => { try{window.localStorage.setItem("snake-abc-lang","it")}catch{}; setLanguage("it" as LearningLanguage); setSpeechLanguage("it" as LearningLanguage); }} className={`rounded-full px-3.5 py-1 text-[11.5px] font-semibold border transition ${language==="it" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>IT</button>
+							<span className="ml-2 text-[11px] text-white/25">· A1 — C2 · 3000</span>
 						</div>
 
-						{/* CTAs */}
-						<div className="p-6 sm:p-7 grid gap-3 sm:grid-cols-2">
-							<button type="button" onClick={() => { setShowLanding(false); setIsSeriesOpen(true); }} className="group relative flex flex-col items-start gap-2 rounded-[20px] border border-[var(--accent-1)] bg-[var(--accent-1)] p-5 text-left shadow-[0_12px_28px_rgba(0,255,163,0.22)] hover:shadow-[0_16px_32px_rgba(0,255,163,0.28)] hover:-translate-y-[1px] transition-all text-[#071a12]">
-								<span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#071a12] text-[var(--accent-1)] text-lg">◈</span>
-								<span className="font-[var(--font-display)] text-[18px] font-black leading-none">Seriye Başla</span>
-								<span className="text-[12px] font-semibold leading-4 opacity-70">A1 Seri 1'den başla, seviye seviye ilerle. Bitirince otomatik ✔</span>
-								<span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#071a12] px-3 py-1 text-[11px] font-black text-white">Serileri gör →</span>
-								{activeSeries && <span className="absolute top-3 right-3 rounded-full bg-[#071a12] text-white px-2 py-0.5 text-[10px] font-bold">Aktif: {activeSeries.label}</span>}
+						<div className="px-6 sm:px-8 pb-7 grid gap-2.5">
+							<button type="button" onClick={() => { setShowLanding(false); setIsSeriesOpen(true); }} className="group flex items-center justify-between rounded-[14px] bg-[var(--accent-1)] px-5 py-4 text-left hover:bg-[var(--accent-1-strong)] transition">
+								<span>
+									<span className="block font-[700] text-[14px] leading-none text-[#071a12]">Seriye Başla</span>
+									<span className="block text-[11.5px] font-medium text-[#071a12]/60 mt-1">50'li paketler — seviye seviye</span>
+								</span>
+								<span className="shrink-0 rounded-full bg-[#071a12] px-3 py-1 text-[11px] font-bold text-white group-hover:translate-x-0.5 transition">→</span>
 							</button>
-
-							<button type="button" onClick={() => { handleClearSeries(); setShowLanding(false); }} className="group flex flex-col items-start gap-2 rounded-[20px] border border-white/10 bg-white/[0.04] p-5 text-left hover:bg-white/[0.07] hover:border-white/15 hover:-translate-y-[1px] transition-all">
-								<span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#0a0a12] text-lg">▶</span>
-								<span className="font-[var(--font-display)] text-[18px] font-black leading-none text-white">Serbest Oyna</span>
-								<span className="text-[12px] font-medium leading-4 text-white/55">Tüm havuz karışık — konu/seviye filtresi ve SRS aktif.</span>
-								<span className="mt-1 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-black text-[#0a0a12]">Oyuna geç →</span>
+							<button type="button" onClick={() => { handleClearSeries(); setShowLanding(false); }} className="flex items-center justify-between rounded-[14px] border border-white/10 bg-white/[0.03] px-5 py-4 text-left hover:bg-white/[0.06] hover:border-white/15 transition">
+								<span>
+									<span className="block font-[600] text-[14px] leading-none text-white">Serbest Oyna</span>
+									<span className="block text-[11.5px] font-medium text-white/45 mt-1">Tüm havuz · SRS aktif</span>
+								</span>
+								<span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#15122E]">→</span>
 							</button>
-						</div>
-
-						<div className="px-6 sm:px-8 pb-6 flex items-center justify-between gap-3">
-							<p className="text-[11px] leading-4 text-white/35">İpucu: Seri modu sadece o 50 kelimeyle oynatır. Seviyeyi bitirince bir sonraki seriye geç.</p>
-							<button type="button" onClick={() => setShowLanding(false)} className="shrink-0 text-[11px] font-bold text-white/50 hover:text-white underline underline-offset-4">Atla, direkt bak →</button>
+							<button type="button" onClick={() => setShowLanding(false)} className="mx-auto mt-1 text-[11px] font-medium text-white/30 hover:text-white/55 underline underline-offset-4 decoration-white/15">geç, tahtaya bak</button>
 						</div>
 					</div>
 				</div>
