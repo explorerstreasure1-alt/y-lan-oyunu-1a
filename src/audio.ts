@@ -396,24 +396,23 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // Hız + netlik: ayarlara göre çarpan, netlik boost'ta pitch net ve ses kalitesi öncelikli
+  // Güzel ayar — dengeli: hızlı ama net, boşluk sıkı ama doğal
   const baseRates: Record<string, number> = {
-    "A1": 1.55,
-    "A2": 1.62,
-    "B1": 1.72,
-    "B2": 1.80,
-    "C1": 1.88,
-    "C2": 1.95
+    "A1": 1.52,
+    "A2": 1.60,
+    "B1": 1.70,
+    "B2": 1.78,
+    "C1": 1.86,
+    "C2": 1.92
   };
-  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.82, normal: 0.92, fast: 1.0, turbo: 1.14 };
-  const base = baseRates[level] || 1.72;
-  const rate = Math.min(2.0, base * (speedMul[speechSpeed] || 1));
-  // Netlik boost: pitch 0.98 daha net, değilse 1.02 biraz tiz
-  const wordPitch = speechClarityBoost ? 0.98 : 1.04;
-  const trPitch = speechClarityBoost ? 0.98 : 1.02;
-  // Türkçe hız: netlikte yabancı kadar değil, akıcılık için hafif hızlı
-  const trRate = speechClarityBoost ? Math.min(1.92, rate * 0.96) : Math.min(1.98, rate + 0.04);
-  const gapMs = speechGap === "tight" ? 10 : 55;
+  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.80, normal: 0.92, fast: 1.0, turbo: 1.12 };
+  const base = baseRates[level] || 1.70;
+  const rate = Math.min(1.98, base * (speedMul[speechSpeed] || 1));
+  // Netlik: pitch 0.96 daha tok/net, TR bir tık daha yumuşak
+  const wordPitch = speechClarityBoost ? 0.96 : 1.03;
+  const trPitch = speechClarityBoost ? 0.97 : 1.02;
+  const trRate = speechClarityBoost ? Math.min(1.90, rate * 0.97) : Math.min(1.96, rate + 0.03);
+  const gapMs = speechGap === "tight" ? 8 : 48;
 
   const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : "en-US";
   if (mode === "word-tr") {
