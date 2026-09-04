@@ -39,7 +39,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
             className="w-full rounded-t-[14px] rounded-b-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 py-2.5 text-base font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.14)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation"
             aria-label="Yukarı">▲</button>
         </div>
-        <div className="col-start-1 row-start-2 w-full relative -top-[3px]">
+        <div className="col-start-1 row-start-2 w-full relative -top-[10px]">
           <button type="button" onPointerDown={dirPress("left", onDirectionChange)}
             className="w-full rounded-l-[14px] rounded-r-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 py-3.5 text-base font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation"
             aria-label="Sol">◀</button>
@@ -50,7 +50,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
             {isPlaying ? "II" : "▶"}
           </button>
         </div>
-        <div className="col-start-3 row-start-2 w-full relative -top-[3px]">
+        <div className="col-start-3 row-start-2 w-full relative -top-[10px]">
           <button type="button" onPointerDown={dirPress("right", onDirectionChange)}
             className="w-full rounded-r-[14px] rounded-l-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 py-3.5 text-base font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation"
             aria-label="Sağ">▶</button>
