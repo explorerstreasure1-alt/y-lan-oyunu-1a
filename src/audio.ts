@@ -261,11 +261,10 @@ function extractCoreTurkishForSpeech(raw: string): string {
   // Clean extra punctuation
   t = t.replace(/[:;_]/g, " ");
   t = t.replace(/\s+/g, " ").trim();
-  // Limit length for clarity (keep first 3 words max for very long)
-  // But keep it natural: if still very long, keep first 4 words
+  // Hız için kısa: en fazla 2 kelime (uzunsa ilk 2), net ve anında bitsin
   const words = t.split(" ");
-  if (words.length > 6) {
-    t = words.slice(0, 4).join(" ");
+  if (words.length > 2) {
+    t = words.slice(0, 2).join(" ");
   }
   return t;
 }
@@ -408,23 +407,23 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // Güzel ayar — dengeli: hızlı ama net, boşluk sıkı ama doğal
+  // Yetişen hız — yemi yediğin an biter, ikinciye yetişir
   const baseRates: Record<string, number> = {
-    "A1": 1.52,
-    "A2": 1.60,
-    "B1": 1.70,
-    "B2": 1.78,
-    "C1": 1.86,
-    "C2": 1.92
+    "A1": 1.72,
+    "A2": 1.82,
+    "B1": 1.95,
+    "B2": 2.05,
+    "C1": 2.15,
+    "C2": 2.25
   };
-  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.80, normal: 0.92, fast: 1.0, turbo: 1.12 };
-  const base = baseRates[level] || 1.70;
-  const rate = Math.min(1.98, base * (speedMul[speechSpeed] || 1));
-  // Netlik: pitch 0.96 daha tok/net, TR bir tık daha yumuşak
-  const wordPitch = speechClarityBoost ? 0.96 : 1.03;
-  const trPitch = speechClarityBoost ? 0.97 : 1.02;
-  const trRate = speechClarityBoost ? Math.min(1.90, rate * 0.97) : Math.min(1.96, rate + 0.03);
-  const gapMs = speechGap === "tight" ? 8 : 48;
+  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.88, normal: 0.96, fast: 1.08, turbo: 1.22 };
+  const base = baseRates[level] || 1.95;
+  const rate = Math.min(2.35, base * (speedMul[speechSpeed] || 1));
+  // Netlik: pitch 1.0 net, TR tok
+  const wordPitch = speechClarityBoost ? 1.0 : 1.04;
+  const trPitch = speechClarityBoost ? 1.0 : 1.03;
+  const trRate = Math.min(2.35, rate * 1.04); // TR yabancıdan %4 daha hızlı — hemen yetişir
+  const gapMs = speechGap === "tight" ? 0 : 22;
 
   const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : "en-US";
   if (mode === "word-tr") {
