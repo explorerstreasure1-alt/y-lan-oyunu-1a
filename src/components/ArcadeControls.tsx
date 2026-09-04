@@ -31,13 +31,13 @@ function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
 
 export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd }: ArcadeControlsProps) {
   return (
-    <div className="mt-2 flex w-full shrink-0 flex-col items-center gap-2 sm:hidden select-none">
-      <div className="arcade-pad relative h-52 w-52 rounded-full border-2 border-white/10 bg-[#1e1440]/95 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm touch-manipulation">
-        {/* Up — geniş vuruş alanı */}
+    <div className="mt-1 flex w-full shrink-0 flex-col items-center gap-1.5 sm:hidden select-none">
+      <div className="arcade-pad relative h-36 w-36 rounded-full border border-white/10 bg-[#1e1440]/90 p-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm touch-manipulation">
+        {/* Up — kompakt ama hassas */}
         <button
           type="button"
           onPointerDown={dirPress("up", onDirectionChange)}
-          className="absolute top-1 left-1/2 -translate-x-1/2 rounded-t-2xl bg-[#3a226b] px-7 py-4 text-xl font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-w-[64px]"
+          className="absolute top-0.5 left-1/2 -translate-x-1/2 rounded-t-xl bg-[#3a226b] px-5 py-2.5 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-w-[48px]"
           aria-label="Yukarı"
         >
           ▲
@@ -47,7 +47,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         <button
           type="button"
           onPointerDown={dirPress("down", onDirectionChange)}
-          className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-b-2xl bg-[#3a226b] px-7 py-4 text-xl font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-w-[64px]"
+          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-b-xl bg-[#3a226b] px-5 py-2.5 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-w-[48px]"
           aria-label="Aşağı"
         >
           ▼
@@ -57,7 +57,7 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         <button
           type="button"
           onPointerDown={dirPress("left", onDirectionChange)}
-          className="absolute left-1 top-1/2 -translate-y-1/2 rounded-l-2xl bg-[#3a226b] px-5 py-6 text-xl font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[64px]"
+          className="absolute left-0.5 top-1/2 -translate-y-1/2 rounded-l-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
           aria-label="Sol"
         >
           ◀
@@ -67,39 +67,38 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         <button
           type="button"
           onPointerDown={dirPress("right", onDirectionChange)}
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-r-2xl bg-[#3a226b] px-5 py-6 text-xl font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[64px]"
+          className="absolute right-0.5 top-1/2 -translate-y-1/2 rounded-r-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
           aria-label="Sağ"
         >
           ▶
         </button>
 
-        {/* Center Pause */}
+        {/* Center Pause — küçültüldü */}
         <button
           type="button"
           onPointerDown={(e) => { e.preventDefault(); buzz(); onPauseToggle(); }}
-          className="absolute inset-0 m-auto h-12 w-12 rounded-full bg-[#ffd96d] text-[10px] font-black text-[#21123a] shadow-md flex items-center justify-center active:brightness-110"
+          className="absolute inset-0 m-auto h-9 w-9 rounded-full bg-[#ffd96d] text-[8px] font-black text-[#21123a] shadow-md flex items-center justify-center active:brightness-110"
         >
-          {isPlaying ? "PAUSE" : "START"}
+          {isPlaying ? "II" : "▶"}
         </button>
       </div>
 
-      {/* Boost: basılı tut = yılan hızlanır */}
+      {/* Boost — kompakt */}
       <button
         type="button"
         onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
         onPointerUp={onBoostEnd}
         onPointerLeave={onBoostEnd}
         onPointerCancel={onBoostEnd}
-        className={`flex h-12 w-48 select-none flex-row items-center justify-center gap-2 rounded-2xl border-2 text-sm font-black transition-colors ${
+        className={`flex h-8 w-36 select-none flex-row items-center justify-center gap-1.5 rounded-xl border text-xs font-black transition-colors ${
           isBoosting
-            ? "border-[#ff84ad] bg-[#ff9ebb] text-[#330012] shadow-[0_0_14px_rgba(255,158,187,0.7)]"
-            : "border-[#ffd96d]/50 bg-[#3a226b] text-[#ffd96d]"
+            ? "border-[#ff84ad] bg-[#ff9ebb] text-[#330012] shadow-[0_0_10px_rgba(255,158,187,0.6)]"
+            : "border-[#ffd96d]/40 bg-[#3a226b] text-[#ffd96d]"
         }`}
         aria-label="Hızlandır (basılı tut)"
       >
-        <span className="text-xl leading-none">⚡</span>
-        <span>HIZ</span>
-        <span className="text-[8px] font-bold opacity-70">basılı tut</span>
+        <span className="text-sm leading-none">⚡</span>
+        <span className="text-[11px]">HIZ</span>
       </button>
     </div>
   );
