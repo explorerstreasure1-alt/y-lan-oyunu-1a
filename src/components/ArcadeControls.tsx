@@ -53,21 +53,21 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
           ▼
         </button>
 
-        {/* Left */}
+        {/* Left — hafif yukarı */}
         <button
           type="button"
           onPointerDown={dirPress("left", onDirectionChange)}
-          className="absolute left-0.5 top-1/2 -translate-y-1/2 rounded-l-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
+          className="absolute left-0.5 top-[42%] -translate-y-1/2 rounded-l-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
           aria-label="Sol"
         >
           ◀
         </button>
 
-        {/* Right */}
+        {/* Right — hafif yukarı */}
         <button
           type="button"
           onPointerDown={dirPress("right", onDirectionChange)}
-          className="absolute right-0.5 top-1/2 -translate-y-1/2 rounded-r-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
+          className="absolute right-0.5 top-[42%] -translate-y-1/2 rounded-r-xl bg-[#3a226b] px-3.5 py-4 text-base font-black text-[#ffd96d] shadow active:scale-95 active:bg-[#4a2d8a] active:brightness-150 transition-transform duration-75 touch-manipulation min-h-[48px]"
           aria-label="Sağ"
         >
           ▶
