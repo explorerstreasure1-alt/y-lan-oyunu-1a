@@ -1,4 +1,4 @@
-import { ITALIAN_PATH, LEARNING_PATH, PORTUGUESE_PATH, SPANISH_PATH, type VocabularyWord, type WordLevel } from "./vocabulary";
+import { FRENCH_PATH, ITALIAN_PATH, LEARNING_PATH, PORTUGUESE_PATH, SPANISH_PATH, type VocabularyWord, type WordLevel } from "./vocabulary";
 import { RUSSIAN_PATH } from "./vocabularyRu";
 import type { LearningLanguage } from "./srs";
 
@@ -23,6 +23,7 @@ function poolForLang(lang: string): VocabularyWord[] {
   if (lang === "it") return ITALIAN_PATH;
   if (lang === "es") return SPANISH_PATH;
   if (lang === "pt") return PORTUGUESE_PATH;
+  if (lang === "fr") return FRENCH_PATH;
   return LEARNING_PATH;
 }
 
@@ -61,6 +62,7 @@ export function getAllSeriesFlat(): Record<LearningLanguage, Series[]> {
     it: getSeriesForLanguage("it"),
     es: getSeriesForLanguage("es"),
     pt: getSeriesForLanguage("pt"),
+    fr: getSeriesForLanguage("fr"),
   } as Record<LearningLanguage, Series[]>;
 }
 
