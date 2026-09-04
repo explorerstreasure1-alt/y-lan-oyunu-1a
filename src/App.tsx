@@ -764,7 +764,11 @@ export default function App() {
 	// Konu/seviye değişince: filtreyi uygula, imleci sıfırla, yeni kelime seç (oyunu bozmadan)
 	const selectPool = useCallback(
 		(topic: string | "ALL", level: WordLevel | "ALL") => {
-			// Seri modu topic/level ile çakışır — seri temizle
+			// Seri modu topic/level ile çakışır — çıkmadan önce tıkla işaretle
+			if (selectedSeriesId && activeSeries && !completedSeries.has(activeSeries.id)) {
+				const next = markSeriesCompleted(activeSeries.id);
+				setCompletedSeries(new Set(next));
+			}
 			if (selectedSeriesId) {
 				setSelectedSeriesId(null);
 				saveSelectedSeriesId(null);
@@ -800,7 +804,7 @@ export default function App() {
 			foodPointRef.current = nextFoodCell;
 			setFoodPoint(nextFoodCell);
 		},
-		[customWordBank, activePool, selectedSeriesId],
+		[customWordBank, activePool, selectedSeriesId, activeSeries, completedSeries],
 	);
 
 	// Dil değiştirme: kaydı, havuzu, mama kelimesini ve oyunu yeni dile göre sıfırla
@@ -809,7 +813,11 @@ export default function App() {
 			if (nextLang === language) return;
 			weakTrainingRef.current = false;
 			setWeakTraining(false);
-			// Dil değişince seri sıfırlanır (seri id dil içerir)
+			// Dil değişince seri sıfırlanır — çıkmadan önce tıkla işaretle
+			if (activeSeries && !completedSeries.has(activeSeries.id)) {
+				const next = markSeriesCompleted(activeSeries.id);
+				setCompletedSeries(new Set(next));
+			}
 			setSelectedSeriesId(null);
 			saveSelectedSeriesId(null);
 			try {
@@ -855,7 +863,7 @@ export default function App() {
 			setGameStatus("ready");
 			setIsQuizOpen(false);
 		},
-		[language, customWordBank, selectedTopic, selectedLevel, setGameStatus],
+		[language, customWordBank, selectedTopic, selectedLevel, setGameStatus, activeSeries, completedSeries],
 	);
 
 	// XP ekle: seviye atlayınca banner göster, localStorage'a kalıcı yaz
@@ -905,12 +913,17 @@ export default function App() {
 		setActiveFood(finalItem);
 	};
 
-	// Seri seç: sadece o 50 kelime havuzuyla oyna
+	// Seri seç: girince otomatik tık — çıkınca tık kalır (uzun basma ile geri alınır)
 	const handleSelectSeries = useCallback((series: Series) => {
 		weakTrainingRef.current = false;
 		setWeakTraining(false);
 		setSelectedSeriesId(series.id);
 		saveSelectedSeriesId(series.id);
+		// Girer girmez tıkla işaretle — çıkınca da kalır
+		if (!completedSeries.has(series.id)) {
+			const next = markSeriesCompleted(series.id);
+			setCompletedSeries(new Set(next));
+		}
 		setIsSeriesOpen(false);
 		// Yeni seriyle yemleri sıfırla
 		eatenTotalRef.current = 0;
@@ -939,9 +952,14 @@ export default function App() {
 		setComboStreak(0);
 		comboStreakRef.current = 0;
 		setGameStatus("ready");
-	}, [customWordBank, setGameStatus]);
+	}, [customWordBank, setGameStatus, completedSeries]);
 
 	const handleClearSeries = useCallback(() => {
+		// Çıkmadan önce tıkla işaretle — çıkınca tık kalır
+		if (activeSeries && !completedSeries.has(activeSeries.id)) {
+			const next = markSeriesCompleted(activeSeries.id);
+			setCompletedSeries(new Set(next));
+		}
 		setSelectedSeriesId(null);
 		saveSelectedSeriesId(null);
 		setIsSeriesOpen(false);
@@ -964,7 +982,7 @@ export default function App() {
 		const nextFoodCell = findOpenCell(snakeRef.current, eatenTotalRef.current + 3);
 		foodPointRef.current = nextFoodCell;
 		setFoodPoint(nextFoodCell);
-	}, [activePool, selectedTopic, selectedLevel, customWordBank]);
+	}, [activePool, selectedTopic, selectedLevel, customWordBank, activeSeries, completedSeries]);
 
 	// Oyun bitince seri otomatik ✔
 	useEffect(() => {
