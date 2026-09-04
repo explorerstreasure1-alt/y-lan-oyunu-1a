@@ -144,7 +144,7 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   setTimeout(loadVoices, 500);
 }
 
-function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "it"): number {
+function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "it" | "es"): number {
   const name = v.name.toLowerCase();
   const lang = v.lang.toLowerCase();
   let s = 0;
@@ -175,6 +175,14 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "i
     if (name.includes("natural") || name.includes("neural")) s += 35;
     if (name.includes("elsa") || name.includes("isabella") || name.includes("cosimo")) s += 25;
     if (name.includes("espeak")) s -= 20;
+  } else if (targetLang === "es") {
+    if (lang === "es-es" || lang === "es-mx" || lang === "es-us") s += 100;
+    else if (lang.startsWith("es")) s += 80;
+    if (name.includes("google") && lang.includes("es")) s += 60;
+    if (name.includes("microsoft") && lang.includes("es")) s += 30;
+    if (name.includes("natural") || name.includes("neural")) s += 35;
+    if (name.includes("helena") || name.includes("laura") || name.includes("pablo") || name.includes("sabina")) s += 25;
+    if (name.includes("espeak")) s -= 20;
   } else {
     // Russian
     if (lang === "ru-ru") s += 100;
@@ -190,7 +198,7 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "i
   return s;
 }
 
-function pickBestVoice(langPrefix: "en" | "tr" | "ru" | "it"): SpeechSynthesisVoice | null {
+function pickBestVoice(langPrefix: "en" | "tr" | "ru" | "it" | "es"): SpeechSynthesisVoice | null {
   if (cachedVoices.length === 0) loadVoices();
   if (cachedVoices.length === 0) return null;
   const scored = cachedVoices
@@ -248,14 +256,14 @@ function extractCoreTurkishForSpeech(raw: string): string {
 
 function makeUtterance(
   text: string,
-  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT",
+  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES",
   rate: number,
   pitch: number,
   volume: number = 1
 ): SpeechSynthesisUtterance {
   const utterance = new SpeechSynthesisUtterance(text);
-  const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : lang.startsWith("it") ? "it" : "tr";
-  const best = pickBestVoice(prefix as "en" | "tr" | "ru" | "it");
+  const prefix = lang.startsWith("en") ? "en" : lang.startsWith("ru") ? "ru" : lang.startsWith("it") ? "it" : lang.startsWith("es") ? "es" : "tr";
+  const best = pickBestVoice(prefix as "en" | "tr" | "ru" | "it" | "es");
   if (best) utterance.voice = best;
   utterance.lang = lang;
   utterance.rate = rate;
@@ -266,7 +274,7 @@ function makeUtterance(
 
 function speakUtterance(
   text: string,
-  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT",
+  lang: "en-US" | "tr-TR" | "ru-RU" | "it-IT" | "es-ES",
   rate: number,
   pitch: number,
   volume: number = 1,
@@ -309,9 +317,9 @@ function speakUtterance(
 }
 
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
-let currentSpeechLang: "en" | "ru" | "it" = "en";
+let currentSpeechLang: "en" | "ru" | "it" | "es" = "en";
 
-export function setSpeechLanguage(lang: "en" | "ru" | "it") {
+export function setSpeechLanguage(lang: "en" | "ru" | "it" | "es") {
   currentSpeechLang = lang;
 }
 
@@ -325,6 +333,9 @@ function cleanRussianWordForSpeech(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }
 function cleanItalianWordForSpeech(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ");
+}
+function cleanSpanishWordForSpeech(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }
 
@@ -347,49 +358,53 @@ export function speakWordDetails(
 
   const isRussian = currentSpeechLang === "ru";
   const isItalian = currentSpeechLang === "it";
-  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
+  const isSpanish = currentSpeechLang === "es";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const trCore = extractCoreTurkishForSpeech(meaningTr);
 
   let targetText = wordClean;
   if (mode === "word-def") targetText = `${wordClean}. ${definition}`;
   if (mode === "word-def-ex") {
-    // Şablon örnekler "Example:"/"Пример:"/"Esempio:" ile başlar - çifte önek okunmasın
-    const exampleClean = example.replace(/^(Example|Пример|Например|Esempio)\s*:\s*/i, "").trim();
-    const forExample = isRussian ? "Например:" : isItalian ? "Per esempio:" : "For example:";
+    // Şablon örnekler "Example:"/"Пример:"/"Esempio:"/"Ejemplo:" ile başlar - çifte önek okunmasın
+    const exampleClean = example.replace(/^(Example|Пример|Например|Esempio|Ejemplo)\s*:\s*/i, "").trim();
+    const forExample = isRussian ? "Например:" : isItalian ? "Per esempio:" : isSpanish ? "Por ejemplo:" : "For example:";
     targetText = `${wordClean}. ${definition}. ${forExample} ${exampleClean}`;
   }
 
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // BİRAZ HIZLI: hızlı modda 1. mama telaffuzu 2. mamadan ÖNCE tamamlansın diye
-  // okuma orta-üstü bantta - A1 ~1.25 (net), B1 ~1.4, C2 ~1.55 (2.0 turbo DEĞİL)
+  // HIZLANDIRILDI + boşluk sıfır: A1 1.55 → C2 1.95, Türkçe hemen ardına ~30ms içinde
   const levelRates: Record<string, number> = {
-    "A1": 1.25,
-    "A2": 1.3,
-    "B1": 1.4,
-    "B2": 1.45,
-    "C1": 1.5,
-    "C2": 1.55
+    "A1": 1.55,
+    "A2": 1.62,
+    "B1": 1.72,
+    "B2": 1.80,
+    "C1": 1.88,
+    "C2": 1.95
   };
-  const rate = levelRates[level] || 1.4;
+  const rate = levelRates[level] || 1.72;
+  const trRate = Math.min(1.95, rate + 0.06); // Türkçe hafif daha hızlı, akıcı
 
-  const wordLang: "en-US" | "ru-RU" | "it-IT" = isRussian ? "ru-RU" : isItalian ? "it-IT" : "en-US";
+  const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : "en-US";
   if (mode === "word-tr") {
-    // ANINDA BAŞLAR + TAMAMLANIR: kelime yeme anında (erken) başlar, BİTER BİTMEZ Türkçe anlam - boşluk yok
+    // ANINDA + SIFIR BOŞLUK: kelime biter bitmez Türkçe ~10ms içinde başlar, hızlı modda kuyruk yok
     speakUtterance(wordClean, wordLang, rate, 1.02, 1, () => {
       if (generation !== speakGeneration) return;
-      try {
-        const ss = window.speechSynthesis;
-        ss.resume();
-        ss.speak(makeUtterance(trCore, "tr-TR", rate, 1.0));
-      } catch { }
+      // boşluğu kısalt — 0ms yerine microtask ile hemen
+      window.setTimeout(() => {
+        if (generation !== speakGeneration) return;
+        try {
+          const ss = window.speechSynthesis;
+          ss.resume();
+          ss.speak(makeUtterance(trCore, "tr-TR", trRate, 1.0));
+        } catch { }
+      }, 12);
     });
   } else if (mode === "word") {
     speakUtterance(wordClean, wordLang, rate, 1.03);
   } else {
-    // Tanım/örnek cümle daha uzun metin: hafif yavaşça (rate - 0.1)
-    speakUtterance(targetText, wordLang, Math.max(1.15, rate - 0.1), 1.02);
+    speakUtterance(targetText, wordLang, Math.max(1.45, rate - 0.08), 1.02);
   }
 }
 
@@ -397,9 +412,10 @@ export function speakEnglishOnly(word: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const isRussian = currentSpeechLang === "ru";
   const isItalian = currentSpeechLang === "it";
-  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : cleanEnglishWordForSpeech(word);
-  const wl: "en-US" | "ru-RU" | "it-IT" = isRussian ? "ru-RU" : isItalian ? "it-IT" : "en-US";
-  speakUtterance(wordClean, wl, 1.4, 1.03);
+  const isSpanish = currentSpeechLang === "es";
+  const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : cleanEnglishWordForSpeech(word);
+  const wl: "en-US" | "ru-RU" | "it-IT" | "es-ES" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : "en-US";
+  speakUtterance(wordClean, wl, 1.72, 1.03);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
