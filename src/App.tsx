@@ -1862,11 +1862,11 @@ const nextFoodCell = findOpenCell(
 									</div>
 								)}
 
-								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#302052] px-3 py-2">
-									<div className="flex items-center gap-1.5">
-										<span className={`status-light status-${status}`} />
-										<span className="font-pixel text-[9px] tracking-wider text-[#ffe99f] truncate max-w-[120px]">
-											{activeSeries ? `📚 ${activeSeries.label}` : `${currentWord.level} • ${currentWord.topic}`}
+								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#2a2258] px-2.5 py-1">
+									<div className="flex items-center gap-1.5 min-w-0">
+										<span className={`status-light status-${status} shrink-0`} />
+										<span className="font-[var(--font-mono)] text-[9px] font-bold tracking-wide text-white/80 truncate max-w-[130px]">
+											{activeSeries ? `📚 ${activeSeries.label}` : `${currentWord.level} · ${currentWord.topic}`}
 										</span>
 									</div>
 									<div className="flex items-center gap-2">
@@ -1893,66 +1893,26 @@ const nextFoodCell = findOpenCell(
 										</span>
 									</div>
 								</div>
-								{/* Word Progress Indicator */}
-								<div className="flex shrink-0 flex-col border-b border-white/10 bg-[#241743] px-3 py-2">
-									{activeSeries && (
-										<div className="mb-1.5 flex items-center justify-between rounded-lg border border-[#99f5c3]/30 bg-[#99f5c3]/10 px-2 py-1">
-											<span className="font-pixel text-[9px] font-black text-[#99f5c3]">📚 {activeSeries.label} • {activeSeries.rangeLabel}</span>
-											<span className="text-[9px] font-bold text-white/60">{completedSeries.has(activeSeries.id) ? "✔ Tamamlandı" : "🎯 Aktif Seri"}</span>
-										</div>
-									)}
-									<div className="flex items-center justify-between mb-1.5">
-										<div className="flex items-center gap-2">
-											<span className="font-pixel text-[10px] font-bold text-white/90">
-												{activeSeries ? `📚 ${activeSeries.label}` : (selectedTopic === "ALL" ? "Tüm Konular" : selectedTopic)}
-											</span>
-											{!activeSeries && selectedLevel !== "ALL" && (
-												<span className="font-pixel text-[10px] font-bold text-[#99f5c3]">
-													{selectedLevel}
-												</span>
-											)}
-										</div>
-										<div className="flex items-center gap-1">
-											<span className="font-pixel text-[10px] font-bold text-[#ffd96d]">
-												{sessionEatenWords.length}
-											</span>
-											<span className="font-pixel text-[10px] text-white/60">
-												/
-											</span>
-											<span className="font-pixel text-[10px] font-bold text-white/70">
-												{displayTotal}
-											</span>
-										</div>
+								{/* Compact progress — tek satır, kısa sayılar, mor tema korunuyor */}
+								<div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#1e1750] px-2.5 py-1.5">
+									<div className="flex items-center gap-1.5 min-w-0 flex-1">
+										<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent-1)] shadow-[0_0_6px_rgba(0,255,163,0.6)]" aria-hidden="true" />
+										<span className="font-[var(--font-mono)] text-[10px] font-bold tracking-[-0.01em] text-white truncate">
+											{activeSeries ? `${activeSeries.label} · ${activeSeries.rangeLabel}` : `${currentWord.level} · ${currentWord.topic}`}
+										</span>
+										{activeSeries && completedSeries.has(activeSeries.id) && <span className="hidden sm:inline shrink-0 rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[8px] font-black leading-none text-[#071a12]">✔</span>}
 									</div>
-									{/* Progress Bar */}
-									<div className="flex items-center gap-2">
-										<div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
-											<div
-												className="h-full bg-gradient-to-r from-[#99f5c3] to-[#ffd96d] transition-all duration-300"
-												style={{ width: `${Math.min(100, (sessionEatenWords.length / displayTotal) * 100)}%` }}
-											/>
+									<div className="flex items-center gap-1.5 shrink-0">
+										<span className="font-[var(--font-mono)] text-[10px] font-bold text-white tabular-nums">
+											{sessionEatenWords.length}<span className="text-white/25">/{displayTotal}</span>
+										</span>
+										<div className="hidden sm:block h-1.5 w-16 sm:w-20 rounded-full bg-white/10 overflow-hidden">
+											<div className="h-full rounded-full bg-gradient-to-r from-[var(--accent-1)] to-[var(--accent-2)] transition-all duration-500" style={{ width: `${Math.min(100, (sessionEatenWords.length / Math.max(1,displayTotal)) * 100)}%` }} />
 										</div>
-										<span className="font-pixel text-[9px] font-bold text-[#ff84ad] whitespace-nowrap">
+										<span className="hidden sm:inline font-[var(--font-mono)] text-[8px] font-bold text-white/35 tabular-nums whitespace-nowrap">
 											{Math.max(0, displayTotal - sessionEatenWords.length)} kaldı
 										</span>
 									</div>
-									{/* Last Eaten Word */}
-									{lastEaten && (
-										<div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1.5">
-											<span className="font-pixel text-[8px] text-white/50">Son:</span>
-											<span className="font-pixel text-[9px] font-bold text-[#99f5c3]">
-												{lastEaten.word.word}
-											</span>
-											<span className="font-pixel text-[8px] text-white/60">
-												{lastEaten.word.meaningTr.split(" /")[0].split(" (")[0].slice(0, 15)}
-											</span>
-											{lastEaten.stars > 0 && (
-												<span className="font-pixel text-[8px] text-[#ffd96d]">
-													{"⭐".repeat(lastEaten.stars)}
-												</span>
-											)}
-										</div>
-									)}
 								</div>
 
 								<div
@@ -2173,12 +2133,9 @@ const nextFoodCell = findOpenCell(
 									)}
 								</div>
 
-								<div className="flex shrink-0 items-center justify-between bg-[#302052] px-3 py-2">
-									<p className="font-pixel text-[9px] text-white/60">
-										SKOR{" "}
-										<strong className="text-[#99f5c3] ml-1">
-											{String(score).padStart(3, "0")}
-										</strong>
+								<div className="flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1">
+									<p className="font-[var(--font-mono)] text-[9px] font-bold text-white/50">
+										SKOR <strong className="text-[var(--accent-1)] ml-1 tabular-nums">{String(score).padStart(3, "0")}</strong>
 									</p>
 									{mouseCount > 0 && (
 										<p className="font-pixel text-[9px] text-[#c9a2ff]">
