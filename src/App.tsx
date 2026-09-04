@@ -444,7 +444,7 @@ export default function App() {
 	// Seçili konu yeni dilin havuzunda yoksa sessizce tüm havuza düşmesin: "ALL" a sıfırla
 	useEffect(() => {
 		if (selectedTopic === "ALL") return;
-		const pool = language === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+		const pool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : LEARNING_PATH;
 		if (!pool.some((w) => w.topic === selectedTopic)) {
 			setSelectedTopic("ALL");
 			try {
@@ -785,7 +785,7 @@ export default function App() {
 			try {
 				window.localStorage.setItem("snake-abc-lang", nextLang);
 			} catch { }
-			const newPool = nextLang === "ru" ? RUSSIAN_PATH : LEARNING_PATH;
+			const newPool = nextLang === "ru" ? RUSSIAN_PATH : nextLang === "it" ? ITALIAN_PATH : LEARNING_PATH;
 			const newMap = getSavedMasteryMap(nextLang);
 			masteryMapRef.current = newMap;
 			setMasteryMap(newMap);

@@ -1,6 +1,6 @@
 import { LEARNING_PATH, LEGACY_BASE_WORDS, LEGACY_PADDING_START, type VocabularyWord } from "./vocabulary";
 
-export type LearningLanguage = "en" | "ru";
+export type LearningLanguage = "en" | "ru" | "it";
 
 export type WordMastery = {
   wordId: number;
@@ -18,9 +18,12 @@ export type ActiveFoodItem = {
 
 const MASTERY_STORAGE_KEY = "snake_abc_mastery_v5_story_3000";
 const MASTERY_STORAGE_KEY_RU = "snake_abc_mastery_v5_story_3000_ru";
+const MASTERY_STORAGE_KEY_IT = "snake_abc_mastery_v5_story_3000_it";
 
 function storageKeyFor(lang: LearningLanguage): string {
-  return lang === "ru" ? MASTERY_STORAGE_KEY_RU : MASTERY_STORAGE_KEY;
+  if (lang === "ru") return MASTERY_STORAGE_KEY_RU;
+  if (lang === "it") return MASTERY_STORAGE_KEY_IT;
+  return MASTERY_STORAGE_KEY;
 }
 
 export function getSavedMasteryMap(lang: LearningLanguage = "en"): Record<number, WordMastery> {

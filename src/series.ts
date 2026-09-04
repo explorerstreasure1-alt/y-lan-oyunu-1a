@@ -1,4 +1,4 @@
-import { LEARNING_PATH, type VocabularyWord, type WordLevel } from "./vocabulary";
+import { ITALIAN_PATH, LEARNING_PATH, type VocabularyWord, type WordLevel } from "./vocabulary";
 import { RUSSIAN_PATH } from "./vocabularyRu";
 import type { LearningLanguage } from "./srs";
 
@@ -20,7 +20,7 @@ const STORAGE_KEY = "snake_abc_series_completed_v1";
 
 function poolForLang(lang: string): VocabularyWord[] {
   if (lang === "ru") return RUSSIAN_PATH;
-  // "it" currently shares English pool
+  if (lang === "it") return ITALIAN_PATH;
   return LEARNING_PATH;
 }
 
@@ -56,8 +56,7 @@ export function getAllSeriesFlat(): Record<LearningLanguage, Series[]> {
   return {
     en: getSeriesForLanguage("en"),
     ru: getSeriesForLanguage("ru"),
-    // @ts-expect-error it not in LearningLanguage union yet but we support alias
-    it: getSeriesForLanguage("en"),
+    it: getSeriesForLanguage("it"),
   } as Record<LearningLanguage, Series[]>;
 }
 
