@@ -174,3 +174,4 @@ export const LEARNING_PATH: VocabularyWord[] = buildDataset();
 export const TOTAL_WORDS = LEARNING_PATH.length;
 export { ITALIAN_PATH } from "./vocabularyIt";
 export { SPANISH_PATH } from "./vocabularyEs";
+export { PORTUGUESE_PATH } from "./vocabularyPt";
