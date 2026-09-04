@@ -107,29 +107,41 @@ html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.14) transparen
   letter-spacing: -0.02em;
 }
 
-/* ---------- Page backdrop ---------- */
+/* ---------- Page backdrop — şık, ful siyah değil ---------- */
 body {
   background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(var(--accent-1-rgb)/0.09), transparent 60%),
-    radial-gradient(900px 500px at 90% 0%, rgba(var(--accent-2-rgb)/0.08), transparent 55%),
-    radial-gradient(800px 600px at 50% 110%, rgba(124,98,255,0.07), transparent 60%),
-    var(--bg-primary);
+    radial-gradient(1100px 520px at 18% -8%, rgba(0,255,163,0.16), transparent 58%),
+    radial-gradient(900px 480px at 88% -6%, rgba(255,183,0,0.13), transparent 54%),
+    radial-gradient(1000px 640px at 50% 108%, rgba(124,90,255,0.14), transparent 62%),
+    radial-gradient(700px 420px at 72% 38%, rgba(110,231,255,0.06), transparent 60%),
+    linear-gradient(180deg, #0f0e2a 0%, #0B091A 38%, #0a0a14 100%);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-.arcade-stars {
-  position: fixed; inset: 0; pointer-events: none; opacity: 0.32;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1.4px),
-    radial-gradient(circle, rgba(var(--accent-1-rgb)/0.55) 1px, transparent 1.4px);
-  background-position: 18px 14px, 88px 54px;
-  background-size: 110px 110px, 150px 150px;
-  animation: stars-drift 24s linear infinite;
-  mask-image: radial-gradient(120% 90% at 50% 0%, black 55%, transparent 100%);
+/* En arka layer — siyah yerine derin mor lacivert + aurora */
+body::before {
+  content:""; position: fixed; inset:0; pointer-events:none; z-index:-1;
+  background:
+    radial-gradient(900px 500px at 14% 16%, rgba(120,90,255,0.18), transparent 62%),
+    radial-gradient(700px 380px at 86% 78%, rgba(0,255,163,0.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 28%);
+  opacity: 0.9;
 }
-@keyframes stars-drift { from { transform: translateY(0)} to { transform: translateY(24px)} }
+
+.arcade-stars {
+  position: fixed; inset: 0; pointer-events: none; opacity: 0.52;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.72) 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(0,255,163,0.62) 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,183,0,0.45) 1px, transparent 1.5px);
+  background-position: 18px 14px, 88px 54px, 48px 92px;
+  background-size: 110px 110px, 150px 150px, 190px 190px;
+  animation: stars-drift 22s linear infinite;
+  mask-image: radial-gradient(120% 90% at 50% 0%, black 58%, transparent 100%);
+}
+@keyframes stars-drift { from { transform: translateY(0)} to { transform: translateY(26px)} }
 
 /* ---------- Top App chrome ---------- */
 .pixel-mark {
@@ -165,11 +177,15 @@ button:focus-visible {
 /* ---------- Bezel & board — premium arcade ---------- */
 .arcade-bezel {
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--r-xl);
-  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)) , var(--bg-secondary);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter: blur(10px) saturate(1.15);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)),
+    radial-gradient(500px 280px at 18% 0%, rgba(0,255,163,0.08), transparent 62%),
+    radial-gradient(420px 260px at 88% 100%, rgba(255,183,0,0.07), transparent 60%),
+    var(--bg-secondary);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(120,90,255,0.10), inset 0 1px 0 rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px) saturate(1.18);
 }
 .story-frame { display:flex; flex-direction:column; align-items:center; width:100%; }
 .story-bezel {
@@ -189,13 +205,15 @@ button:focus-visible {
 .game-board {
   position: relative; display:block;
   aspect-ratio: 9/16; overflow:hidden;
-  background-color: #0f0d24;
+  background-color: #0f0e2e;
   background-image:
-    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px),
-    radial-gradient(600px 400px at 50% 0%, rgba(var(--accent-1-rgb)/0.08), transparent 55%),
-    radial-gradient(700px 500px at 85% 85%, rgba(var(--accent-2-rgb)/0.06), transparent 60%);
-  background-size: 100% calc(100%/32), calc(100%/18) 100%, auto, auto;
+    linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px),
+    radial-gradient(700px 420px at 28% 12%, rgba(0,255,163,0.13), transparent 58%),
+    radial-gradient(620px 380px at 82% 88%, rgba(255,183,0,0.10), transparent 58%),
+    radial-gradient(600px 420px at 50% 52%, rgba(124,90,255,0.10), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%);
+  background-size: 100% calc(100%/32), calc(100%/18) 100%, auto, auto, auto, auto;
 }
 .game-board::after {
   content:""; position:absolute; inset:0; z-index:4; pointer-events:none; opacity:0.08;
