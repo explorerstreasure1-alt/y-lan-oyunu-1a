@@ -327,8 +327,18 @@ function speakUtterance(
 /** Aktif öğrenme dili - App.tsx dil değişince çağırır */
 let currentSpeechLang: "en" | "ru" | "it" | "es" | "pt" = "en";
 
+// Okuma ayarları — SettingsModal'den kontrol edilir
+let speechSpeed: "slow" | "normal" | "fast" | "turbo" = "fast";
+let speechGap: "tight" | "normal" = "tight";
+let speechClarityBoost = true;
+
 export function setSpeechLanguage(lang: "en" | "ru" | "it" | "es" | "pt") {
   currentSpeechLang = lang;
+}
+export function setSpeechSettings(opts: { speed?: typeof speechSpeed; gap?: typeof speechGap; clarity?: boolean }) {
+  if (opts.speed) speechSpeed = opts.speed;
+  if (opts.gap) speechGap = opts.gap;
+  if (typeof opts.clarity === "boolean") speechClarityBoost = opts.clarity;
 }
 
 /**
@@ -386,8 +396,8 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // HIZLANDIRILDI + boşluk sıfır: A1 1.55 → C2 1.95, Türkçe hemen ardına ~30ms içinde
-  const levelRates: Record<string, number> = {
+  // Hız + netlik: ayarlara göre çarpan, netlik boost'ta pitch net ve ses kalitesi öncelikli
+  const baseRates: Record<string, number> = {
     "A1": 1.55,
     "A2": 1.62,
     "B1": 1.72,
@@ -395,28 +405,34 @@ export function speakWordDetails(
     "C1": 1.88,
     "C2": 1.95
   };
-  const rate = levelRates[level] || 1.72;
-  const trRate = Math.min(1.95, rate + 0.06); // Türkçe hafif daha hızlı, akıcı
+  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.82, normal: 0.92, fast: 1.0, turbo: 1.14 };
+  const base = baseRates[level] || 1.72;
+  const rate = Math.min(2.0, base * (speedMul[speechSpeed] || 1));
+  // Netlik boost: pitch 0.98 daha net, değilse 1.02 biraz tiz
+  const wordPitch = speechClarityBoost ? 0.98 : 1.04;
+  const trPitch = speechClarityBoost ? 0.98 : 1.02;
+  // Türkçe hız: netlikte yabancı kadar değil, akıcılık için hafif hızlı
+  const trRate = speechClarityBoost ? Math.min(1.92, rate * 0.96) : Math.min(1.98, rate + 0.04);
+  const gapMs = speechGap === "tight" ? 10 : 55;
 
   const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : "en-US";
   if (mode === "word-tr") {
-    // ANINDA + SIFIR BOŞLUK: kelime biter bitmez Türkçe ~10ms içinde başlar, hızlı modda kuyruk yok
-    speakUtterance(wordClean, wordLang, rate, 1.02, 1, () => {
+    // Yabancı kelime → TR: hız ve boşluk ayara göre, TR net ve tok
+    speakUtterance(wordClean, wordLang, rate, wordPitch, 1, () => {
       if (generation !== speakGeneration) return;
-      // boşluğu kısalt — 0ms yerine microtask ile hemen
       window.setTimeout(() => {
         if (generation !== speakGeneration) return;
         try {
           const ss = window.speechSynthesis;
           ss.resume();
-          ss.speak(makeUtterance(trCore, "tr-TR", trRate, 1.0));
+          ss.speak(makeUtterance(trCore, "tr-TR", trRate, trPitch));
         } catch { }
-      }, 12);
+      }, gapMs);
     });
   } else if (mode === "word") {
-    speakUtterance(wordClean, wordLang, rate, 1.03);
+    speakUtterance(wordClean, wordLang, rate, wordPitch);
   } else {
-    speakUtterance(targetText, wordLang, Math.max(1.45, rate - 0.08), 1.02);
+    speakUtterance(targetText, wordLang, Math.max(1.45, rate - 0.08), wordPitch);
   }
 }
 

@@ -2,6 +2,9 @@ import { type SpeechMode } from "../audio";
 
 type AppSettings = {
   speechMode: SpeechMode;
+  speechSpeed: "slow" | "normal" | "fast" | "turbo";
+  speechGap: "tight" | "normal";
+  speechClarity: boolean;
   sfxEnabled: boolean;
   musicOn: boolean;
   autoPauseOnEat: boolean;
@@ -75,6 +78,46 @@ export function SettingsModal({ isOpen, onClose, settings, onSettingsChange }: S
                   </span>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Speech Speed & Gap & Clarity — yeni */}
+          <div>
+            <h3 className="mb-3 font-pixel text-xs tracking-wider text-[#99f5c3] uppercase">
+              🗣️ OKUMA HIZI VE NETLİK
+            </h3>
+            <p className="mb-3 text-[11px] leading-4 text-white/50">Yabancı kelime hızını ve Türkçe'ye geçiş boşluğunu ayarla — netlik modu daha tok ve anlaşılır okur.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { v: "slow" as const, l: "Yavaş", d: "0.82× net" },
+                { v: "normal" as const, l: "Normal", d: "0.92× dengeli" },
+                { v: "fast" as const, l: "Hızlı", d: "1.0× önerilen" },
+                { v: "turbo" as const, l: "Turbo", d: "1.14× hızlı" },
+              ].map((o) => (
+                <button key={o.v} type="button" onClick={() => onSettingsChange({ speechSpeed: o.v })}
+                  className={`rounded-xl border px-2 py-2.5 text-center transition ${settings.speechSpeed === o.v ? "border-[#99f5c3] bg-[#99f5c3]/15 text-white" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10"}`}>
+                  <p className="text-xs font-black">{o.l}</p>
+                  <p className="text-[10px] text-white/50">{o.d}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => onSettingsChange({ speechGap: settings.speechGap === "tight" ? "normal" : "tight" })}
+                className={`rounded-xl border px-3 py-2.5 text-left flex items-center justify-between ${settings.speechGap === "tight" ? "border-[#ffd96d] bg-[#ffd96d]/10" : "border-white/12 bg-white/5"}`}>
+                <div>
+                  <p className="text-xs font-black text-white">⏱️ Boşluk: {settings.speechGap === "tight" ? "Sıkı (12ms)" : "Normal (55ms)"}</p>
+                  <p className="text-[10px] text-white/50">Yabancı → TR arası</p>
+                </div>
+                <span className="text-xs font-bold text-white/70">{settings.speechGap === "tight" ? "●" : "○"}</span>
+              </button>
+              <button type="button" onClick={() => onSettingsChange({ speechClarity: !settings.speechClarity })}
+                className={`rounded-xl border px-3 py-2.5 text-left flex items-center justify-between ${settings.speechClarity ? "border-[#99f5c3] bg-[#99f5c3]/10" : "border-white/12 bg-white/5"}`}>
+                <div>
+                  <p className="text-xs font-black text-white">🎙️ Netlik {settings.speechClarity ? "Açık" : "Kapalı"}</p>
+                  <p className="text-[10px] text-white/50">Tok, yerel ses öncelikli</p>
+                </div>
+                <span className={`h-6 w-10 rounded-full relative transition ${settings.speechClarity ? "bg-[#99f5c3]" : "bg-white/20"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-[#17112e] transition ${settings.speechClarity ? "left-5" : "left-1"}`} /></span>
+              </button>
             </div>
           </div>
 

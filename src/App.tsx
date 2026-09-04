@@ -11,9 +11,10 @@ import {
 	playEatSfx,
 	playGameOverSfx,
 	playTurnSfx,
-	type SpeechMode,
 	setSpeechLanguage,
+	setSpeechSettings,
 	speakWordDetails,
+	type SpeechMode,
 } from "./audio";
 import {
 	type AchievementStats,
@@ -245,6 +246,9 @@ function buildFilteredPool(
 
 type SavedSettings = {
 	speechMode: SpeechMode;
+	speechSpeed: "slow" | "normal" | "fast" | "turbo";
+	speechGap: "tight" | "normal";
+	speechClarity: boolean;
 	sfxEnabled: boolean;
 	musicOn: boolean;
 	autoPauseOnEat: boolean;
@@ -262,6 +266,9 @@ function loadSettings(): SavedSettings {
 		if (!raw)
 			return {
 				speechMode: "word-tr",
+				speechSpeed: "fast",
+				speechGap: "tight",
+				speechClarity: true,
 				sfxEnabled: true,
 				musicOn: true,
 				autoPauseOnEat: false,
@@ -290,8 +297,14 @@ function loadSettings(): SavedSettings {
 			parsed.repeatFrequency === 2 || parsed.repeatFrequency === 3
 				? parsed.repeatFrequency
 				: 1;
+		const speechSpeed: SavedSettings["speechSpeed"] =
+			parsed.speechSpeed === "slow" || parsed.speechSpeed === "normal" || parsed.speechSpeed === "turbo" ? parsed.speechSpeed : "fast";
+		const speechGap: SavedSettings["speechGap"] = parsed.speechGap === "normal" ? "normal" : "tight";
 		return {
 			speechMode: mode,
+			speechSpeed,
+			speechGap,
+			speechClarity: typeof parsed.speechClarity === "boolean" ? parsed.speechClarity : true,
 			sfxEnabled:
 				typeof parsed.sfxEnabled === "boolean" ? parsed.sfxEnabled : true,
 			musicOn: typeof parsed.musicOn === "boolean" ? parsed.musicOn : true,
@@ -309,6 +322,9 @@ function loadSettings(): SavedSettings {
 	} catch {
 		return {
 			speechMode: "word-tr",
+			speechSpeed: "fast",
+			speechGap: "tight",
+			speechClarity: true,
 			sfxEnabled: true,
 			musicOn: true,
 			autoPauseOnEat: false,
@@ -657,6 +673,12 @@ export default function App() {
 		settings.fontSize,
 		settings.highContrast,
 	]);
+
+	// Telaffuz ayarlarını audio engine'e aktar — hız / boşluk / netlik
+	useEffect(() => {
+		setSpeechSettings({ speed: settings.speechSpeed, gap: settings.speechGap, clarity: settings.speechClarity });
+		setSpeechLanguage(language);
+	}, [settings.speechSpeed, settings.speechGap, settings.speechClarity, language]);
 
 	// Scroll-lock when any modal or landing is open — prevents background scroll, keeps premium feel
 	useEffect(() => {
