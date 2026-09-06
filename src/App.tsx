@@ -1421,24 +1421,36 @@ export default function App() {
 				isSamePoint(segment, nextHead),
 			);
 
-			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır — shield/extraLife artık kafayı dışarı çıkarmadan korur, hızlı bitişi engeller
-			if ((hitsWall || hitsBody) && !isGhostActive) {
-				if (hasShield) {
-					setHasShield(false);
-					// Çarpma anında hareketi durdur, yılan olduğu yerde kalsın — dışarı taşma yok
-					try { navigator.vibrate?.(20); } catch {}
-					return;
-				} else if (extraLives > 0) {
-					// ❤️ Can sonsuz: çarpma anında can eksilmez, oyun devam eder
+			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır
+			// Duvar: sonsuz can — olduğu yerde kal, oyun bitmez
+			if (hitsWall && !isGhostActive) {
+				try { navigator.vibrate?.(15); } catch {}
+				if (sfxEnabled) playEatSfx(false, 0);
+				if (hasShield) setHasShield(false);
+				return;
+			}
+			// Kendi kuyruğunu yeme: gövdeye çarpınca o noktadan kes, yılan kısalır
+			if (hitsBody && !isGhostActive) {
+				const hitIdx = bodyToCheck.findIndex((seg) => isSamePoint(seg, nextHead));
+				if (hitIdx !== -1) {
+					// Kuyruğu yedi — çarpılan segmentten kuyruğa kadar olan kısım kopar
+					const cutSnake = [nextHead, ...oldSnake.slice(0, hitIdx)];
+					// En az 1 segment kalsın
+					const finalCut = cutSnake.length < 1 ? [nextHead] : cutSnake;
+					snakeRef.current = finalCut;
+					setSnake(finalCut);
+					// Küçük efekt: board flash ve titreşim
+					setBoardFlash("good");
+					window.setTimeout(() => setBoardFlash(null), 220);
+					try { navigator.vibrate?.(25); } catch {}
 					if (sfxEnabled) playEatSfx(false, 0);
-					try { navigator.vibrate?.(20); } catch {}
-					return;
+					// Kalkan varsa harca ama oyun bitmesin
+					if (hasShield) setHasShield(false);
 				} else {
-					// Oyun hiç bitmesin — can sonsuz: duvar/gövde çarpışması oyunu bitirmiyor, sadece yılan olduğu yerde kalır
+					// Bulunamadıysa sadece dur
 					try { navigator.vibrate?.(15); } catch {}
-					if (sfxEnabled) playEatSfx(false, 0);
-					return;
 				}
+				return;
 			}
 
 			const nextSnake = [nextHead, ...oldSnake];
