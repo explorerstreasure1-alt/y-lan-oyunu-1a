@@ -52,23 +52,18 @@ import {
 	type WordMastery,
 } from "./srs";
 import {
-	FRENCH_PATH,
-	GERMAN_PATH,
-	ITALIAN_PATH,
-	LEARNING_PATH,
-	PORTUGUESE_PATH,
-	SPANISH_PATH,
 	type VocabularyWord,
 	type WordLevel,
 } from "./vocabulary";
-import { RUSSIAN_PATH } from "./vocabularyRu";
 import { WordLibraryModal } from "./WordLibraryModal";
 import { SeriesModal } from "./components/SeriesModal";
 import {
   getCompletedSeries,
   getSelectedSeriesId,
   getSeriesForLanguage,
+  LANG_META,
   markSeriesCompleted,
+  poolForLang,
   saveSelectedSeriesId,
   type Series,
 } from "./series";
@@ -440,13 +435,13 @@ export default function App() {
 			return "en";
 		}
 	});
-	const activePool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : language === "de" ? GERMAN_PATH : LEARNING_PATH;
+	const activePool = useMemo(() => poolForLang(language), [language]);
 	const filteredPool = useMemo(
 		() => buildFilteredPool(selectedTopic, selectedLevel, activePool),
 		[selectedTopic, selectedLevel, activePool],
 	);
 
-	// --- 50'li Seri sistemi ---
+	// --- 10'lu Seri sistemi ---
 	const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(() => getSelectedSeriesId());
 	const [completedSeries, setCompletedSeries] = useState<Set<string>>(() => getCompletedSeries());
 	const [isSeriesOpen, setIsSeriesOpen] = useState(false);
@@ -455,7 +450,7 @@ export default function App() {
 		const all = getSeriesForLanguage(language as LearningLanguage);
 		return all.find((s) => s.id === selectedSeriesId) ?? null;
 	}, [selectedSeriesId, language]);
-	// Seri seçiliyse oyun sadece o 50 kelimeyle oynanır, yoksa konu/seviye filtresi geçerli
+	// Seri seçiliyse oyun sadece o 10 kelimeyle oynanır, yoksa konu/seviye filtresi geçerli
 	const effectivePool = activeSeries ? activeSeries.words : filteredPool;
 
 	// Dil değişince: ses dilini ayarla + o güne ait kayıt haritasını yükle
@@ -468,7 +463,7 @@ export default function App() {
 	// Seçili konu yeni dilin havuzunda yoksa sessizce tüm havuza düşmesin: "ALL" a sıfırla
 	useEffect(() => {
 		if (selectedTopic === "ALL") return;
-		const pool = language === "ru" ? RUSSIAN_PATH : language === "it" ? ITALIAN_PATH : language === "es" ? SPANISH_PATH : language === "pt" ? PORTUGUESE_PATH : language === "fr" ? FRENCH_PATH : language === "de" ? GERMAN_PATH : LEARNING_PATH;
+		const pool = poolForLang(language);
 		if (!pool.some((w) => w.topic === selectedTopic)) {
 			setSelectedTopic("ALL");
 			try {
@@ -837,7 +832,7 @@ export default function App() {
 			try {
 				window.localStorage.setItem("snake-abc-lang", nextLang);
 			} catch { }
-			const newPool = nextLang === "ru" ? RUSSIAN_PATH : nextLang === "it" ? ITALIAN_PATH : nextLang === "es" ? SPANISH_PATH : nextLang === "pt" ? PORTUGUESE_PATH : nextLang === "fr" ? FRENCH_PATH : nextLang === "de" ? GERMAN_PATH : LEARNING_PATH;
+			const newPool = poolForLang(nextLang);
 			const newMap = getSavedMasteryMap(nextLang);
 			masteryMapRef.current = newMap;
 			setMasteryMap(newMap);
@@ -1682,7 +1677,7 @@ const nextFoodCell = findOpenCell(
 					: "HAZIR";
 	const xpLevel = Math.floor(xp / 100) + 1;
 
-	// Seri aktifse ilerleme sadece o 50 kelimeye göre, yoksa konu/seviye filtresi
+	// Seri aktifse ilerleme sadece o 10 kelimeye göre, yoksa konu/seviye filtresi
 	const isPoolFiltered = activeSeries ? true : filteredPool.length < activePool.length;
 	const poolTotal = activeSeries ? activeSeries.words.length : filteredPool.length;
 	const poolLearned = (activeSeries ? activeSeries.words : filteredPool).filter(
@@ -1764,19 +1759,17 @@ const nextFoodCell = findOpenCell(
 
 					<div className="flex flex-wrap items-center gap-1">
 						<div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur">
-							{[
-								{ c: "en", f: "🇬🇧", a: "bg-white text-[#0a0a12]" },
-								{ c: "ru", f: "🇷🇺", a: "bg-white text-[#0a0a12]" },
-								{ c: "it", f: "🇮🇹", a: "bg-white text-[#0a0a12]" },
-								{ c: "es", f: "🇪🇸", a: "bg-white text-[#0a0a12]" },
-								{ c: "pt", f: "🇵🇹", a: "bg-white text-[#0a0a12]" },
-								{ c: "fr", f: "🇫🇷", a: "bg-white text-[#0a0a12]" },
-								{ c: "de", f: "🇩🇪", a: "bg-white text-[#0a0a12]" },
-							].map((l) => (
-								<button key={l.c} type="button" onClick={() => switchLanguage(l.c as LearningLanguage)} aria-label={l.c}
-									className={`h-6 w-6 grid place-items-center rounded-full text-[11px] leading-none transition ${language === l.c ? l.a + " shadow-sm" : "text-white/55 hover:text-white hover:bg-white/10"}`}>{l.f}</button>
-							))}
+							{(Object.keys(LANG_META) as Array<keyof typeof LANG_META>).map((c) => {
+								const meta = LANG_META[c];
+								return (
+									<button key={c} type="button" onClick={() => switchLanguage(c as LearningLanguage)} aria-label={meta.nameTr} title={meta.nameTr}
+										className={`h-6 px-1.5 sm:w-auto grid place-items-center rounded-full text-[11px] leading-none transition gap-1 ${language === c ? "bg-white text-[#0a0a12] shadow-sm px-2" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
+										<span>{meta.flag}</span><span className={`hidden ${language === c ? "sm:inline" : "sm:hidden"} text-[10px] font-bold`}>{meta.nameTr}</span>
+									</button>
+								);
+							})}
 						</div>
+						<span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-white/50">{LANG_META[language]?.flag} {LANG_META[language]?.nameTr}</span>
 						<button type="button" onClick={() => setIsSeriesOpen(true)}
 							className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition ${activeSeries ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)] shadow-sm" : "bg-white/[0.05] text-white/70 border-white/10 hover:bg-white/10 hover:text-white"}`}>
 							{activeSeries ? `📚 ${activeSeries.label}` : "Seriye Başla"}
@@ -2756,21 +2749,22 @@ const nextFoodCell = findOpenCell(
 						</div>
 
 						<div className="px-6 sm:px-8 pb-5 flex flex-wrap items-center justify-center gap-1.5">
-							<button type="button" onClick={() => switchLanguage("en")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="en" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>EN</button>
-							<button type="button" onClick={() => switchLanguage("ru")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="ru" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>RU</button>
-							<button type="button" onClick={() => switchLanguage("it")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="it" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>IT</button>
-							<button type="button" onClick={() => switchLanguage("es")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="es" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>ES</button>
-							<button type="button" onClick={() => switchLanguage("pt")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="pt" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>PT</button>
-							<button type="button" onClick={() => switchLanguage("fr")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="fr" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>FR</button>
-							<button type="button" onClick={() => switchLanguage("de")} className={`rounded-full px-3 py-1 text-[11px] font-semibold border transition ${language==="de" ? "bg-white text-[#15122E] border-white" : "bg-transparent text-white/50 border-white/10 hover:text-white/80 hover:border-white/15"}`}>DE</button>
-							<span className="ml-1 text-[11px] text-white/25">· 7 dil · 3000</span>
+							{(Object.keys(LANG_META) as Array<keyof typeof LANG_META>).map((c) => {
+								const meta = LANG_META[c];
+								return (
+									<button key={c} type="button" onClick={() => switchLanguage(c as LearningLanguage)} className={`rounded-full px-3 py-1.5 text-[11px] font-semibold border transition inline-flex items-center gap-1.5 ${language===c ? "bg-white text-[#15122E] border-white shadow-sm" : "bg-transparent text-white/60 border-white/10 hover:text-white/90 hover:border-white/15"}`}>
+										<span>{meta.flag}</span> {meta.nameTr}
+									</button>
+								);
+							})}
+							<span className="ml-1 text-[11px] text-white/25">· 7 dil · 3000 kelime · 10'lu seriler</span>
 						</div>
 
 						<div className="px-6 sm:px-8 pb-7 grid gap-2.5">
 							<button type="button" onClick={() => { setShowLanding(false); setIsSeriesOpen(true); }} className="group flex items-center justify-between rounded-[14px] bg-[var(--accent-1)] px-5 py-4 text-left hover:bg-[var(--accent-1-strong)] transition">
 								<span>
 									<span className="block font-[700] text-[14px] leading-none text-[#071a12]">Seriye Başla</span>
-									<span className="block text-[11.5px] font-medium text-[#071a12]/60 mt-1">50'li paketler — seviye seviye</span>
+									<span className="block text-[11.5px] font-medium text-[#071a12]/60 mt-1">10'lu paketler — seviye seviye</span>
 								</span>
 								<span className="shrink-0 rounded-full bg-[#071a12] px-3 py-1 text-[11px] font-bold text-white group-hover:translate-x-0.5 transition">→</span>
 							</button>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LEVEL_ORDER, type Series, getSeriesForLanguage, toggleSeriesCompleted } from "../series";
+import { getLangMeta, LEVEL_ORDER, type Series, getSeriesForLanguage, toggleSeriesCompleted } from "../series";
 import type { WordLevel } from "../vocabulary";
 
 type Props = {
@@ -87,6 +87,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
   const totalDone = allSeries.filter((s) => completedSet.has(s.id)).length;
   const progress = allSeries.length ? Math.round((totalDone / allSeries.length) * 100) : 0;
   const pendingSeries = pendingId ? allSeries.find((s) => s.id === pendingId) ?? null : null;
+  const langMeta = getLangMeta(language);
 
   return (
     <div
@@ -120,10 +121,11 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                 </span>
               </div>
               <h2 id="series-title" className="mt-2 font-[var(--font-display)] text-[22px] sm:text-[26px] font-black tracking-[-0.02em] leading-none text-white">
-                {language === "ru" ? "🇷🇺" : language === "it" ? "🇮🇹" : language === "es" ? "🇪🇸" : language === "pt" ? "🇵🇹" : language === "fr" ? "🇫🇷" : language === "de" ? "🇩🇪" : "🇬🇧"} Seriler <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 50'li paketler</span>
+                {langMeta.flag} {langMeta.nameTr} Serileri <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 10'lu paketler</span>
               </h2>
+              <p className="mt-1 text-[12px] font-semibold text-white/40">{langMeta.nameTr} · {langMeta.nameEn} · {allSeries.length} seri · {allSeries.length * 10} kelime</p>
               <p className="mt-2 max-w-[560px] text-[12.5px] leading-5 text-white/58">
-                Her seri tam <b className="text-white font-bold">50 kelime</b> — seviye içinde sıralı. Bitirince otomatik <span className="inline-flex items-center rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[10px] font-black text-[#071a12]">✔</span> olur. Yanlışsa <b className="text-[var(--accent-2)]">basılı tut</b> ile geri al.
+                Her seri tam <b className="text-white font-bold">10 kelime</b> — seviye içinde sıralı. Bitirince otomatik <span className="inline-flex items-center rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[10px] font-black text-[#071a12]">✔</span> olur. Yanlışsa <b className="text-[var(--accent-2)]">basılı tut</b> ile geri al.
               </p>
               <div className="mt-3 flex items-center gap-2">
                 <div className="h-1.5 w-[140px] overflow-hidden rounded-full bg-white/10">
@@ -169,7 +171,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                 ✕ Seri iptali
               </button>
             ) : (
-              <span className="hidden sm:inline text-[11px] text-white/35">İpucu: seriye dokun → sadece o 50 kelimeyle oyna</span>
+              <span className="hidden sm:inline text-[11px] text-white/35">İpucu: seriye dokun → sadece o 10 kelimeyle oyna</span>
             )}
           </div>
         </div>
