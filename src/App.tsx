@@ -875,7 +875,7 @@ export default function App() {
 		[language, customWordBank, selectedTopic, selectedLevel, setGameStatus, activeSeries, completedSeries],
 	);
 
-	// XP ekle: seviye atlayınca banner göster, localStorage'a kalıcı yaz
+	// XP ekle: localStorage'a kalıcı yaz — seviye banner penceresi kapalı (yazı penceresi istenmiyor)
 	const addXp = useCallback((amount: number) => {
 		const prev = xpRef.current;
 		const next = prev + amount;
@@ -884,12 +884,6 @@ export default function App() {
 		try {
 			window.localStorage.setItem("snake_abc_xp_v1", String(next));
 		} catch { }
-		const prevLevel = Math.floor(prev / 100) + 1;
-		const nextLevel = Math.floor(next / 100) + 1;
-		if (nextLevel > prevLevel) {
-			setLevelUpBanner(nextLevel);
-			window.setTimeout(() => setLevelUpBanner(null), 2600);
-		}
 	}, []);
 
 	// Zayıf kelimeler: hata defterine düşmüş veya tekrar tekrar pekişememiş
@@ -1020,7 +1014,7 @@ export default function App() {
 		else if (type === "ghost") setIsGhostActive(true);
 		else if (type === "spotlight") {
 			setIsSpotlightActive(true);
-			setShowHint(true);
+			// İpucu penceresi otomatik açılmasın — kullanıcı butona basarsa açılır
 		}
 		setPowerExpiry((p) => ({ ...p, [type]: Date.now() + durationMs }));
 		if (sfxEnabled) playComboSfx();
@@ -1032,7 +1026,6 @@ export default function App() {
 			else if (type === "ghost") setIsGhostActive(false);
 			else if (type === "spotlight") {
 				setIsSpotlightActive(false);
-				setShowHint(false);
 			}
 			setPowerExpiry((p) => {
 				const next = { ...p };
@@ -1235,10 +1228,8 @@ export default function App() {
 						Math.abs(currentMouse.pos.x - tail.x) +
 						Math.abs(currentMouse.pos.y - tail.y);
 					if (distToTail <= 1) {
-						// Kuyruğa yetişti → parça kopardı, kaçış deliğine yönel
+						// Kuyruğa yetişti → parça kopardı, kaçış deliğine yönel (yazı penceresi yok)
 						mouseBite = true;
-						setScoreFloat({ id: nextFloatId(), text: "🐀 kuyruk kopardı!" });
-						window.setTimeout(() => setScoreFloat(null), 850);
 						// Fare parçayı "çiğner": 6 tick hareket etmez — oyuncu kafayla gelip yiyebilsin,
 						// sonra kaçış deliğine koşar
 						const stunnedMouse: MouseState = {
@@ -1409,13 +1400,11 @@ export default function App() {
 			const bitesPowerUp =
 				powerUpRef.current && isSamePoint(nextHead, powerUpRef.current.point);
 
-			// 🐀 Fare yakalandı: +10 puan, efekt, delikler 24-38 tick sonra yeni fare çıkar
+			// 🐀 Fare yakalandı: +10 puan (yazı penceresi yok)
 			if (bitesMouse) {
 				const nextScore = scoreRef.current + 10;
 				scoreRef.current = nextScore;
 				setScore(nextScore);
-				setScoreFloat({ id: nextFloatId(), text: "+10 🐀" });
-				window.setTimeout(() => setScoreFloat(null), 850);
 				addXp(1);
 				setMouseCount((c) => c + 1);
 				if (sfxEnabled) playEatSfx(false, 0);
@@ -1432,23 +1421,26 @@ export default function App() {
 				isSamePoint(segment, nextHead),
 			);
 
-			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır
+			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır — shield/extraLife artık kafayı dışarı çıkarmadan korur, hızlı bitişi engeller
 			if ((hitsWall || hitsBody) && !isGhostActive) {
 				if (hasShield) {
 					setHasShield(false);
+					// Çarpma anında hareketi durdur, yılan olduğu yerde kalsın — dışarı taşma yok
+					try { navigator.vibrate?.(20); } catch {}
+					return;
 				} else if (extraLives > 0) {
-					// ❤️ Ekstra can: çarpma anında 1 can yakar, oyun devam eder
+					// ❤️ Ekstra can: çarpma anında 1 can yakar, oyun devam eder, kafa dışarı çıkmaz
 					setExtraLives((l) => l - 1);
 					if (sfxEnabled) playEatSfx(false, 0);
+					try { navigator.vibrate?.(20); } catch {}
+					return;
 				} else {
 					const newBest = Math.max(bestScore, scoreRef.current);
 					setBestScore(newBest);
 					window.localStorage.setItem("snake-abc-best", String(newBest));
 					if (sfxEnabled) playGameOverSfx();
 					setGameStatus("over");
-					if (sessionEatenWords.length > 0) {
-						setIsQuizOpen(true);
-					}
+					// Quiz penceresi oyun sırasında otomatik açılmasın — sadece kelime+anlam göster
 					return;
 				}
 			}
@@ -1508,8 +1500,7 @@ export default function App() {
 				setMaxCombo((prev) => Math.max(prev, nextCombo));
 
 				if (nextCombo > 1) {
-					setShowComboBanner(true);
-					window.setTimeout(() => setShowComboBanner(false), 1200);
+					// Combo yazısı penceresi kapalı — sadece ses, ekran yazısı yok
 					if (sfxEnabled) playComboSfx();
 				}
 
@@ -1560,12 +1551,7 @@ export default function App() {
 				addXp((isReview ? 2 : 5) + (isBonus ? 2 : 0));
 				setDailyLog(addDailyActivity(isReview ? "review" : "eaten"));
 
-				setScoreFloat({ id: nextFloatId(), text: `+${scorePoints}` });
-				window.setTimeout(() => setScoreFloat(null), 850);
-				setWordToast({ id: nextFloatId(), word: currentWord, isReview });
-				window.setTimeout(() => setWordToast(null), 1100);
-				setBoardFlash(isReview || isBonus ? "gold" : "good");
-				window.setTimeout(() => setBoardFlash(null), 480);
+				// Ekranda yazı penceresi yok — skor/kelime toast ve board flash kapalı, sadece yan paneldeki kelime+anlam kalır
 				setShowHint(false);
 
 				setLastEaten({ word: currentWord, isReview, stars: newStars });
@@ -1926,11 +1912,7 @@ const nextFoodCell = findOpenCell(
 						</div>
 						<div ref={frameRef} className="story-frame">
 							<div className="arcade-bezel story-bezel relative overflow-hidden">
-								{showComboBanner && (
-									<div className="absolute top-10 left-1/2 z-20 -translate-x-1/2 animate-pop rounded-xl border-2 border-[#ffd96d] bg-[#ffd96d] px-3 py-1 font-pixel text-xs font-black text-[#21123a] shadow-xl">
-										🔥 COMBO x{comboStreak}!
-									</div>
-								)}
+								{/* combo yazı penceresi kapalı */}
 
 								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#2a2258] px-2.5 py-1">
 									<div className="flex items-center gap-1.5 min-w-0">
@@ -2001,27 +1983,7 @@ const nextFoodCell = findOpenCell(
 									{boardFlash && (
 										<div className={`board-flash ${boardFlash}`} />
 									)}
-									{scoreFloat && (
-										<div key={scoreFloat.id} className="score-float">
-											{scoreFloat.text}
-										</div>
-									)}
-									{wordToast && (
-										<div key={wordToast.id} className="word-toast">
-											<span
-												className={`word-toast-word ${wordToast.isReview ? "text-[#ffe9a0]" : ""}`}
-											>
-												{wordToast.word.word}
-											</span>
-											<span className="word-toast-meaning">
-												🇹🇷{" "}
-												{wordToast.word.meaningTr
-													.split(" /")[0]
-													.split(" (")[0]
-													.slice(0, 18)}
-											</span>
-										</div>
-									)}
+									{/* skor ve kelime yazı pencereleri kapalı — sadece yan paneldeki kelime+anlam gösteriliyor */}
 									{/* Kaydırma katmanı: 576 hücre yerine slot'lar, her tick'te transform ile kayarak hareket eder */}
 									<div className="board-layer">
 										{/* 🐀 Fare delikleri: köşelerden görünen oyuklar (en alt katman) */}
@@ -2187,21 +2149,7 @@ const nextFoodCell = findOpenCell(
 											</div>
 										</div>
 									)}
-									{levelUpBanner !== null && (
-										<div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-											<div className="animate-pop rounded-2xl border-2 border-[#ffd96d] bg-[#21123a]/95 px-6 py-4 text-center shadow-2xl">
-												<p className="font-pixel text-[10px] tracking-widest text-[#ffd96d]">
-													SEVİYE ATLADIN!
-												</p>
-												<p className="mt-1 font-pixel text-3xl font-black text-white">
-													⚡ Lv {levelUpBanner}
-												</p>
-												<p className="mt-1 text-[11px] text-white/60">
-													Her 100 XP yeni seviye • Devam et!
-												</p>
-											</div>
-										</div>
-									)}
+									{/* seviye banner yazı penceresi kapalı */}
 								</div>
 
 								<div className="flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1">
