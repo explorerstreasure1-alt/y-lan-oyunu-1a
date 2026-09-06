@@ -254,25 +254,20 @@ function cleanEnglishWordForSpeech(raw: string): string {
 }
 
 function extractCoreTurkishForSpeech(raw: string): string {
-  // Take the most natural short meaning, strip technical notes
+  // Doğal ve güzel Türkçe telaffuz için temizlik — anlam kaybolmasın, sadece teknik notlar atılsın
   let t = raw.trim();
-  // Remove flags/emojis
-  t = t.replace(/🇹🇷|🇬🇧|🇺🇸/g, "");
-  // Take only first alternative before "/"
+  t = t.replace(/🇹🇷|🇬🇧|🇺🇸|🇷🇺|🇮🇹|🇪🇸|🇵🇹|🇫🇷|🇩🇪/g, "");
   t = t.split("/")[0] ?? t;
-  // Strip content inside parentheses (), [], {}
   t = t.split("(")[0] ?? t;
   t = t.split("[")[0] ?? t;
   t = t.split("{")[0] ?? t;
-  // Remove " - çoğul", " - xyz", " (çoğul / 3. tekil)" already stripped by "(" but also handle " - "
   t = t.split(" - ")[0] ?? t;
-  // Clean extra punctuation
   t = t.replace(/[:;_]/g, " ");
   t = t.replace(/\s+/g, " ").trim();
-  // Hız için kısa: en fazla 2 kelime (uzunsa ilk 2), net ve anında bitsin
-  const words = t.split(" ");
-  if (words.length > 2) {
-    t = words.slice(0, 2).join(" ");
+  // Anlamı koru: en fazla 4 kelime, 2'ye kısaltma artık yok — daha doğal
+  const words = t.split(" ").filter(Boolean);
+  if (words.length > 4) {
+    t = words.slice(0, 4).join(" ");
   }
   return t;
 }
@@ -419,27 +414,27 @@ export function speakWordDetails(
   // Bu talep eski okuma zincirini geçersiz kılar (hızlı yemede gecikmiş anlam okunmaz)
   const generation = ++speakGeneration;
 
-  // Yetişen hız — yemi yediğin an biter, ikinciye yetişir
+  // GÜZEL TELAFFUZ: yavaş, net, tane tane — seviye arttıkça hafif hızlanır, turbo bile doğal kalır
   const baseRates: Record<string, number> = {
-    "A1": 1.72,
-    "A2": 1.82,
-    "B1": 1.95,
-    "B2": 2.05,
-    "C1": 2.15,
-    "C2": 2.25
+    "A1": 0.92,
+    "A2": 0.98,
+    "B1": 1.02,
+    "B2": 1.06,
+    "C1": 1.10,
+    "C2": 1.14
   };
-  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.88, normal: 0.96, fast: 1.08, turbo: 1.22 };
-  const base = baseRates[level] || 1.95;
-  const rate = Math.min(2.35, base * (speedMul[speechSpeed] || 1));
-  // Netlik: pitch 1.0 net, TR tok
-  const wordPitch = speechClarityBoost ? 1.0 : 1.04;
-  const trPitch = speechClarityBoost ? 1.0 : 1.03;
-  const trRate = Math.min(2.35, rate * 1.04); // TR yabancıdan %4 daha hızlı — hemen yetişir
-  const gapMs = speechGap === "tight" ? 0 : 22;
+  const speedMul: Record<typeof speechSpeed, number> = { slow: 0.90, normal: 0.98, fast: 1.06, turbo: 1.16 };
+  const base = baseRates[level] || 1.02;
+  const rate = Math.min(1.28, Math.max(0.78, base * (speedMul[speechSpeed] || 1)));
+  // Netlik: net ve tok, hafif sıcak pitch
+  const wordPitch = speechClarityBoost ? 1.02 : 1.06;
+  const trPitch = speechClarityBoost ? 0.98 : 1.02;
+  const trRate = Math.min(1.28, Math.max(0.78, rate * 0.96)); // TR hafif daha yavaş ve tok — daha güzel
+  const gapMs = speechGap === "tight" ? 520 : 780; // doğal nefes arası
 
   const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
   if (mode === "word-tr") {
-    // Yabancı kelime → TR: hız ve boşluk ayara göre, TR net ve tok
+    // GÜZEL SIRA: yabancı kelime net ve tane tane → doğal nefes → Türkçe anlam tok ve sıcak
     speakUtterance(wordClean, wordLang, rate, wordPitch, 1, () => {
       if (generation !== speakGeneration) return;
       window.setTimeout(() => {
@@ -447,6 +442,7 @@ export function speakWordDetails(
         try {
           const ss = window.speechSynthesis;
           ss.resume();
+          // Türkçe anlam öncesi kısa sessizlik zaten gapMs ile verildi, şimdi güzel ve tok oku
           ss.speak(makeUtterance(trCore, "tr-TR", trRate, trPitch));
         } catch { }
       }, gapMs);
@@ -454,7 +450,8 @@ export function speakWordDetails(
   } else if (mode === "word") {
     speakUtterance(wordClean, wordLang, rate, wordPitch);
   } else {
-    speakUtterance(targetText, wordLang, Math.max(1.45, rate - 0.08), wordPitch);
+    // Tanım/örnek modunda da doğal hız — acele yok
+    speakUtterance(targetText, wordLang, Math.min(1.15, rate * 0.97), wordPitch);
   }
 }
 
@@ -468,11 +465,13 @@ export function speakEnglishOnly(word: string) {
   const isGerman = currentSpeechLang === "de";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : isGerman ? cleanGermanWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const wl: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
-  speakUtterance(wordClean, wl, 1.72, 1.03);
+  const r = speechSpeed === "slow" ? 0.90 : speechSpeed === "turbo" ? 1.16 : speechSpeed === "normal" ? 0.98 : 1.04;
+  speakUtterance(wordClean, wl, r, 1.02);
 }
 
 export function speakTurkishOnly(meaningTr: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const trCore = extractCoreTurkishForSpeech(meaningTr);
-  speakUtterance(trCore, "tr-TR", 1.4, 1.0);
+  const r = speechSpeed === "slow" ? 0.88 : speechSpeed === "turbo" ? 1.12 : speechSpeed === "normal" ? 0.96 : 1.00;
+  speakUtterance(trCore, "tr-TR", r, 0.98);
 }
