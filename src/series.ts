@@ -2,7 +2,7 @@ import { FRENCH_PATH, GERMAN_PATH, ITALIAN_PATH, LEARNING_PATH, PORTUGUESE_PATH,
 import { RUSSIAN_PATH } from "./vocabularyRu";
 import type { LearningLanguage } from "./srs";
 
-export const SERIES_SIZE = 50;
+export const SERIES_SIZE = 10;
 export const LEVEL_ORDER: WordLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 export type Series = {
@@ -12,13 +12,27 @@ export type Series = {
   seriesIndex: number; // 1-based per level
   globalIndex: number; // 1-based across all levels
   words: VocabularyWord[];
-  rangeLabel: string; // "1-50"
+  rangeLabel: string; // "1-10"
   label: string; // "A1 • Seri 1"
 };
 
 const STORAGE_KEY = "snake_abc_series_completed_v1";
 
-function poolForLang(lang: string): VocabularyWord[] {
+export const LANG_META: Record<string, { flag: string; nameTr: string; nameEn: string }> = {
+  en: { flag: "🇬🇧", nameTr: "İngilizce", nameEn: "English" },
+  ru: { flag: "🇷🇺", nameTr: "Rusça", nameEn: "Russian" },
+  it: { flag: "🇮🇹", nameTr: "İtalyanca", nameEn: "Italian" },
+  es: { flag: "🇪🇸", nameTr: "İspanyolca", nameEn: "Spanish" },
+  pt: { flag: "🇵🇹", nameTr: "Portekizce", nameEn: "Portuguese" },
+  fr: { flag: "🇫🇷", nameTr: "Fransızca", nameEn: "French" },
+  de: { flag: "🇩🇪", nameTr: "Almanca", nameEn: "German" },
+};
+
+export function getLangMeta(lang: string) {
+  return LANG_META[lang] ?? { flag: "🏳️", nameTr: lang, nameEn: lang };
+}
+
+export function poolForLang(lang: string): VocabularyWord[] {
   if (lang === "ru") return RUSSIAN_PATH;
   if (lang === "it") return ITALIAN_PATH;
   if (lang === "es") return SPANISH_PATH;
