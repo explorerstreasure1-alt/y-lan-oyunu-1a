@@ -363,7 +363,7 @@ export default function App() {
 	const [isDoubleXpActive, setIsDoubleXpActive] = useState(false);
 	const [isSlowBerryActive, setIsSlowBerryActive] = useState(false);
 	const [isMagnetActive, setIsMagnetActive] = useState(false);
-	const [extraLives, setExtraLives] = useState(0);
+	const [extraLives, setExtraLives] = useState(99); // sonsuz can — hiç bitmez
 	const [boostRemaining, setBoostRemaining] = useState(0);
 	const [charges, setCharges] =
 		useState<Record<ChargeKey, number>>(EMPTY_CHARGES);
@@ -753,7 +753,7 @@ export default function App() {
 		setIsSpotlightActive(false);
 		setPowerExpiry({});
 		setCharges(EMPTY_CHARGES);
-		setExtraLives(0);
+		setExtraLives(99);
 		setBoostRemaining(0);
 		setElapsedMs(0);
 		setScore(0);
@@ -1429,18 +1429,14 @@ export default function App() {
 					try { navigator.vibrate?.(20); } catch {}
 					return;
 				} else if (extraLives > 0) {
-					// ❤️ Ekstra can: çarpma anında 1 can yakar, oyun devam eder, kafa dışarı çıkmaz
-					setExtraLives((l) => l - 1);
+					// ❤️ Can sonsuz: çarpma anında can eksilmez, oyun devam eder
 					if (sfxEnabled) playEatSfx(false, 0);
 					try { navigator.vibrate?.(20); } catch {}
 					return;
 				} else {
-					const newBest = Math.max(bestScore, scoreRef.current);
-					setBestScore(newBest);
-					window.localStorage.setItem("snake-abc-best", String(newBest));
-					if (sfxEnabled) playGameOverSfx();
-					setGameStatus("over");
-					// Quiz penceresi oyun sırasında otomatik açılmasın — sadece kelime+anlam göster
+					// Oyun hiç bitmesin — can sonsuz: duvar/gövde çarpışması oyunu bitirmiyor, sadece yılan olduğu yerde kalır
+					try { navigator.vibrate?.(15); } catch {}
+					if (sfxEnabled) playEatSfx(false, 0);
 					return;
 				}
 			}
@@ -1934,9 +1930,7 @@ const nextFoodCell = findOpenCell(
 										{isSpotlightActive && (
 											<span className="text-[10px]">🔦</span>
 										)}
-										{extraLives > 0 && (
-											<span className="text-[10px]">❤️ x{extraLives}</span>
-										)}
+										<span className="text-[10px]">❤️ ∞</span>
 										{boostRemaining > 0 && (
 											<span className="text-[10px]">✨ x{boostRemaining}</span>
 										)}
@@ -2313,7 +2307,7 @@ const nextFoodCell = findOpenCell(
 								})}
 							</div>
 							<div className="mt-2 flex items-center gap-1.5">
-								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">❤️ ×{extraLives}</span>
+								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">❤️ ∞</span>
 								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">✨ ×{boostRemaining}</span>
 								<span className="ml-auto text-[10px] text-white/25">pasif → anında</span>
 							</div>
