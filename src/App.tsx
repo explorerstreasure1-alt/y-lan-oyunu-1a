@@ -1547,7 +1547,10 @@ export default function App() {
 				addXp((isReview ? 2 : 5) + (isBonus ? 2 : 0));
 				setDailyLog(addDailyActivity(isReview ? "review" : "eaten"));
 
-				// Ekranda yazı penceresi yok — skor/kelime toast ve board flash kapalı, sadece yan paneldeki kelime+anlam kalır
+				setWordToast({ id: nextFloatId(), word: currentWord, isReview });
+				window.setTimeout(() => setWordToast(null), 1100);
+				setBoardFlash(isReview || isBonus ? "gold" : "good");
+				window.setTimeout(() => setBoardFlash(null), 480);
 				setShowHint(false);
 
 				setLastEaten({ word: currentWord, isReview, stars: newStars });
@@ -1977,7 +1980,22 @@ const nextFoodCell = findOpenCell(
 									{boardFlash && (
 										<div className={`board-flash ${boardFlash}`} />
 									)}
-									{/* skor ve kelime yazı pencereleri kapalı — sadece yan paneldeki kelime+anlam gösteriliyor */}
+									{wordToast && (
+										<div key={wordToast.id} className="word-toast">
+											<span
+												className={`word-toast-word ${wordToast.isReview ? "text-[#ffe9a0]" : ""}`}
+											>
+												{wordToast.word.word}
+											</span>
+											<span className="word-toast-meaning">
+												🇹🇷{" "}
+												{wordToast.word.meaningTr
+													.split(" /")[0]
+													.split(" (")[0]
+													.slice(0, 18)}
+											</span>
+										</div>
+									)}
 									{/* Kaydırma katmanı: 576 hücre yerine slot'lar, her tick'te transform ile kayarak hareket eder */}
 									<div className="board-layer">
 										{/* 🐀 Fare delikleri: köşelerden görünen oyuklar (en alt katman) */}
