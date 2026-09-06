@@ -500,8 +500,9 @@ export default function App() {
 
 	// Landing / Home — giriş seçim ekranı (hop diye oyuna dalma)
 	const [showLanding, setShowLanding] = useState(true);
-
-	// Modals & UI
+	const [isEyePro, setIsEyePro] = useState<boolean>(() => {
+		try { return window.localStorage.getItem("snake-abc-eye-pro") === "on"; } catch { return false; }
+	});
 	const [activeSkinId, setActiveSkinId] = useState<SnakeSkinId>("classic");
 	const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 	const [isSkinsOpen, setIsSkinsOpen] = useState(false);
@@ -677,6 +678,19 @@ export default function App() {
 		settings.fontSize,
 		settings.highContrast,
 	]);
+
+	// Gece Modu Pro — göz yormayan palet (70% kontrast, <50% doygunluk, mavi yok)
+	useEffect(() => {
+		if (typeof document !== "undefined") {
+			if (isEyePro) {
+				document.documentElement.setAttribute("data-eye-pro", "on");
+				try { window.localStorage.setItem("snake-abc-eye-pro", "on"); } catch {}
+			} else {
+				document.documentElement.removeAttribute("data-eye-pro");
+				try { window.localStorage.setItem("snake-abc-eye-pro", "off"); } catch {}
+			}
+		}
+	}, [isEyePro]);
 
 	// Telaffuz ayarlarını audio engine'e aktar — hız / boşluk / netlik
 	useEffect(() => {
@@ -1785,6 +1799,15 @@ const nextFoodCell = findOpenCell(
 							title={`${xp} XP • ${xp % 100}/100`}
 						>
 							⚡ Lv{xpLevel}
+						</button>
+						<button
+							type="button"
+							onClick={() => setIsEyePro((v) => !v)}
+						 className={`rounded-lg border px-1.5 py-0.5 text-[9px] font-bold transition ${isEyePro ? "border-[#8FB996]/40 bg-[#8FB996]/15 text-[#8FB996] shadow-[0_0_10px_rgba(143,185,150,0.18)]" : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
+							title={isEyePro ? "Gece Modu Pro: Açık (göz yormaz)" : "Gece Modu Pro: Kapalı — tıkla göz yormayan palete geç"}
+							aria-pressed={isEyePro}
+						>
+							{isEyePro ? "👁️‍🗨️ Gece Pro" : "👁️ Gece Pro"}
 						</button>
 						<button
 							type="button"
