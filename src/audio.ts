@@ -131,10 +131,31 @@ export function playGameOverSfx() {
 /* ------------------------------------------------------------------ */
 
 let cachedVoices: SpeechSynthesisVoice[] = [];
+/** Dil başına seçilmiş en iyi ses (her okumada yeniden puanlama yok) */
+const voiceCache = new Map<string, SpeechSynthesisVoice | null>();
+
+/**
+ * Dil başına konuşma profili — her dilin TTS motorunda en doğal duyulduğu
+ * hız/ton. rateMul mevcut hıza çarpılır, pitch tonu ayarlar.
+ */
+export const LANG_SPEECH_PROFILE: Record<
+  "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr" | "de",
+  { rateMul: number; pitch: number; prefer: string[] }
+> = {
+  en: { rateMul: 1.0, pitch: 1.0, prefer: ["en-us", "en-gb"] },
+  tr: { rateMul: 1.04, pitch: 1.0, prefer: ["tr-tr"] },
+  ru: { rateMul: 0.9, pitch: 1.0, prefer: ["ru-ru"] }, // Kiril netliği için biraz yavaş
+  it: { rateMul: 1.0, pitch: 1.06, prefer: ["it-it"] }, // İtalyanca melodik, hafif tiz
+  es: { rateMul: 1.0, pitch: 1.0, prefer: ["es-es", "es-us", "es-mx"] },
+  pt: { rateMul: 0.94, pitch: 1.0, prefer: ["pt-pt", "pt-br"] }, // dar ünlüler için yavaş
+  fr: { rateMul: 0.94, pitch: 1.03, prefer: ["fr-fr", "fr-ca"] }, // liaison netliği
+  de: { rateMul: 0.9, pitch: 0.97, prefer: ["de-de"] }, // uzun birleşik kelimeler + tok ton
+};
 
 function loadVoices() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   cachedVoices = window.speechSynthesis.getVoices();
+  voiceCache.clear(); // liste yenilendiyse eski seçim geçersiz
 }
 
 if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -219,22 +240,32 @@ function scoreVoice(v: SpeechSynthesisVoice, targetLang: "en" | "tr" | "ru" | "i
   }
   // Prefer default voice slightly
   if (v.default) s += 5;
+  // Bölge tercihi: öğrenilen varyant (es-ES, pt-PT…) listedeyse öne al
+  const prof = LANG_SPEECH_PROFILE[targetLang];
+  if (prof && lang === prof.prefer[0]) s += 15;
   return s;
 }
 
 function pickBestVoice(langPrefix: "en" | "tr" | "ru" | "it" | "es" | "pt" | "fr" | "de"): SpeechSynthesisVoice | null {
   if (cachedVoices.length === 0) loadVoices();
   if (cachedVoices.length === 0) return null;
+  const cached = voiceCache.get(langPrefix);
+  if (cached && cachedVoices.includes(cached)) return cached;
   const scored = cachedVoices
     .map((v) => ({ v, score: scoreVoice(v, langPrefix) }))
     .filter(({ v }) => v.lang.toLowerCase().startsWith(langPrefix))
     .sort((a, b) => b.score - a.score);
-  if (scored.length === 0) return null;
+  if (scored.length === 0) {
+    voiceCache.set(langPrefix, null);
+    return null;
+  }
   // Ağ sesleri (ör. "Microsoft Aria Online (Natural)") her konuşmada sunucuya
   // stream bağlantısı kurduğu için ilk heceye kadar 1-3 sn sessiz bekletir.
   // Anında telaffuz için önce yerel (localService) sesleri tercih et.
   const local = scored.find(({ v }) => v.localService);
-  return (local ?? scored[0]).v;
+  const best = (local ?? scored[0]).v;
+  voiceCache.set(langPrefix, best);
+  return best;
 }
 
 // --- Text cleaners for beautiful clear speech ---
@@ -425,11 +456,15 @@ export function speakWordDetails(
   };
   const speedMul: Record<typeof speechSpeed, number> = { slow: 0.88, normal: 0.96, fast: 1.08, turbo: 1.22 };
   const base = baseRates[level] || 1.95;
-  const rate = Math.min(2.35, base * (speedMul[speechSpeed] || 1));
-  // Netlik: pitch 1.0 net, TR tok
-  const wordPitch = speechClarityBoost ? 1.0 : 1.04;
-  const trPitch = speechClarityBoost ? 1.0 : 1.03;
-  const trRate = Math.min(2.35, rate * 1.04); // TR yabancıdan %4 daha hızlı — hemen yetişir
+  // Dile özel profil: Rusça/Almanca yavaş-net, İtalyanca tiz, Fransızca yumuşak
+  const prof = LANG_SPEECH_PROFILE[currentSpeechLang] ?? LANG_SPEECH_PROFILE.en;
+  const trProf = LANG_SPEECH_PROFILE.tr;
+  const rate = Math.min(2.35, base * (speedMul[speechSpeed] || 1) * prof.rateMul);
+  const clampPitch = (p: number) => Math.min(2, Math.max(0.5, p));
+  // Netlik: pitch 1.0 net, TR tok — üzerine dil profili uygulanır
+  const wordPitch = clampPitch((speechClarityBoost ? 1.0 : 1.04) * prof.pitch);
+  const trPitch = clampPitch((speechClarityBoost ? 1.0 : 1.03) * trProf.pitch);
+  const trRate = Math.min(2.35, rate * 1.04 * trProf.rateMul); // TR yabancıdan %4 daha hızlı — hemen yetişir
   const gapMs = speechGap === "tight" ? 0 : 22;
 
   const wordLang: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
@@ -463,7 +498,8 @@ export function speakEnglishOnly(word: string) {
   const isGerman = currentSpeechLang === "de";
   const wordClean = isRussian ? cleanRussianWordForSpeech(word) : isItalian ? cleanItalianWordForSpeech(word) : isSpanish ? cleanSpanishWordForSpeech(word) : isPortuguese ? cleanPortugueseWordForSpeech(word) : isFrench ? cleanFrenchWordForSpeech(word) : isGerman ? cleanGermanWordForSpeech(word) : cleanEnglishWordForSpeech(word);
   const wl: "en-US" | "ru-RU" | "it-IT" | "es-ES" | "pt-PT" | "fr-FR" | "de-DE" = isRussian ? "ru-RU" : isItalian ? "it-IT" : isSpanish ? "es-ES" : isPortuguese ? "pt-PT" : isFrench ? "fr-FR" : isGerman ? "de-DE" : "en-US";
-  speakUtterance(wordClean, wl, 1.72, 1.03);
+  const wlProf = LANG_SPEECH_PROFILE[currentSpeechLang] ?? LANG_SPEECH_PROFILE.en;
+  speakUtterance(wordClean, wl, 1.72 * wlProf.rateMul, 1.03 * wlProf.pitch);
 }
 
 export function speakTurkishOnly(meaningTr: string) {

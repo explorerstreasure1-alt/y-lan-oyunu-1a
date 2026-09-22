@@ -448,6 +448,9 @@ export default function App() {
 	const [isSeriesOpen, setIsSeriesOpen] = useState(false);
 	// Konu listesinden seriye geçerken modal o konuya odaklı açılır (örn. "Fiiller")
 	const [seriesFocusTopic, setSeriesFocusTopic] = useState<string | null>(null);
+	// Seri tur sayacı: 50 bitince başa sarar, tur artar (13/50 • 2. tur)
+	const [seriesEaten, setSeriesEaten] = useState(0);
+	const seriesEatenRef = useRef(0);
 	const activeSeries: Series | null = useMemo(() => {
 		if (!selectedSeriesId) return null;
 		const all = getSeriesForLanguage(language as LearningLanguage);
@@ -727,6 +730,8 @@ export default function App() {
 		scoreRef.current = 0;
 		newWordCursorRef.current = 0;
 		eatenTotalRef.current = 0;
+		seriesEatenRef.current = 0;
+		setSeriesEaten(0);
 		comboStreakRef.current = 0;
 		recentUnlearnedIdsRef.current = [];
 
@@ -796,6 +801,8 @@ export default function App() {
 			setWeakTraining(false);
 			setSelectedTopic(topic);
 			setSelectedLevel(level);
+			seriesEatenRef.current = 0;
+			setSeriesEaten(0);
 			try {
 				window.localStorage.setItem("snake-abc-topic", topic);
 				window.localStorage.setItem("snake-abc-level", level);
@@ -878,6 +885,8 @@ export default function App() {
 			setSessionEatenWords([]);
 			setRecentUnlearnedIds([]);
 			recentUnlearnedIdsRef.current = [];
+			seriesEatenRef.current = 0;
+			setSeriesEaten(0);
 			setLastEaten(null);
 			setComboStreak(0);
 			comboStreakRef.current = 0;
@@ -948,9 +957,11 @@ export default function App() {
 			setCompletedSeries(new Set(next));
 		}
 		setIsSeriesOpen(false);
-		// Yeni seriyle yemleri sıfırla — 50 kelimelik döngünün başından başla
+		// Yeni seriyle yemleri sıfırla — 50 kelimelik döngünün başından başla, tur sayacı sıfırlanır
 		eatenTotalRef.current = 0;
 		newWordCursorRef.current = 0;
+		seriesEatenRef.current = 0;
+		setSeriesEaten(0);
 		recentUnlearnedIdsRef.current = [];
 		setRecentUnlearnedIds([]);
 		const { item, updatedCursor } = getNextSeriesItem(series.words, 0);
@@ -977,6 +988,8 @@ export default function App() {
 		setSelectedSeriesId(null);
 		saveSelectedSeriesId(null);
 		setIsSeriesOpen(false);
+		seriesEatenRef.current = 0;
+		setSeriesEaten(0);
 		// Eski konu/seviye havuzuna dön
 		const pool = buildFilteredPool(selectedTopic, selectedLevel, activePool);
 		const { item, updatedCursor } = getNextFoodItem(
@@ -1611,6 +1624,11 @@ export default function App() {
 				);
 
 				newWordCursorRef.current = updatedCursor;
+				// Seri tur sayacı: her yeme +1; 50 dolunca tur otomatik artar (görünümde)
+				if (loopSeries && !weakTrainingRef.current) {
+					seriesEatenRef.current += 1;
+					setSeriesEaten(seriesEatenRef.current);
+				}
 				const finalItem = maybeBonusMama(nextItem);
 				activeFoodRef.current = finalItem;
 				setActiveFood(finalItem);
@@ -1710,6 +1728,16 @@ const nextFoodCell = findOpenCell(
 		100,
 		Math.round((displayLearned / Math.max(1, displayTotal)) * 100),
 	);
+	// Seri tur görünümü: 50 bitince başa sarar — 13/50 • 2. tur
+	const seriesLen = activeSeries ? activeSeries.words.length : 0;
+	const seriesPos =
+		activeSeries && seriesLen > 0 && seriesEaten > 0
+			? ((seriesEaten - 1) % seriesLen) + 1
+			: 0;
+	const seriesLap =
+		activeSeries && seriesLen > 0 && seriesEaten > 0
+			? Math.floor((seriesEaten - 1) / seriesLen) + 1
+			: 1;
 
 	// Oturum takibi: bu havuzda en az bir kez YENEN kelime sayısı (kalıcı, dil bazlı kayıt)
 	const poolSeenCount = (activeSeries ? activeSeries.words : filteredPool).filter(
@@ -1980,15 +2008,34 @@ const nextFoodCell = findOpenCell(
 										{activeSeries && completedSeries.has(activeSeries.id) && <span className="hidden sm:inline shrink-0 rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[8px] font-black leading-none text-[#071a12]">✔</span>}
 									</div>
 									<div className="flex items-center gap-1.5 shrink-0">
-										<span className="font-[var(--font-mono)] text-[10px] font-bold text-white tabular-nums">
-											{sessionEatenWords.length}<span className="text-white/25">/{displayTotal}</span>
-										</span>
-										<div className="hidden sm:block h-1.5 w-16 sm:w-20 rounded-full bg-white/10 overflow-hidden">
-											<div className="h-full rounded-full bg-gradient-to-r from-[var(--accent-1)] to-[var(--accent-2)] transition-all duration-500" style={{ width: `${Math.min(100, (sessionEatenWords.length / Math.max(1,displayTotal)) * 100)}%` }} />
-										</div>
-										<span className="hidden sm:inline font-[var(--font-mono)] text-[8px] font-bold text-white/35 tabular-nums whitespace-nowrap">
-											{Math.max(0, displayTotal - sessionEatenWords.length)} kaldı
-										</span>
+										{activeSeries ? (
+											<>
+												<span className="font-[var(--font-mono)] text-[10px] font-bold text-white tabular-nums">
+													{seriesPos}<span className="text-white/25">/{seriesLen}</span>
+												</span>
+												<span className="rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 font-[var(--font-mono)] text-[8px] font-black leading-none text-[#071a12] tabular-nums whitespace-nowrap">
+													{seriesLap}. tur
+												</span>
+												<div className="hidden sm:block h-1.5 w-16 sm:w-20 rounded-full bg-white/10 overflow-hidden">
+													<div className="h-full rounded-full bg-gradient-to-r from-[var(--accent-1)] to-[var(--accent-2)] transition-all duration-500" style={{ width: `${Math.min(100, (seriesPos / Math.max(1, seriesLen)) * 100)}%` }} />
+												</div>
+												<span className="hidden sm:inline font-[var(--font-mono)] text-[8px] font-bold text-white/35 tabular-nums whitespace-nowrap">
+													{Math.max(0, seriesLen - seriesPos)} kaldı
+												</span>
+											</>
+										) : (
+											<>
+												<span className="font-[var(--font-mono)] text-[10px] font-bold text-white tabular-nums">
+													{sessionEatenWords.length}<span className="text-white/25">/{displayTotal}</span>
+												</span>
+												<div className="hidden sm:block h-1.5 w-16 sm:w-20 rounded-full bg-white/10 overflow-hidden">
+													<div className="h-full rounded-full bg-gradient-to-r from-[var(--accent-1)] to-[var(--accent-2)] transition-all duration-500" style={{ width: `${Math.min(100, (sessionEatenWords.length / Math.max(1,displayTotal)) * 100)}%` }} />
+												</div>
+												<span className="hidden sm:inline font-[var(--font-mono)] text-[8px] font-bold text-white/35 tabular-nums whitespace-nowrap">
+													{Math.max(0, displayTotal - sessionEatenWords.length)} kaldı
+												</span>
+											</>
+										)}
 									</div>
 								</div>
 
