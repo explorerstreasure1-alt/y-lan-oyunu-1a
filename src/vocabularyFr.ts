@@ -1,5 +1,6 @@
 import type { VocabularyWord, WordLevel } from "./vocabulary";
 import { expandPoolToTarget } from "./expandToTarget";
+import { REAL_FR_TUPLES } from "./realExtraFr";
 
 type FrBaseTuple = [string, string, string, WordLevel, string];
 
@@ -3200,6 +3201,11 @@ function buildFrDataset(): VocabularyWord[] {
     if (dataset.length >= 3000) break;
     dataset.push(makeFrWord(t[0], t[1], t[2], t[3], t[4], id++));
   }
+  // Gerçek çekirdek kelimeler (sıfat + sayı + isim) ÖNCE — ilk 3000'e girsinler
+  for (const t of REAL_FR_TUPLES) {
+    const key = t[0].toLowerCase().trim();
+    if (!map.has(key)) { map.set(key, t); dataset.push(makeFrWord(t[0], t[1], t[2], t[3], t[4], dataset.length)); }
+  }
   let cursor = 0;
   while (dataset.length < 3000 && cursor < unique.length * 2) {
     const [w, tr, pos, lvl, topic] = unique[cursor % unique.length];
@@ -3210,18 +3216,12 @@ function buildFrDataset(): VocabularyWord[] {
     else if (pos === "verb" && !low.endsWith("r")) { vw = low + "r"; vt = tr + " (mastar)"; if (!map.has(vw)) { map.set(vw, [vw, vt, pos, lvl, topic]); dataset.push(makeFrWord(vw, vt, pos, lvl, topic, id++)); } }
     cursor++;
   }
+  // FR_EXTRA büyük ölçüde "(FR)" dolgudur — yalnızca gerçek çevirilileri al
   for (const t of FR_EXTRA) {
     if (dataset.length >= 3000) break;
+    if (/\([A-ZÇĞİÖŞÜ]{2,}\)/.test(t[1])) continue;
     const key = t[0].toLowerCase().trim();
     if (!map.has(key)) { map.set(key, t); dataset.push(makeFrWord(t[0], t[1], t[2], t[3], t[4], dataset.length)); }
-  }
-  let extraIdx = 0;
-  while (dataset.length < 3000) {
-    const base = unique[extraIdx % unique.length];
-    const w = `${base[0]}_${Math.floor(extraIdx / unique.length) + 2}`;
-    if (!map.has(w)) { map.set(w, [w, base[1], base[2], base[3], base[4]]); dataset.push(makeFrWord(w, base[1], base[2], base[3], base[4], dataset.length)); }
-    extraIdx++;
-    if (extraIdx > 10000) break;
   }
   // İlk 3000'in id'si korunur (eski kayıtlar bozulmaz); 7500'e kurallı öbeklerle tamamlanır
   const cappedFr = dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));

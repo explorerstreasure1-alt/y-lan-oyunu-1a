@@ -46,6 +46,14 @@ function isCleanSingle(w: string): boolean {
   return true;
 }
 
+/** Öbek malzemesi olmaya uygun mu? "(FR)" dolguları ve genel sepet konular elenir */
+const JUNK_TOPICS = new Set(["Sık Kelimeler", "Genel", "Günlük", "Temel", "Yaygın"]);
+function isTrusted(w: VocabularyWord): boolean {
+  if (JUNK_TOPICS.has(w.topic)) return false;
+  if (/\([A-ZÇĞİÖŞÜ]{2,}\)/.test(w.meaningTr)) return false; // "hmm (DE)" tarzı dolgu
+  return true;
+}
+
 function maxLevel(a: WordLevel, b: WordLevel): WordLevel {
   return (LEVEL_RANK[a] ?? 0) >= (LEVEL_RANK[b] ?? 0) ? a : b;
 }
@@ -75,12 +83,14 @@ export function expandPoolToTarget(
     return true;
   };
 
-  const nouns = base.filter((w) => w.pos === "noun" && isCleanSingle(w.word));
+  const nouns = base.filter(
+    (w) => w.pos === "noun" && w.topic !== "Sayılar" && isTrusted(w) && isCleanSingle(w.word),
+  );
   const adjs = base.filter(
-    (w) => w.pos === "adjective" && isCleanSingle(w.word),
+    (w) => w.pos === "adjective" && w.topic !== "Sayılar" && isTrusted(w) && isCleanSingle(w.word),
   );
   const nums = base.filter(
-    (w) => w.topic === "Sayılar" && isCleanSingle(w.word),
+    (w) => w.topic === "Sayılar" && isTrusted(w) && isCleanSingle(w.word),
   );
 
   // 1) sıfat + isim (sıfat dışta → konular dengeli yayılır)
@@ -95,7 +105,7 @@ export function expandPoolToTarget(
     }
   }
 
-  // 2) sayı + isim (sayı her dilde ismin önündedir)
+  // 2) sayı + isim (sayı 7 dilde de ismin ÖNÜNDEDİR: "vingt objets", "yirmi kitap")
   for (const s of nums) {
     if (out.length >= TARGET_WORDS) break;
     for (const n of nouns) {

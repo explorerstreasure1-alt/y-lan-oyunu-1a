@@ -1,5 +1,6 @@
 import type { VocabularyWord, WordLevel } from "./vocabulary";
 import { expandPoolToTarget } from "./expandToTarget";
+import { REAL_IT_TUPLES } from "./realExtraIt";
 
 /**
  * İtalyanca öğrenme havuzu — İngilizce ve Rusça ile aynı yapıda.
@@ -2166,6 +2167,11 @@ function buildItDataset(): VocabularyWord[] {
     dataset.push(makeItWord(t[0], t[1], t[2], t[3], t[4], id++));
   }
   // çoğul / çekim varyantları
+  // Gerçek çekirdek kelimeler (sıfat + sayı + isim) ÖNCE — ilk 3000'e girsinler
+  for (const t of REAL_IT_TUPLES) {
+    const key = t[0].toLowerCase().trim();
+    if (!map.has(key)) { map.set(key, t); dataset.push(makeItWord(t[0], t[1], t[2], t[3], t[4], dataset.length)); }
+  }
   let cursor = 0;
   while (dataset.length < 3000 && cursor < unique.length * 2) {
     const [w, tr, pos, lvl, topic] = unique[cursor % unique.length];
@@ -2184,19 +2190,12 @@ function buildItDataset(): VocabularyWord[] {
     }
     cursor++;
   }
+  // IT_EXTRA "(IT)" dolgusu içerir — yalnızca gerçek çevirilileri al, "word_2" dolgusu YOK
   for (const t of IT_EXTRA) {
     if (dataset.length >= 3000) break;
+    if (/\([A-ZÇĞİÖŞÜ]{2,}\)/.test(t[1])) continue;
     const key = t[0].toLowerCase().trim();
     if (!map.has(key)) { map.set(key, t); dataset.push(makeItWord(t[0], t[1], t[2], t[3], t[4], dataset.length)); }
-  }
-  // hala eksikse döngüyle çoğalt
-  let extraIdx = 0;
-  while (dataset.length < 3000) {
-    const base = unique[extraIdx % unique.length];
-    const w = `${base[0]}_${Math.floor(extraIdx / unique.length) + 2}`;
-    if (!map.has(w)) { map.set(w, [w, base[1], base[2], base[3], base[4]]); dataset.push(makeItWord(w, base[1], base[2], base[3], base[4], dataset.length)); }
-    extraIdx++;
-    if (extraIdx > 10000) break;
   }
   // İlk 3000'in id'si korunur (eski kayıtlar bozulmaz); 7500'e kurallı öbeklerle tamamlanır
   const cappedIt = dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));
