@@ -9,6 +9,8 @@ type ArcadeControlsProps = {
   isBoosting: boolean;
   onBoostStart: () => void;
   onBoostEnd: () => void;
+  onPoisonFire: () => void;
+  poisonAmmo: number;
 };
 
 // Dokunma hissi: mobilde kısa titreme (desteklemeyen tarayıcıda sessizce yok sayılır)
@@ -29,56 +31,73 @@ function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
   };
 }
 
-export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd }: ArcadeControlsProps) {
+export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd, onPoisonFire, poisonAmmo }: ArcadeControlsProps) {
   return (
     <div className="mt-1 flex w-full shrink-0 flex-col items-center gap-1.5 sm:hidden select-none">
-      {/* Premium D-pad — büyütüldü, eni boyu düzgün */}
-      <div className="arcade-pad grid h-44 w-44 grid-cols-3 grid-rows-3 gap-1.5 rounded-[20px] border border-white/[0.09] bg-gradient-to-b from-[#22184a] to-[#161030] p-2 shadow-[0_10px_28px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.35)] backdrop-blur-sm touch-manipulation place-items-center">
-        <div className="col-start-2 row-start-1 w-full">
-          <button type="button" onPointerDown={dirPress("up", onDirectionChange)}
-            className="w-full h-[42px] rounded-t-[14px] rounded-b-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.14)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
-            aria-label="Yukarı">▲</button>
-        </div>
-        <div className="col-start-1 row-start-2 w-full">
-          <button type="button" onPointerDown={dirPress("left", onDirectionChange)}
-            className="w-full h-[52px] rounded-l-[14px] rounded-r-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
-            aria-label="Sol">◀</button>
-        </div>
-        <div className="col-start-2 row-start-2 flex h-full w-full items-center justify-center">
-          <button type="button" onPointerDown={(e) => { e.preventDefault(); buzz(); onPauseToggle(); }}
-            className="h-10 w-10 rounded-full bg-gradient-to-b from-[#ffe9a8] to-[#ffd96d] border border-white/20 text-[9px] font-black text-[#1e1440] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.7)] flex items-center justify-center active:scale-95 active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-75">
-            {isPlaying ? "II" : "▶"}
-          </button>
-        </div>
-        <div className="col-start-3 row-start-2 w-full">
-          <button type="button" onPointerDown={dirPress("right", onDirectionChange)}
-            className="w-full h-[52px] rounded-r-[14px] rounded-l-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
-            aria-label="Sağ">▶</button>
-        </div>
-        <div className="col-start-2 row-start-3 w-full">
-          <button type="button" onPointerDown={dirPress("down", onDirectionChange)}
-            className="w-full h-[42px] rounded-b-[14px] rounded-t-[8px] bg-gradient-to-b from-[#3d2680] to-[#271752] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#45308a] hover:to-[#2c1a5e] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
-            aria-label="Aşağı">▼</button>
-        </div>
-      </div>
+      {/* Ped + iki başparmak: sol HIZ (basılı tut), sağ ZEHİR (dokun ateşle) */}
+      <div className="flex w-full items-center justify-center gap-2">
+        <button
+          type="button"
+          onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
+          onPointerUp={onBoostEnd}
+          onPointerLeave={onBoostEnd}
+          onPointerCancel={onBoostEnd}
+          className={`flex h-32 w-14 shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-black transition-all active:scale-[0.98] touch-manipulation ${
+            isBoosting
+              ? "border-[#ff84ad] bg-gradient-to-b from-[#ff9ebb] to-[#ff7a9e] text-[#1a0a12] shadow-[0_0_14px_rgba(255,158,187,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
+              : "border-white/10 bg-gradient-to-b from-[#2e1a5a] to-[#25124a] text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          }`}
+          aria-label="Hızlandır (basılı tut)"
+        >
+          <span className="text-xl leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">⚡</span>
+          <span className="text-[9px] tracking-wide">HIZ</span>
+        </button>
 
-      {/* Boost — aynı konum, daha premium */}
-      <button
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
-        onPointerUp={onBoostEnd}
-        onPointerLeave={onBoostEnd}
-        onPointerCancel={onBoostEnd}
-        className={`flex h-8 w-36 select-none flex-row items-center justify-center gap-1.5 rounded-xl border text-xs font-black transition-all active:scale-[0.98] ${
-          isBoosting
-            ? "border-[#ff84ad] bg-gradient-to-b from-[#ff9ebb] to-[#ff7a9e] text-[#1a0a12] shadow-[0_0_14px_rgba(255,158,187,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
-            : "border-white/10 bg-gradient-to-b from-[#2e1a5a] to-[#25124a] text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-[#35206a] hover:to-[#2a184a]"
-        }`}
-        aria-label="Hızlandır (basılı tut)"
-      >
-        <span className="text-sm leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">⚡</span>
-        <span className="text-[11px] tracking-wide">HIZ</span>
-      </button>
+        {/* Premium D-pad — büyütüldü, eni boyu düzgün */}
+        <div className="arcade-pad grid h-44 w-44 shrink-0 grid-cols-3 grid-rows-3 gap-1.5 rounded-[20px] border border-white/[0.09] bg-gradient-to-b from-[#22184a] to-[#161030] p-2 shadow-[0_10px_28px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.35)] backdrop-blur-sm touch-manipulation place-items-center">
+          <div className="col-start-2 row-start-1 w-full">
+            <button type="button" onPointerDown={dirPress("up", onDirectionChange)}
+              className="w-full h-[42px] rounded-t-[14px] rounded-b-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.14)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
+              aria-label="Yukarı">▲</button>
+          </div>
+          <div className="col-start-1 row-start-2 w-full">
+            <button type="button" onPointerDown={dirPress("left", onDirectionChange)}
+              className="w-full h-[52px] rounded-l-[14px] rounded-r-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
+              aria-label="Sol">◀</button>
+          </div>
+          <div className="col-start-2 row-start-2 flex h-full w-full items-center justify-center">
+            <button type="button" onPointerDown={(e) => { e.preventDefault(); buzz(); onPauseToggle(); }}
+              className="h-10 w-10 rounded-full bg-gradient-to-b from-[#ffe9a8] to-[#ffd96d] border border-white/20 text-[9px] font-black text-[#1e1440] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.7)] flex items-center justify-center active:scale-95 active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-75">
+              {isPlaying ? "II" : "▶"}
+            </button>
+          </div>
+          <div className="col-start-3 row-start-2 w-full">
+            <button type="button" onPointerDown={dirPress("right", onDirectionChange)}
+              className="w-full h-[52px] rounded-r-[14px] rounded-l-[8px] bg-gradient-to-b from-[#4a2d8a] to-[#2e1a5a] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#4f3092] hover:to-[#321d60] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
+              aria-label="Sağ">▶</button>
+          </div>
+          <div className="col-start-2 row-start-3 w-full">
+            <button type="button" onPointerDown={dirPress("down", onDirectionChange)}
+              className="w-full h-[42px] rounded-b-[14px] rounded-t-[8px] bg-gradient-to-b from-[#3d2680] to-[#271752] border border-white/10 text-[18px] font-black text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12)] hover:from-[#45308a] hover:to-[#2c1a5e] active:scale-[0.98] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] transition-all duration-75 touch-manipulation flex items-center justify-center"
+              aria-label="Aşağı">▼</button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onPointerDown={(e) => { e.preventDefault(); buzz(); onPoisonFire(); }}
+          className={`flex h-32 w-14 shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-black transition-all active:scale-[0.98] touch-manipulation ${
+            poisonAmmo > 0
+              ? "border-[#7CFC00]/40 bg-gradient-to-b from-[#7CFC00]/25 to-[#4a8a00]/25 text-[#c6ff8a] shadow-[0_0_14px_rgba(124,252,0,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]"
+              : "border-white/5 bg-white/[0.02] text-white/30 opacity-60"
+          }`}
+          aria-label="Zehir püskürt"
+        >
+          <span className="text-xl leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">☠️</span>
+          <span className="text-[10px] tabular-nums">{poisonAmmo > 0 ? `×${poisonAmmo}` : "…"}</span>
+          <span className="text-[8px] tracking-wide opacity-80">ZEHİR</span>
+        </button>
+      </div>
     </div>
   );
 }

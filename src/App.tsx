@@ -157,7 +157,7 @@ function findOpenCell(
 // ☠️ Zehir: kafadan çıkar, hedefi (yem/fare) her tick yeniden bulup kovalar
 type PoisonShot = { id: number; pos: Point; life: number };
 const POISON_MAX = 3; // cephane
-const POISON_REGEN_SEC = 12; // yeni zehir dolum süresi
+const POISON_REGEN_SEC = 10; // yeni zehir dolum süresi (3 atış sonrası 10 sn)
 const POISON_LIFE_TICKS = 60; // ıskalayan mermi bu kadar tick sonra söner
 
 // 🐀 Fare delikleri: 4 köşe her zaman boştur
@@ -667,7 +667,7 @@ export default function App() {
 		const id = window.setInterval(() => {
 			setNowMs(Date.now());
 			setElapsedMs((e) => (statusRef.current === "playing" ? e + 1000 : e));
-			// ☠️ Zehir dolumu: oynarken her 12 sn'de 1 cephane (max 3)
+			// ☠️ Zehir dolumu: oynarken her 10 sn'de 1 cephane (max 3)
 			if (statusRef.current === "playing" && poisonAmmoRef.current < POISON_MAX) {
 				poisonRegenRef.current += 1;
 				if (poisonRegenRef.current >= POISON_REGEN_SEC) {
@@ -2389,6 +2389,8 @@ const nextFoodCell = findOpenCell(
 								isBoosting={isBoosting}
 								onBoostStart={() => setIsBoosting(true)}
 								onBoostEnd={() => setIsBoosting(false)}
+								onPoisonFire={firePoison}
+								poisonAmmo={poisonAmmo}
 							/>
 
 							<div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
