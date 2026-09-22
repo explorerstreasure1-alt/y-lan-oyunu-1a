@@ -10,6 +10,7 @@ import {
 	playComboSfx,
 	playEatSfx,
 	playGameOverSfx,
+	playSpitSfx,
 	playTurnSfx,
 	setSpeechLanguage,
 	setSpeechSettings,
@@ -153,9 +154,14 @@ function findOpenCell(
 	return { x: 2, y: 2 };
 }
 
+// ☠️ Zehir: kafadan çıkar, hedefi (yem/fare) her tick yeniden bulup kovalar
+type PoisonShot = { id: number; pos: Point; life: number };
+const POISON_MAX = 3; // cephane
+const POISON_REGEN_SEC = 12; // yeni zehir dolum süresi
+const POISON_LIFE_TICKS = 60; // ıskalayan mermi bu kadar tick sonra söner
+
 // 🐀 Fare delikleri: 4 köşe her zaman boştur
-const MOUSE_HOLES: Point[] = [
-	{ x: 0, y: 0 },
+const MOUSE_HOLES: Point[] = [	{ x: 0, y: 0 },
 	{ x: COLUMNS - 1, y: 0 },
 	{ x: 0, y: ROWS - 1 },
 	{ x: COLUMNS - 1, y: ROWS - 1 },
@@ -379,6 +385,13 @@ export default function App() {
 	// 🐀 Fare: yılandan kuyruk parçası koparmak için kuyruğu kovalar, ısırınca hedef deliğe kaçar; yılan kafası yakalarsa puan
 	const [mouse, setMouse] = useState<MouseState | null>(null);
 	const [mouseCount, setMouseCount] = useState(0); // yakalanan fare sayısı
+
+	// ☠️ Zehir püskürtme: buton/F tuşu ateşler, mermi hedefi takip eder
+	const [poisons, setPoisons] = useState<PoisonShot[]>([]);
+	const poisonsRef = useRef<PoisonShot[]>([]);
+	const [poisonAmmo, setPoisonAmmo] = useState(POISON_MAX);
+	const poisonAmmoRef = useRef(POISON_MAX);
+	const poisonRegenRef = useRef(0);
 
 	// XP / Seviye (kalıcı): kelime yeme ve quiz bonusuyla birikir - 100 XP = 1 seviye
 	const [xp, setXp] = useState(() => {
@@ -654,6 +667,15 @@ export default function App() {
 		const id = window.setInterval(() => {
 			setNowMs(Date.now());
 			setElapsedMs((e) => (statusRef.current === "playing" ? e + 1000 : e));
+			// ☠️ Zehir dolumu: oynarken her 12 sn'de 1 cephane (max 3)
+			if (statusRef.current === "playing" && poisonAmmoRef.current < POISON_MAX) {
+				poisonRegenRef.current += 1;
+				if (poisonRegenRef.current >= POISON_REGEN_SEC) {
+					poisonRegenRef.current = 0;
+					poisonAmmoRef.current = Math.min(POISON_MAX, poisonAmmoRef.current + 1);
+					setPoisonAmmo(poisonAmmoRef.current);
+				}
+			}
 		}, 1000);
 		return () => window.clearInterval(id);
 	}, []);
@@ -759,6 +781,11 @@ export default function App() {
 		setSnake(freshSnake);
 		setFoodPoint(nextFoodPoint);
 		setPowerUpOnGrid(null);
+		poisonsRef.current = [];
+		setPoisons([]);
+		poisonAmmoRef.current = POISON_MAX;
+		setPoisonAmmo(POISON_MAX);
+		poisonRegenRef.current = 0;
 		setHasShield(false);
 		setIsDoubleXpActive(false);
 		setIsSlowBerryActive(false);
@@ -1059,6 +1086,22 @@ export default function App() {
 		}, durationMs);
 	};
 
+	// ☠️ Zehir ateşle: kafadan 1 mermi çıkar, en yakın hedefi (yem/fare) kovalar
+	const firePoison = useCallback(() => {
+		if (statusRef.current !== "playing") return;
+		if (poisonAmmoRef.current <= 0) return;
+		const head = snakeRef.current[0];
+		if (!head) return;
+		poisonAmmoRef.current -= 1;
+		setPoisonAmmo(poisonAmmoRef.current);
+		poisonRegenRef.current = 0;
+		const shot: PoisonShot = { id: nextFloatId(), pos: { ...head }, life: POISON_LIFE_TICKS };
+		poisonsRef.current = [...poisonsRef.current, shot];
+		setPoisons(poisonsRef.current);
+		if (settingsRef.current.sfxEnabled) playSpitSfx();
+		try { navigator.vibrate?.(10); } catch {}
+	}, []);
+
 	const changeDirection = useCallback(
 		(nextDirection: Direction) => {
 			if (statusRef.current === "over") return;
@@ -1110,6 +1153,11 @@ export default function App() {
 				event.preventDefault();
 				setIsBoosting(true);
 			}
+			// F = zehir püskürt
+			if (event.key === "f" || event.key === "F") {
+				event.preventDefault();
+				firePoison();
+			}
 		};
 		const onKeyUp = (event: KeyboardEvent) => {
 			if (event.key === "Shift") setIsBoosting(false);
@@ -1120,7 +1168,7 @@ export default function App() {
 			window.removeEventListener("keydown", onKeyDown);
 			window.removeEventListener("keyup", onKeyUp);
 		};
-	}, [changeDirection, setGameStatus, startGame]);
+	}, [changeDirection, setGameStatus, startGame, firePoison]);
 
 	// Mobil: oyun çerçevesini (alan + yön pedi) ekrana sığdır - ped alanın hemen altında, ikisi birlikte görünür
 	useLayoutEffect(() => {
@@ -1399,6 +1447,44 @@ export default function App() {
 					stunTicks: 0,
 					flightTicks: 0,
 				});
+			}
+			// ☠️ Zehir mermileri: HER tick hedefi yeniden seçer (yem ya da fare — takip),
+			// tick başına 2 hücre uçar. Yeme isabet → mama ağza ışınlanır (normal yeme akışı),
+			// fareye isabet → fare kafaya ışınlanır (normal yakalama akışı).
+			if (poisonsRef.current.length > 0) {
+				const nextShots: PoisonShot[] = [];
+				for (const shot of poisonsRef.current) {
+					const fp = foodPointRef.current;
+					const liveMouse = mouseRef.current;
+					let target = fp;
+					if (liveMouse) {
+						const dFood = Math.abs(shot.pos.x - fp.x) + Math.abs(shot.pos.y - fp.y);
+						const dMouse = Math.abs(shot.pos.x - liveMouse.pos.x) + Math.abs(shot.pos.y - liveMouse.pos.y);
+						if (dMouse <= dFood) target = liveMouse.pos;
+					}
+					let px = shot.pos.x;
+					let py = shot.pos.y;
+					for (let step = 0; step < 2 && (px !== target.x || py !== target.y); step++) {
+						if (px !== target.x) px += Math.sign(target.x - px);
+						else if (py !== target.y) py += Math.sign(target.y - py);
+					}
+					const curMouse = mouseRef.current;
+					const hitFood = px === foodPointRef.current.x && py === foodPointRef.current.y;
+					const hitMouse = curMouse !== null && px === curMouse.pos.x && py === curMouse.pos.y;
+					if (hitFood) {
+						foodPointRef.current = { ...nextHead };
+						setFoodPoint({ ...nextHead });
+						setBoardFlash("gold");
+						window.setTimeout(() => setBoardFlash(null), 240);
+					} else if (hitMouse && curMouse) {
+						mouseRef.current = { ...curMouse, pos: { ...nextHead } };
+						setMouse({ ...curMouse, pos: { ...nextHead } });
+					} else if (shot.life > 1) {
+						nextShots.push({ ...shot, pos: { x: px, y: py }, life: shot.life - 1 });
+					}
+				}
+				poisonsRef.current = nextShots;
+				setPoisons(nextShots);
 			}
 			const bitesMouse =
 				mouseRef.current !== null &&
@@ -2102,6 +2188,20 @@ const nextFoodCell = findOpenCell(
 												</div>
 											</div>
 										)}
+										{/* ☠️ Zehir mermileri: hedefi kovalayan parlayan toplar */}
+										{poisons.map((p) => (
+											<div
+												key={`poison-${p.id}`}
+												className="snake-slot"
+												style={{
+													transform: `translate(${p.pos.x * 100}%, ${p.pos.y * 100}%)`,
+												}}
+											>
+												<div className="absolute inset-0 z-[5] flex items-center justify-center poison-blob">
+													☠️
+												</div>
+											</div>
+										))}
 										{snake.map((segment, index) => {
 											const prev = prevSnakeRef.current[index];
 											// Nokia-style thin square orientation
@@ -2404,6 +2504,18 @@ const nextFoodCell = findOpenCell(
 								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-[10px] font-bold text-white/60">✨ ×{boostRemaining}</span>
 								<span className="ml-auto text-[10px] text-white/25">pasif → anında</span>
 							</div>
+							<button
+								type="button"
+								onClick={firePoison}
+								disabled={poisonAmmo <= 0 || status === "over"}
+								title="Zehir püskürt — hedefi takip eder, yemi ağza getirir, fareyi avlar (F)"
+								className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] font-black transition-all active:scale-[0.98] ${poisonAmmo > 0 && status !== "over" ? "border-[#7CFC00]/40 bg-[#7CFC00]/15 text-[#b6ff7a] hover:bg-[#7CFC00]/25 hover:shadow-[0_0_18px_rgba(124,252,0,0.35)] cursor-pointer" : "border-white/5 bg-white/[0.02] text-white/30 cursor-not-allowed opacity-60"}`}
+							>
+								<span className="text-[15px] leading-none">☠️</span>
+								Zehir Püskürt
+								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] tabular-nums">×{poisonAmmo}</span>
+								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] text-white/40">F</span>
+							</button>
 						</div>
 
 						<div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur p-4 sm:p-5 shadow-[0_12px_32px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">

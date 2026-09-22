@@ -109,8 +109,26 @@ export function playWrongSfx() {
   osc.stop(now + 0.22);
 }
 
+/** ☠️ Zehir püskürtme: kısa tiz "pfft" inişi */
+export function playSpitSfx() {
+	const ctx = getAudioContext();
+	if (!ctx) return;
+	const now = ctx.currentTime;
+	const osc = ctx.createOscillator();
+	const gain = ctx.createGain();
+	osc.type = "sawtooth";
+	osc.frequency.setValueAtTime(620, now);
+	osc.frequency.exponentialRampToValueAtTime(180, now + 0.09);
+	gain.gain.setValueAtTime(0.07, now);
+	gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+	osc.connect(gain);
+	gain.connect(ctx.destination);
+	osc.start(now);
+	osc.stop(now + 0.1);
+}
+
 export function playGameOverSfx() {
-  const ctx = getAudioContext();
+	const ctx = getAudioContext();
   if (!ctx) return;
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
