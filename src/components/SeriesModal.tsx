@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getLangMeta, LEVEL_ORDER, type Series, getSeriesForLanguage, toggleSeriesCompleted } from "../series";
+import { getLangMeta, getSeriesForLanguage, getTopicsForLanguage, SERIES_SIZE, toggleSeriesCompleted, type Series } from "../series";
 import type { WordLevel } from "../vocabulary";
 
 type Props = {
@@ -11,6 +11,8 @@ type Props = {
   onSelectSeries: (series: Series) => void;
   onCompletedChange: (next: Set<string>) => void;
   onClearSeries: () => void;
+  /** Konu listesinden gelindiyse o konuya odaklı açılır (örn. "Fiiller") */
+  focusTopic?: string | null;
 };
 
 const LEVEL_META: Record<WordLevel, { label: string; dot: string; ring: string }> = {
@@ -22,28 +24,32 @@ const LEVEL_META: Record<WordLevel, { label: string; dot: string; ring: string }
   C2: { label: "Mastery", dot: "bg-[#ff7a3d]", ring: "ring-[rgba(255,122,61,0.22)]" },
 };
 
-export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, completedSet, onSelectSeries, onCompletedChange, onClearSeries }: Props) {
-  const [levelFilter, setLevelFilter] = useState<WordLevel | "ALL">("ALL");
+export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, completedSet, onSelectSeries, onCompletedChange, onClearSeries, focusTopic }: Props) {
+  const [topicFilter, setTopicFilter] = useState<string | "ALL">("ALL");
   const [pendingId, setPendingId] = useState<string | null>(selectedSeriesId);
   const allSeries = useMemo(() => getSeriesForLanguage(language), [language]);
+  const topics = useMemo(() => getTopicsForLanguage(language), [language]);
   const filtered = useMemo(() => {
-    if (levelFilter === "ALL") return allSeries;
-    return allSeries.filter((s) => s.level === levelFilter);
-  }, [allSeries, levelFilter]);
+    if (topicFilter === "ALL") return allSeries;
+    return allSeries.filter((s) => s.topic === topicFilter);
+  }, [allSeries, topicFilter]);
 
-  // keep pending in sync when modal opens or language/selection changes
+  // keep pending + topic in sync when modal opens or language/selection changes
   useEffect(() => {
-    if (isOpen) setPendingId(selectedSeriesId);
-  }, [isOpen, selectedSeriesId, language]);
+    if (isOpen) {
+      setPendingId(selectedSeriesId);
+      setTopicFilter(focusTopic ?? "ALL");
+    }
+  }, [isOpen, selectedSeriesId, focusTopic]);
 
   const grouped = useMemo(() => {
-    const map = new Map<WordLevel, Series[]>();
-    for (const lvl of LEVEL_ORDER) {
-      const arr = filtered.filter((s) => s.level === lvl);
-      if (arr.length) map.set(lvl, arr);
+    const map = new Map<string, Series[]>();
+    for (const topic of topics) {
+      const arr = filtered.filter((s) => s.topic === topic);
+      if (arr.length) map.set(topic, arr);
     }
     return map;
-  }, [filtered]);
+  }, [filtered, topics]);
 
   const longPressTimer = useRef<number | null>(null);
   const longPressed = useRef(false);
@@ -121,11 +127,11 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                 </span>
               </div>
               <h2 id="series-title" className="mt-2 font-[var(--font-display)] text-[22px] sm:text-[26px] font-black tracking-[-0.02em] leading-none text-white">
-                {langMeta.flag} {langMeta.nameTr} Serileri <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 10'lu paketler</span>
+                {langMeta.flag} {langMeta.nameTr} Serileri <span className="font-[var(--font-body)] font-bold text-white/45 text-[13px] align-middle ml-1">— 50'li paketler</span>
               </h2>
-              <p className="mt-1 text-[12px] font-semibold text-white/40">{langMeta.nameTr} · {langMeta.nameEn} · {allSeries.length} seri · {allSeries.length * 10} kelime</p>
+              <p className="mt-1 text-[12px] font-semibold text-white/40">{langMeta.nameTr} · {langMeta.nameEn} · {allSeries.length} seri · {allSeries.length * SERIES_SIZE} kelime</p>
               <p className="mt-2 max-w-[560px] text-[12.5px] leading-5 text-white/58">
-                Her seri tam <b className="text-white font-bold">10 kelime</b> — seviye içinde sıralı. Bitirince otomatik <span className="inline-flex items-center rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[10px] font-black text-[#071a12]">✔</span> olur. Yanlışsa <b className="text-[var(--accent-2)]">basılı tut</b> ile geri al.
+                Her seri tam <b className="text-white font-bold">50 kelime</b> — konu içinde sıralı. Seri bitince <b className="text-white font-bold">başa sarar</b>, çıkana kadar döner. Bitirince otomatik <span className="inline-flex items-center rounded-full bg-[var(--accent-1)] px-1.5 py-0.5 text-[10px] font-black text-[#071a12]">✔</span> olur. Yanlışsa <b className="text-[var(--accent-2)]">basılı tut</b> ile geri al.
               </p>
               <div className="mt-3 flex items-center gap-2">
                 <div className="h-1.5 w-[140px] overflow-hidden rounded-full bg-white/10">
@@ -148,19 +154,19 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
 
         {/* controls — pill bar */}
         <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] bg-[rgba(12,10,28,0.55)] px-5 sm:px-7 py-3.5 backdrop-blur">
-          <span className="text-[11px] font-bold tracking-wide text-white/45 uppercase">Seviye</span>
-          <div className="flex flex-wrap gap-1.5">
-            {(["ALL", ...LEVEL_ORDER] as const).map((lvl) => {
-              const active = levelFilter === lvl;
+          <span className="text-[11px] font-bold tracking-wide text-white/45 uppercase">Konu</span>
+          <div className="flex flex-wrap gap-1.5 max-h-[104px] overflow-y-auto">
+            {(["ALL", ...topics] as const).map((topic) => {
+              const active = topicFilter === topic;
               return (
                 <button
-                  key={lvl}
+                  key={topic}
                   type="button"
-                  onClick={() => setLevelFilter(lvl as WordLevel | "ALL")}
+                  onClick={() => setTopicFilter(topic as string | "ALL")}
                   aria-pressed={active}
                   className={`rounded-full px-3.5 py-1.5 text-[12px] font-bold border transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent-1-ring)] ${active ? "bg-white text-[#0a0a12] border-white shadow-[0_6px_16px_rgba(0,0,0,0.24)]" : "bg-white/[0.06] text-white/72 border-white/10 hover:bg-white/10 hover:text-white"}`}
                 >
-                  {lvl === "ALL" ? "Tümü" : lvl}
+                  {topic === "ALL" ? "Tümü" : topic}
                 </button>
               );
             })}
@@ -171,7 +177,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                 ✕ Seri iptali
               </button>
             ) : (
-              <span className="hidden sm:inline text-[11px] text-white/35">İpucu: seriye dokun → sadece o 10 kelimeyle oyna</span>
+              <span className="hidden sm:inline text-[11px] text-white/35">İpucu: seriye dokun → sadece o 50 kelimeyle oyna</span>
             )}
           </div>
         </div>
@@ -181,24 +187,22 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
           {filtered.length === 0 ? (
             <div className="mx-auto flex max-w-[420px] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-10 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-white/60">∅</div>
-              <p className="font-[var(--font-display)] text-[16px] font-bold text-white">Bu seviyede seri yok</p>
+              <p className="font-[var(--font-display)] text-[16px] font-bold text-white">Bu konuda seri yok</p>
               <p className="text-[12px] leading-5 text-white/55">Filtreyi değiştir veya <b className="text-white">Tümü</b>ne dön.</p>
-              <button type="button" onClick={() => setLevelFilter("ALL")} className="mt-1 rounded-full bg-white px-4 py-2 text-xs font-black text-[#0a0a12] hover:bg-white/90">Tümünü göster</button>
+              <button type="button" onClick={() => setTopicFilter("ALL")} className="mt-1 rounded-full bg-white px-4 py-2 text-xs font-black text-[#0a0a12] hover:bg-white/90">Tümünü göster</button>
             </div>
           ) : (
-            Array.from(grouped.entries()).map(([lvl, series]) => {
-              const doneInLevel = series.filter((s) => completedSet.has(s.id)).length;
-              const meta = LEVEL_META[lvl];
+            Array.from(grouped.entries()).map(([topic, series]) => {
+              const doneInTopic = series.filter((s) => completedSet.has(s.id)).length;
               return (
-                <section key={lvl} className="space-y-3">
+                <section key={topic} className="space-y-3">
                   <div className="flex items-center gap-3">
                     <span className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-black tracking-wide text-white shadow-sm`}>
-                      <span className={`h-2 w-2 rounded-full ${meta.dot} shadow-[0_0_8px_currentColor]`} aria-hidden="true" />
-                      {lvl}
-                      <span className="font-[var(--font-body)] font-semibold text-white/45">· {meta.label}</span>
+                      <span className="h-2 w-2 rounded-full bg-[var(--accent-1)] shadow-[0_0_8px_currentColor]" aria-hidden="true" />
+                      📌 {topic}
                     </span>
                     <span className="text-[12px] font-semibold text-white/55">{series.length} seri</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${doneInLevel === series.length ? "bg-[var(--accent-1)] text-[#071a12]" : "bg-white/10 text-white/60 border border-white/10"}`}>{doneInLevel} ✔</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${doneInTopic === series.length ? "bg-[var(--accent-1)] text-[#071a12]" : "bg-white/10 text-white/60 border border-white/10"}`}>{doneInTopic} ✔</span>
                     <span className="ml-auto hidden sm:inline text-[11px] text-white/30">Kelime {series[0]?.rangeLabel} → {series[series.length - 1]?.rangeLabel}</span>
                   </div>
 
@@ -207,6 +211,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
                       const isCompleted = completedSet.has(s.id);
                       const isPending = pendingId === s.id;
                       const isActive = selectedSeriesId === s.id;
+                      const meta = LEVEL_META[s.level];
                       return (
                         <button
                           key={s.id}
@@ -240,6 +245,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
 
                           <span className="inline-flex items-center gap-2">
                             <span className="font-[var(--font-mono)] text-[12px] font-black tracking-[-0.01em] text-white">{s.label}</span>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black leading-none ${meta.dot} text-[#0a0a12]`}>{s.level}</span>
                             {isPending && <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black leading-none text-[#0a0a12]">SEÇİLİ</span>}
                             {isActive && !isPending && <span className="rounded-full bg-white/15 border border-white/20 px-2 py-0.5 text-[10px] font-bold leading-none text-white/70">AKTİF</span>}
                           </span>
@@ -267,7 +273,7 @@ export function SeriesModal({ isOpen, onClose, language, selectedSeriesId, compl
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-white/[0.07] bg-[rgba(12,10,28,0.78)] px-5 sm:px-7 py-4 backdrop-blur">
           <p className="hidden sm:block text-[11.5px] leading-4 text-white/45 max-w-[460px]">
-            Bir seriyi <b className="text-white">seç</b>, sonra <b className="text-[var(--accent-1)]">Başla</b> ile oyna — oyun sonunda otomatik ✔ olur.
+            Bir seriyi <b className="text-white">seç</b>, sonra <b className="text-[var(--accent-1)]">Başla</b> ile oyna — 50 kelime bitince <b className="text-white">başa sarar</b>, çıkana kadar döner.
           </p>
           <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
             <button type="button" onClick={onClose} className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-full border border-white/12 bg-white/[0.06] px-5 py-2.5 text-[13px] font-bold text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/20">

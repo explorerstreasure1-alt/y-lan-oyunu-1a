@@ -1,4 +1,5 @@
 import type { VocabularyWord, WordLevel } from "./vocabulary";
+import { expandPoolToTarget } from "./expandToTarget";
 
 /**
  * İtalyanca öğrenme havuzu — İngilizce ve Rusça ile aynı yapıda.
@@ -2197,7 +2198,9 @@ function buildItDataset(): VocabularyWord[] {
     extraIdx++;
     if (extraIdx > 10000) break;
   }
-  return dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));
+  // İlk 3000'in id'si korunur (eski kayıtlar bozulmaz); 7500'e kurallı öbeklerle tamamlanır
+  const cappedIt = dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));
+  return expandPoolToTarget(cappedIt, makeItWord, false);
 }
 
 export const ITALIAN_PATH: VocabularyWord[] = buildItDataset();

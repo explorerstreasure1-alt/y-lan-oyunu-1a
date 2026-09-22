@@ -330,6 +330,29 @@ export function getNextFoodItem(
   };
 }
 
+/**
+ * 50'li SERİ döngüsü: seri bitince BAŞA SARAR, kullanıcı çıkana kadar döner.
+ * - Öğrenildi/tekrar ayrımı YOK: 50 kelime sırayla, sonsuz tur.
+ * - SRS eleme yapmaz; pekiştirme isterse "Öğrendim" kaydı yine tutulur
+ *   (istatistik için) ama akışı kesmez.
+ */
+export function getNextSeriesItem(
+  seriesWords: VocabularyWord[],
+  seriesCursor: number,
+): { item: ActiveFoodItem; updatedCursor: number } {
+  if (seriesWords.length === 0) {
+    return {
+      item: { word: LEARNING_PATH[0], isReview: false },
+      updatedCursor: 0,
+    };
+  }
+  const word = seriesWords[seriesCursor % seriesWords.length];
+  return {
+    item: { word, isReview: false },
+    updatedCursor: (seriesCursor + 1) % seriesWords.length,
+  };
+}
+
 // --- Günlük aktivite kaydı (StatsModal "BUGÜN" özeti için) ---
 
 const DAILY_LOG_KEY = "snake_abc_daily_log_v1";

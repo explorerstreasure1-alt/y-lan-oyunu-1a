@@ -11,6 +11,8 @@ type TopicsModalProps = {
   onSelectTopic: (topic: string | "ALL") => void;
   onSelectLevel: (level: WordLevel | "ALL") => void;
   masteryMap: Record<number, WordMastery>;
+  /** Konuya tıklayınca: konuyu seç + o konunun 50'li serilerini aç */
+  onSelectTopicSeries: (topic: string) => void;
 };
 
 export function TopicsModal({
@@ -22,6 +24,7 @@ export function TopicsModal({
   onSelectTopic,
   onSelectLevel,
   masteryMap,
+  onSelectTopicSeries,
 }: TopicsModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +77,7 @@ export function TopicsModal({
           <div>
             <h2 className="font-pixel text-xl tracking-wide text-[#ffe073]">KONU VE SEVİYE FİLTRESİ</h2>
             <p className="mt-1 text-xs text-white/70">
-              Konu seçince oyun sadece o konunun kelimeleriyle oynanır — her konunun öğrendiklerin ayrı ayrı kaydedilir ve gösterilir.
+              Konuya dokun → o konunun <b className="text-white">50'li serileri</b> açılır. Seri bitince başa sarar, çıkana kadar döner — her konunun öğrendiklerin ayrı ayrı kaydedilir.
             </p>
           </div>
           <button
@@ -147,7 +150,7 @@ export function TopicsModal({
                   <button
                     key={top}
                     type="button"
-                    onClick={() => onSelectTopic(top)}
+                    onClick={() => onSelectTopicSeries(top)}
                     className={`rounded-xl border p-3 text-left font-bold text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd96d]/50 ${selectedTopic === top
                         ? "border-[#ffd96d] bg-[#ffd96d]/20 text-[#ffd96d] shadow"
                         : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
@@ -157,6 +160,7 @@ export function TopicsModal({
                       <span>📌 {top} {done && <span className="ml-1">🏆</span>}</span>
                       <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-[#99f5c3]">✔ {stat.learned}/{stat.total}</span>
                     </span>
+                    <span className="mt-1.5 block text-[10px] font-semibold text-white/40">▶ 50'li serileri aç</span>
                   </button>
                 );
               })}

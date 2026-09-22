@@ -1,4 +1,5 @@
 import type { VocabularyWord, WordLevel } from "./vocabulary";
+import { expandPoolToTarget, TARGET_WORDS } from "./expandToTarget";
 
 /**
  * Rusça öğrenme havuzu - İngilizce vocabulary.ts ile birebir aynı yapıda.
@@ -272,8 +273,23 @@ function buildRussianDataset(): VocabularyWord[] {
     fi++;
   }
 
-  return dataset.slice(0,3000).map((w,i)=>({...w, id:i}));
+  // İlk 3000'in id'si korunur (eski kayıtlar bozulmaz); 7500'e kurallı öbeklerle tamamlanır
+  const cappedRu = dataset.slice(0,3000).map((w,i)=>({...w, id:i}));
+  return expandPoolToTarget(cappedRu, (w, tr, pos, lvl, topic, id) => {
+    const clean = w.trim().toLowerCase();
+    return {
+      id,
+      word: clean,
+      meaningTr: tr,
+      phonetic: `/${translitRu(clean)}/`,
+      pos,
+      topic,
+      level: lvl,
+      definition: `Русское слово уровня ${lvl} (${pos.toUpperCase()}), по-турецки: «${tr}». Тема: ${topic}.`,
+      example: `Пример: Я использую слово «${clean}», когда говорю на тему «${topic}».`,
+    };
+  }, true);
 }
 
-export const TOTAL_WORDS_RU = 3000;
+export const TOTAL_WORDS_RU = TARGET_WORDS;
 export const RUSSIAN_PATH: VocabularyWord[] = buildRussianDataset();

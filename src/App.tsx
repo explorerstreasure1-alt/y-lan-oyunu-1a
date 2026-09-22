@@ -42,6 +42,7 @@ import {
 	type DailyLog,
 	getDailyLog,
 	getNextFoodItem,
+	getNextSeriesItem,
 	getSavedMasteryMap,
 	isWeakWord,
 	type LearningLanguage,
@@ -441,16 +442,18 @@ export default function App() {
 		[selectedTopic, selectedLevel, activePool],
 	);
 
-	// --- 10'lu Seri sistemi ---
+	// --- 50'li Seri sistemi ---
 	const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(() => getSelectedSeriesId());
 	const [completedSeries, setCompletedSeries] = useState<Set<string>>(() => getCompletedSeries());
 	const [isSeriesOpen, setIsSeriesOpen] = useState(false);
+	// Konu listesinden seriye geçerken modal o konuya odaklı açılır (örn. "Fiiller")
+	const [seriesFocusTopic, setSeriesFocusTopic] = useState<string | null>(null);
 	const activeSeries: Series | null = useMemo(() => {
 		if (!selectedSeriesId) return null;
 		const all = getSeriesForLanguage(language as LearningLanguage);
 		return all.find((s) => s.id === selectedSeriesId) ?? null;
 	}, [selectedSeriesId, language]);
-	// Seri seçiliyse oyun sadece o 10 kelimeyle oynanır, yoksa konu/seviye filtresi geçerli
+	// Seri seçiliyse oyun sadece o 50 kelimeyle oynanır, yoksa konu/seviye filtresi geçerli
 	const effectivePool = activeSeries ? activeSeries.words : filteredPool;
 
 	// Dil değişince: ses dilini ayarla + o güne ait kayıt haritasını yükle
@@ -581,6 +584,7 @@ export default function App() {
 	const settingsRef = useRef(settings);
 	const mouseRef = useRef<MouseState | null>(null);
 	const mouseCooldownRef = useRef(20); // yeni fare çıkana kadar geçen tick sayısı
+	const activeSeriesRef = useRef<Series | null>(null); // seri döngüsü her tick'te güncel seriyi görsün
 
 	// Render'daki teleport kontrolü için bir önceki commit edilmiş yılan pozisyonları
 	useLayoutEffect(() => {
@@ -589,6 +593,7 @@ export default function App() {
 
 	masteryMapRef.current = masteryMap;
 	activeFoodRef.current = activeFood;
+	activeSeriesRef.current = activeSeries;
 	powerUpRef.current = powerUpOnGrid;
 	recentUnlearnedIdsRef.current = recentUnlearnedIds;
 	xpRef.current = xp;
@@ -726,16 +731,20 @@ export default function App() {
 		recentUnlearnedIdsRef.current = [];
 
 		const nextFoodPoint = findOpenCell(freshSnake, 1);
-		const { item, updatedCursor } = getNextFoodItem(
-			0,
-			masteryMapRef.current,
-			0,
-			[],
-			customWordBank,
-			effectivePool,
-			[],
-			settingsRef.current.repeatFrequency,
-		);
+		// Seri modundaysak 50 kelime döngüsünden başla (başa sarma), yoksa SRS havuzu
+		const resetSeries = activeSeriesRef.current;
+		const { item, updatedCursor } = resetSeries
+			? getNextSeriesItem(resetSeries.words, 0)
+			: getNextFoodItem(
+				0,
+				masteryMapRef.current,
+				0,
+				[],
+				customWordBank,
+				effectivePool,
+				[],
+				settingsRef.current.repeatFrequency,
+			);
 
 		newWordCursorRef.current = updatedCursor;
 		foodPointRef.current = nextFoodPoint;
@@ -814,6 +823,17 @@ export default function App() {
 			setFoodPoint(nextFoodCell);
 		},
 		[customWordBank, activePool, selectedSeriesId, activeSeries, completedSeries],
+	);
+
+	// Konuya tıklayınca: konuyu seç + o konunun 50'li serilerini aç
+	const handleTopicSeries = useCallback(
+		(topic: string) => {
+			selectPool(topic, selectedLevel);
+			setSeriesFocusTopic(topic);
+			setIsTopicsOpen(false);
+			setIsSeriesOpen(true);
+		},
+		[selectPool, selectedLevel],
 	);
 
 	// Dil değiştirme: kaydı, havuzu, mama kelimesini ve oyunu yeni dile göre sıfırla
@@ -928,21 +948,12 @@ export default function App() {
 			setCompletedSeries(new Set(next));
 		}
 		setIsSeriesOpen(false);
-		// Yeni seriyle yemleri sıfırla
+		// Yeni seriyle yemleri sıfırla — 50 kelimelik döngünün başından başla
 		eatenTotalRef.current = 0;
 		newWordCursorRef.current = 0;
 		recentUnlearnedIdsRef.current = [];
 		setRecentUnlearnedIds([]);
-		const { item, updatedCursor } = getNextFoodItem(
-			0,
-			masteryMapRef.current,
-			0,
-			[],
-			customWordBank,
-			series.words,
-			[],
-			settingsRef.current.repeatFrequency,
-		);
+		const { item, updatedCursor } = getNextSeriesItem(series.words, 0);
 		newWordCursorRef.current = updatedCursor;
 		const finalItem = maybeBonusMama(item);
 		activeFoodRef.current = finalItem;
@@ -955,7 +966,7 @@ export default function App() {
 		setComboStreak(0);
 		comboStreakRef.current = 0;
 		setGameStatus("ready");
-	}, [customWordBank, setGameStatus, completedSeries]);
+	}, [setGameStatus, completedSeries]);
 
 	const handleClearSeries = useCallback(() => {
 		// Çıkmadan önce tıkla işaretle — çıkınca tık kalır
@@ -1583,7 +1594,12 @@ export default function App() {
 
 				if (autoPauseOnEat) setGameStatus("paused");
 
-				const { item: nextItem, updatedCursor } = getNextFoodItem(
+			// Seri modu: 50 kelime bitince başa sar, çıkana kadar dön (SRS eleme yok).
+			// Zayıf antrenman açıksa SRS yolu korunur.
+			const loopSeries = activeSeriesRef.current;
+			const { item: nextItem, updatedCursor } = loopSeries && !weakTrainingRef.current
+				? getNextSeriesItem(loopSeries.words, newWordCursorRef.current)
+				: getNextFoodItem(
 					newWordCursorRef.current,
 					updatedMap,
 					eatenTotalRef.current,
@@ -1674,7 +1690,7 @@ const nextFoodCell = findOpenCell(
 					: "HAZIR";
 	const xpLevel = Math.floor(xp / 100) + 1;
 
-	// Seri aktifse ilerleme sadece o 10 kelimeye göre, yoksa konu/seviye filtresi
+	// Seri aktifse ilerleme sadece o 50 kelimeye göre, yoksa konu/seviye filtresi
 	const isPoolFiltered = activeSeries ? true : filteredPool.length < activePool.length;
 	const poolTotal = activeSeries ? activeSeries.words.length : filteredPool.length;
 	const poolLearned = (activeSeries ? activeSeries.words : filteredPool).filter(
@@ -1746,10 +1762,10 @@ const nextFoodCell = findOpenCell(
 						</div>
 						<div className="leading-none text-left">
 							<p className="font-[var(--font-display)] text-[10.5px] font-black tracking-[-0.02em] leading-none text-white">
-								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8px] font-bold tracking-[0.1em] text-white/35 align-super">3000</span>
+								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8px] font-bold tracking-[0.1em] text-white/35 align-super">7500</span>
 							</p>
 							<p className="hidden sm:block font-[var(--font-mono)] text-[7.5px] font-bold uppercase tracking-[0.12em] text-white/30 leading-none mt-[1px]">
-								A1 — C2 • 3000
+								A1 — C2 • 7500
 							</p>
 						</div>
 					</button>
@@ -1767,7 +1783,7 @@ const nextFoodCell = findOpenCell(
 							})}
 						</div>
 						<span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-white/50">{LANG_META[language]?.flag} {LANG_META[language]?.nameTr}</span>
-						<button type="button" onClick={() => setIsSeriesOpen(true)}
+						<button type="button" onClick={() => { setSeriesFocusTopic(null); setIsSeriesOpen(true); }}
 							className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition ${activeSeries ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)] shadow-sm" : "bg-white/[0.05] text-white/70 border-white/10 hover:bg-white/10 hover:text-white"}`}>
 							{activeSeries ? `📚 ${activeSeries.label}` : "Seriye Başla"}
 						</button>
@@ -2610,6 +2626,7 @@ const nextFoodCell = findOpenCell(
 				onSelectTopic={(t) => selectPool(t, selectedLevel)}
 				onSelectLevel={(l) => selectPool(selectedTopic, l)}
 				masteryMap={masteryMap}
+				onSelectTopicSeries={handleTopicSeries}
 			/>
 			<AchievementsModal
 				isOpen={isAchievementsOpen}
@@ -2703,6 +2720,7 @@ const nextFoodCell = findOpenCell(
 				onSelectSeries={(s) => { handleSelectSeries(s); setShowLanding(false); }}
 				onCompletedChange={setCompletedSeries}
 				onClearSeries={handleClearSeries}
+				focusTopic={seriesFocusTopic}
 			/>
 
 			{/* Landing — minimal & zarif */}
@@ -2714,7 +2732,7 @@ const nextFoodCell = findOpenCell(
 						<div className="px-7 sm:px-8 pt-8 pb-6 text-center">
 							<div className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] border border-white/10 text-white/70 text-[14px]">◆</div>
 							<h1 className="mt-3 font-[var(--font-display)] text-[26px] font-[800] tracking-[-0.03em] leading-none text-white">
-								Snake <span className="font-[300] text-white/55">ABC</span> <span className="font-[var(--font-mono)] text-[11px] font-bold text-white/30 align-super">3000</span>
+								Snake <span className="font-[300] text-white/55">ABC</span> <span className="font-[var(--font-mono)] text-[11px] font-bold text-white/30 align-super">7500</span>
 							</h1>
 							<p className="mt-1.5 text-[12.5px] leading-5 text-white/45 font-[400]">Yılanla kelime ezberle — sakin, zarif, odak.</p>
 							<div className="mx-auto mt-4 h-px w-12 bg-white/10" />
@@ -2729,14 +2747,14 @@ const nextFoodCell = findOpenCell(
 									</button>
 								);
 							})}
-							<span className="ml-1 text-[11px] text-white/25">· 7 dil · 3000 kelime · 10'lu seriler</span>
+							<span className="ml-1 text-[11px] text-white/25">· 7 dil · 7500 kelime · 50'li seriler</span>
 						</div>
 
 						<div className="px-6 sm:px-8 pb-7 grid gap-2.5">
-							<button type="button" onClick={() => { setShowLanding(false); setIsSeriesOpen(true); }} className="group flex items-center justify-between rounded-[14px] bg-[var(--accent-1)] px-5 py-4 text-left hover:bg-[var(--accent-1-strong)] transition">
+							<button type="button" onClick={() => { setSeriesFocusTopic(null); setShowLanding(false); setIsSeriesOpen(true); }} className="group flex items-center justify-between rounded-[14px] bg-[var(--accent-1)] px-5 py-4 text-left hover:bg-[var(--accent-1-strong)] transition">
 								<span>
 									<span className="block font-[700] text-[14px] leading-none text-[#071a12]">Seriye Başla</span>
-									<span className="block text-[11.5px] font-medium text-[#071a12]/60 mt-1">10'lu paketler — seviye seviye</span>
+									<span className="block text-[11.5px] font-medium text-[#071a12]/60 mt-1">50'li paketler — konu konu</span>
 								</span>
 								<span className="shrink-0 rounded-full bg-[#071a12] px-3 py-1 text-[11px] font-bold text-white group-hover:translate-x-0.5 transition">→</span>
 							</button>

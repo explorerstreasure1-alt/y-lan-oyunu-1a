@@ -2,18 +2,19 @@ import { FRENCH_PATH, GERMAN_PATH, ITALIAN_PATH, LEARNING_PATH, PORTUGUESE_PATH,
 import { RUSSIAN_PATH } from "./vocabularyRu";
 import type { LearningLanguage } from "./srs";
 
-export const SERIES_SIZE = 10;
+export const SERIES_SIZE = 50;
 export const LEVEL_ORDER: WordLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 export type Series = {
-  id: string; // e.g. "en-A1-1"
+  id: string; // e.g. "en::Fiiller::1"
   lang: string;
-  level: WordLevel;
-  seriesIndex: number; // 1-based per level
-  globalIndex: number; // 1-based across all levels
+  topic: string; // konu bazlı seri (örn. "Fiiller")
+  level: WordLevel; // öbekteki baskın seviye (rozet için)
+  seriesIndex: number; // 1-based per topic
+  globalIndex: number; // 1-based across all topics
   words: VocabularyWord[];
-  rangeLabel: string; // "1-10"
-  label: string; // "A1 • Seri 1"
+  rangeLabel: string; // "1-50"
+  label: string; // "Fiiller • Seri 1"
 };
 
 const STORAGE_KEY = "snake_abc_series_completed_v1";
@@ -42,32 +43,68 @@ export function poolForLang(lang: string): VocabularyWord[] {
   return LEARNING_PATH;
 }
 
+/** Bir öbeğin baskın seviyesi (rozet/görünüm için) */
+function dominantLevel(words: VocabularyWord[]): WordLevel {
+  const counts = new Map<WordLevel, number>();
+  for (const w of words) counts.set(w.level, (counts.get(w.level) ?? 0) + 1);
+  let best: WordLevel = words[0]?.level ?? "A1";
+  let bestCount = -1;
+  for (const lvl of LEVEL_ORDER) {
+    const c = counts.get(lvl) ?? 0;
+    if (c > bestCount) {
+      bestCount = c;
+      best = lvl;
+    }
+  }
+  return best;
+}
+
+/** Konular: havuzdaki ilk görünüm sırasıyla */
+export function getTopicsForLanguage(lang: string): string[] {
+  const pool = poolForLang(lang);
+  const seen: string[] = [];
+  const set = new Set<string>();
+  for (const w of pool) {
+    if (!set.has(w.topic)) {
+      set.add(w.topic);
+      seen.push(w.topic);
+    }
+  }
+  return seen;
+}
+
 export function getSeriesForLanguage(lang: string): Series[] {
   const pool = poolForLang(lang);
   const result: Series[] = [];
   let globalIdx = 0;
-  for (const lvl of LEVEL_ORDER) {
-    const lvlWords = pool.filter((w) => w.level === lvl);
-    if (lvlWords.length === 0) continue;
-    const chunkCount = Math.ceil(lvlWords.length / SERIES_SIZE);
+  for (const topic of getTopicsForLanguage(lang)) {
+    const topicWords = pool.filter((w) => w.topic === topic);
+    if (topicWords.length === 0) continue;
+    const chunkCount = Math.ceil(topicWords.length / SERIES_SIZE);
     for (let i = 0; i < chunkCount; i++) {
       globalIdx += 1;
-      const slice = lvlWords.slice(i * SERIES_SIZE, (i + 1) * SERIES_SIZE);
+      const slice = topicWords.slice(i * SERIES_SIZE, (i + 1) * SERIES_SIZE);
       const start = i * SERIES_SIZE + 1;
       const end = start + slice.length - 1;
       result.push({
-        id: `${lang}-${lvl}-${i + 1}`,
+        id: `${lang}::${topic}::${i + 1}`,
         lang,
-        level: lvl,
+        topic,
+        level: dominantLevel(slice),
         seriesIndex: i + 1,
         globalIndex: globalIdx,
         words: slice,
         rangeLabel: `${start}-${end}`,
-        label: `${lvl} • Seri ${i + 1}`,
+        label: `${topic} • Seri ${i + 1}`,
       });
     }
   }
   return result;
+}
+
+/** Tek konunun 50'lik serileri (konuya tıklayınca açılan liste) */
+export function getSeriesForTopic(lang: string, topic: string): Series[] {
+  return getSeriesForLanguage(lang).filter((s) => s.topic === topic);
 }
 
 export function getAllSeriesFlat(): Record<LearningLanguage, Series[]> {

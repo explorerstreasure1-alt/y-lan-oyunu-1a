@@ -1,6 +1,7 @@
 export type WordLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
 import { EXTRA_TUPLES } from "./extraTuples";
+import { expandPoolToTarget } from "./expandToTarget";
 
 export type VocabularyWord = {
   id: number;
@@ -157,7 +158,8 @@ function buildDataset(): VocabularyWord[] {
 
   const dataset = [...core];
 
-  // 4. Havuzu 3000 GERÇEK benzersiz kelimeyle tamamla (eski düzen kopyalıyordu - artık yeni kelimeler)
+  // 4. Havuzu 7500 GERÇEK + kurallı öbekle tamamla (ilk 3000'in id'si korunur,
+  // eski öğrenme kayıtları bozulmaz; öbekler sona eklenir)
   for (const t of EXTRA_TUPLES) {
     if (dataset.length >= 3000) break;
     const key = t[0].toLowerCase().trim();
@@ -167,7 +169,8 @@ function buildDataset(): VocabularyWord[] {
     }
   }
 
-  return dataset.slice(0, 3000).map((w, i) => ({ ...w, id: i }));
+  const capped = dataset.slice(0, 3000).map((w, i) => ({ ...w, id: i }));
+  return expandPoolToTarget(capped, makeWord, true);
 }
 
 export const LEARNING_PATH: VocabularyWord[] = buildDataset();

@@ -1,4 +1,5 @@
 import type { VocabularyWord, WordLevel } from "./vocabulary";
+import { expandPoolToTarget } from "./expandToTarget";
 
 type DeBaseTuple = [string, string, string, WordLevel, string];
 
@@ -3222,7 +3223,9 @@ function buildDeDataset(): VocabularyWord[] {
     extraIdx++;
     if (extraIdx > 10000) break;
   }
-  return dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));
+  // İlk 3000'in id'si korunur (eski kayıtlar bozulmaz); 7500'e kurallı öbeklerle tamamlanır
+  const cappedDe = dataset.slice(0, 3000).map((w,i)=>({ ...w, id:i }));
+  return expandPoolToTarget(cappedDe, makeDeWord, true);
 }
 
 export const GERMAN_PATH: VocabularyWord[] = buildDeDataset();
