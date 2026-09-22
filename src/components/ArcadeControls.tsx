@@ -64,38 +64,41 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
         </div>
       </div>
 
-      {/* ☠️ Zehir — sağ altta YUVARLAK yüzen buton, pedden uzak (alan kaplamaz) */}
-      <button
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); buzz(); onPoisonFire(); }}
-        className={`absolute bottom-0 right-2 flex h-12 w-12 shrink-0 select-none flex-col items-center justify-center rounded-full border-2 text-xs font-black transition-all active:scale-90 touch-manipulation ${
-          poisonAmmo > 0
-            ? "border-[#7CFC00]/60 bg-gradient-to-b from-[#7CFC00]/30 to-[#4a8a00]/30 text-[#c6ff8a] shadow-[0_0_16px_rgba(124,252,0,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]"
-            : "border-white/10 bg-white/[0.02] text-white/30 opacity-60"
-        }`}
-        aria-label="Zehir püskürt"
-      >
-        <span className="text-lg leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">☠️</span>
-        <span className="-mt-0.5 text-[9px] tabular-nums">{poisonAmmo > 0 ? `×${poisonAmmo}` : "…"}</span>
-      </button>
-
-      {/* Boost — eski yerinde, pedin altında */}
-      <button
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
-        onPointerUp={onBoostEnd}
-        onPointerLeave={onBoostEnd}
-        onPointerCancel={onBoostEnd}
-        className={`flex h-8 w-36 select-none flex-row items-center justify-center gap-1.5 rounded-xl border text-xs font-black transition-all active:scale-[0.98] ${
-          isBoosting
-            ? "border-[#ff84ad] bg-gradient-to-b from-[#ff9ebb] to-[#ff7a9e] text-[#1a0a12] shadow-[0_0_14px_rgba(255,158,187,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
-            : "border-white/10 bg-gradient-to-b from-[#2e1a5a] to-[#25124a] text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-[#35206a] hover:to-[#2a184a]"
-        }`}
-        aria-label="Hızlandır (basılı tut)"
-      >
-        <span className="text-sm leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">⚡</span>
-        <span className="text-[11px] tracking-wide">HIZ</span>
-      </button>
+      {/* Alt sıra: HIZ tam ortada, zehir sağda — akış içinde, üst üste binme imkansız */}
+      <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-1.5">
+        <div />
+        <button
+          type="button"
+          onPointerDown={(e) => { e.preventDefault(); buzz(); onBoostStart(); }}
+          onPointerUp={onBoostEnd}
+          onPointerLeave={onBoostEnd}
+          onPointerCancel={onBoostEnd}
+          className={`flex h-8 w-36 select-none flex-row items-center justify-center gap-1.5 rounded-xl border text-xs font-black transition-all active:scale-[0.98] ${
+            isBoosting
+              ? "border-[#ff84ad] bg-gradient-to-b from-[#ff9ebb] to-[#ff7a9e] text-[#1a0a12] shadow-[0_0_14px_rgba(255,158,187,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
+              : "border-white/10 bg-gradient-to-b from-[#2e1a5a] to-[#25124a] text-[#ffe9a8] shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-[#35206a] hover:to-[#2a184a]"
+          }`}
+          aria-label="Hızlandır (basılı tut)"
+        >
+          <span className="text-sm leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">⚡</span>
+          <span className="text-[11px] tracking-wide">HIZ</span>
+        </button>
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onPointerDown={(e) => { e.preventDefault(); buzz(); onPoisonFire(); }}
+            className={`flex h-10 w-10 select-none flex-col items-center justify-center rounded-full border-2 text-xs font-black transition-all active:scale-90 touch-manipulation ${
+              poisonAmmo > 0
+                ? "border-[#7CFC00]/60 bg-gradient-to-b from-[#7CFC00]/30 to-[#4a8a00]/30 text-[#c6ff8a] shadow-[0_0_16px_rgba(124,252,0,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]"
+                : "border-white/10 bg-white/[0.02] text-white/30 opacity-60"
+            }`}
+            aria-label="Zehir püskürt"
+          >
+            <span className="text-base leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">☠️</span>
+            <span className="-mt-0.5 text-[8px] tabular-nums">{poisonAmmo > 0 ? `×${poisonAmmo}` : "…"}</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
