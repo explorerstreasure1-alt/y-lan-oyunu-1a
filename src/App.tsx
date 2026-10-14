@@ -122,7 +122,7 @@ const directionDelta: Record<Direction, Point> = {
 const isSamePoint = (first: Point, second: Point) =>
 	first.x === second.x && first.y === second.y;
 
-// Aynı milisaniyede iki olay (örn. fare + yem) aynı Date.now() id'sini alınca
+// Aynı milisaniyede iki olay aynı Date.now() id'sini alınca
 // React "duplicate key" uyarısı verir — modül seviyesi sayaçla benzersizleştir
 let floatIdSeq = 0;
 const nextFloatId = () => {
@@ -154,46 +154,11 @@ function findOpenCell(
 	return { x: 2, y: 2 };
 }
 
-// ☠️ Zehir: kafadan çıkar, hedefi (yem/fare) her tick yeniden bulup kovalar
+// ☠️ Zehir: kafadan çıkar, hedefi (yem) her tick yeniden bulup kovalar
 type PoisonShot = { id: number; pos: Point; life: number };
 const POISON_MAX = 3; // cephane
 const POISON_REGEN_SEC = 10; // yeni zehir dolum süresi (3 atış sonrası 10 sn)
 const POISON_LIFE_TICKS = 60; // ıskalayan mermi bu kadar tick sonra söner
-
-// 🐀 Fare delikleri: 4 köşe her zaman boştur
-const MOUSE_HOLES: Point[] = [	{ x: 0, y: 0 },
-	{ x: COLUMNS - 1, y: 0 },
-	{ x: 0, y: ROWS - 1 },
-	{ x: COLUMNS - 1, y: ROWS - 1 },
-];
-
-// Fare bir adımı: hedef eksene önce ilerler; yılan gövdesi engellerse diğer ekseni dener
-function mouseStep(from: Point, target: Point, snake: Point[]): Point {
-	const dx = Math.sign(target.x - from.x);
-	const dy = Math.sign(target.y - from.y);
-	const candidates: Point[] = [];
-	if (Math.abs(dx) >= Math.abs(dy)) {
-		if (dx !== 0) candidates.push({ x: from.x + dx, y: from.y });
-		if (dy !== 0) candidates.push({ x: from.x, y: from.y + dy });
-	} else {
-		if (dy !== 0) candidates.push({ x: from.x, y: from.y + dy });
-		if (dx !== 0) candidates.push({ x: from.x + dx, y: from.y });
-	}
-	const blocked = (p: Point) => snake.slice(1).some((s) => isSamePoint(s, p));
-	const next = candidates.find((c) => !blocked(c));
-	return next ?? from;
-}
-
-// 🐀 Fare durumu: önce yılanın kuyruğunu kovalar (hunt), ısırınca hedef deliğe kaçar (flee)
-interface MouseState {
-	pos: Point;
-	target: Point; // hunt sırasında anlık kuyruk (yön için), flee sırasında hedef delik
-	hole: Point; // kaçış deliği (flee'ye geçince target buna eşitlenir)
-	phase: "hunt" | "flee";
-	huntTicks: number; // kuyruğa yetişemezse pes edip kaçma sınırı
-	stunTicks: number; // ısırık sonrası "çiğneme" molası — hareket yok, oyuncu yetişebilsin
-	flightTicks: number; // flee'de yavaş kaçış sayacı — her 2. tick'te hareket eder
-}
 
 // Güç paneli tanımları — ❤️ Kalp ve ✨ Boost pasiftir (kutu yiyince anında uygulanır), kalanlar şarj biriktirir
 const POWER_DEFS: {
@@ -381,10 +346,6 @@ export default function App() {
 	>({});
 	const [nowMs, setNowMs] = useState(() => Date.now());
 	const [elapsedMs, setElapsedMs] = useState(0);
-
-	// 🐀 Fare: yılandan kuyruk parçası koparmak için kuyruğu kovalar, ısırınca hedef deliğe kaçar; yılan kafası yakalarsa puan
-	const [mouse, setMouse] = useState<MouseState | null>(null);
-	const [mouseCount, setMouseCount] = useState(0); // yakalanan fare sayısı
 
 	// ☠️ Zehir püskürtme: buton/F tuşu ateşler, mermi hedefi takip eder
 	const [poisons, setPoisons] = useState<PoisonShot[]>([]);
@@ -598,8 +559,6 @@ export default function App() {
 	const weakTrainingRef = useRef(false);
 	const weakWordsRef = useRef<VocabularyWord[]>([]);
 	const settingsRef = useRef(settings);
-	const mouseRef = useRef<MouseState | null>(null);
-	const mouseCooldownRef = useRef(20); // yeni fare çıkana kadar geçen tick sayısı
 	const activeSeriesRef = useRef<Series | null>(null); // seri döngüsü her tick'te güncel seriyi görsün
 
 	// Render'daki teleport kontrolü için bir önceki commit edilmiş yılan pozisyonları
@@ -805,9 +764,6 @@ export default function App() {
 		setSessionEatenWords([]);
 		setRecentUnlearnedIds([]);
 		setShowHint(false);
-		mouseRef.current = null;
-		setMouse(null);
-		mouseCooldownRef.current = 20;
 		setGameStatus("ready");
 	}, [customWordBank, effectivePool, setGameStatus]);
 
@@ -1086,7 +1042,7 @@ export default function App() {
 		}, durationMs);
 	};
 
-	// ☠️ Zehir ateşle: kafadan 1 mermi çıkar, en yakın hedefi (yem/fare) kovalar
+	// ☠️ Zehir ateşle: kafadan 1 mermi çıkar, yemi kovalar
 	const firePoison = useCallback(() => {
 		if (statusRef.current !== "playing") return;
 		if (poisonAmmoRef.current <= 0) return;
@@ -1289,196 +1245,24 @@ export default function App() {
 
 			const nextHead = { x: nextX, y: nextY };
 
-			// 🐀 Fare: yılanın kuyruğunu kovalar, kuyruğa 1 hücre kala parça koparıp hedef deliğe kaçar; yılan kafası yakalarsa +10 puan
-			let mouseBite = false; // bu tick'te fare kuyruktan parça kopardı → yılan küçülür
-			const currentMouse = mouseRef.current;
-			if (currentMouse) {
-				if (currentMouse.phase === "hunt") {
-					// Kuyruk her tick hareket ettiği için hedefi anlık kuyruk pozisyonu yap
-					const tail = oldSnake[oldSnake.length - 1];
-					const distToTail =
-						Math.abs(currentMouse.pos.x - tail.x) +
-						Math.abs(currentMouse.pos.y - tail.y);
-					if (distToTail <= 1) {
-						// Kuyruğa yetişti → parça kopardı, kaçış deliğine yönel (yazı penceresi yok)
-						mouseBite = true;
-						// Fare parçayı "çiğner": 6 tick hareket etmez — oyuncu kafayla gelip yiyebilsin,
-						// sonra kaçış deliğine koşar
-						const stunnedMouse: MouseState = {
-							...currentMouse,
-							target: currentMouse.hole,
-							phase: "flee",
-							stunTicks: 6,
-							flightTicks: 0,
-						};
-						mouseRef.current = stunnedMouse;
-						setMouse(stunnedMouse);
-					} else if (currentMouse.huntTicks >= 60) {
-						// Çok uzun kovaladı → pes edip hedef deliğe kaçar
-						const nextMousePos = mouseStep(
-							currentMouse.pos,
-							currentMouse.hole,
-							oldSnake,
-						);
-						mouseRef.current = {
-							...currentMouse,
-							pos: nextMousePos,
-							target: currentMouse.hole,
-							phase: "flee",
-							stunTicks: 0,
-							flightTicks: 0,
-						};
-						setMouse({
-							...currentMouse,
-							pos: nextMousePos,
-							target: currentMouse.hole,
-							phase: "flee",
-							stunTicks: 0,
-							flightTicks: 0,
-						});
-					} else {
-						// Kuyruğu kovalamaya devam et — fare yılanla aynı hızda koşar (1 adım/tick), oyuncu yetişip yakalayabilir
-						// Hedef seçimi: dikey mesafe yataydan büyükse önce kuyruğun SATIRINA in (sütunu koru).
-						// mouseStep |dx|>=|dy| iken x'i öncelediği için doğrudan kuyruğu hedeflerse yatay eksende
-						// dönüp durabilir; ayrıca rowTarget fare kuyruk satırına inince kendi üzerine düşer (dx=0,
-						// dy=0 → donar), bu yüzden aynı satıra yaklaşınca hedefi GERÇEK kuyruk yapıp yatayca kovalar.
-						const huntTarget =
-							Math.abs(tail.x - currentMouse.pos.x) >=
-								Math.abs(tail.y - currentMouse.pos.y)
-								? tail
-								: { x: currentMouse.pos.x, y: tail.y };
-						const nextMousePos = mouseStep(
-							currentMouse.pos,
-							huntTarget,
-							oldSnake,
-						);
-						mouseRef.current = {
-							pos: nextMousePos,
-							target: tail,
-							hole: currentMouse.hole,
-							phase: "hunt",
-							huntTicks: currentMouse.huntTicks + 1,
-							stunTicks: 0,
-							flightTicks: 0,
-						};
-						setMouse({
-							pos: nextMousePos,
-							target: tail,
-							hole: currentMouse.hole,
-							phase: "hunt",
-							huntTicks: currentMouse.huntTicks + 1,
-							stunTicks: 0,
-							flightTicks: 0,
-						});
-					}
-				} else {
-					// flee: önce "çiğneme" molası (hareket yok), sonra HIZLI kaçış —
-					// her tick'te bir hücre (yılanla aynı hız → daha zor yakalanır);
-					// 1 hücre kala deliğe girer, kaybol
-					if (currentMouse.stunTicks > 0) {
-						const stillMouse = {
-							...currentMouse,
-							stunTicks: currentMouse.stunTicks - 1,
-						};
-						mouseRef.current = stillMouse;
-						setMouse(stillMouse);
-					} else {
-						const distToTarget =
-							Math.abs(currentMouse.pos.x - currentMouse.target.x) +
-							Math.abs(currentMouse.pos.y - currentMouse.target.y);
-						if (distToTarget <= 1) {
-							mouseRef.current = null;
-							setMouse(null);
-							mouseCooldownRef.current = 18 + Math.floor(Math.random() * 14);
-						} else {
-							const nextMousePos = mouseStep(
-								currentMouse.pos,
-								currentMouse.target,
-								oldSnake,
-							);
-							const movedMouse = {
-								...currentMouse,
-								pos: nextMousePos,
-								flightTicks: currentMouse.flightTicks + 1,
-							};
-							mouseRef.current = movedMouse;
-							setMouse(movedMouse);
-						}
-					}
-				}
-			} else if (mouseCooldownRef.current > 0) {
-				mouseCooldownRef.current -= 1;
-			} else {
-				// Cooldown bitti → çıkış deliği rastgele, kaçış deliği EN UZAK olan:
-				// uzun kovalamaca + yavaş kaçış = oyuncu fareyi yakalayabilsin; önce kuyruğu kovalar
-				const shuffled = [...MOUSE_HOLES].sort(() => Math.random() - 0.5);
-				const spawn = shuffled[0];
-				// Fare deliğin hemen içinden çıkar (köşe hücresinde doğmaz)
-				const insideSpawn = {
-					x:
-						spawn.x === 0 ? 1 : spawn.x === COLUMNS - 1 ? COLUMNS - 2 : spawn.x,
-					y: spawn.y === 0 ? 1 : spawn.y === ROWS - 1 ? ROWS - 2 : spawn.y,
-				};
-				let hole = spawn;
-				for (const candidate of shuffled) {
-					const dist =
-						Math.abs(candidate.x - insideSpawn.x) +
-						Math.abs(candidate.y - insideSpawn.y);
-					const bestDist =
-						Math.abs(hole.x - insideSpawn.x) + Math.abs(hole.y - insideSpawn.y);
-					if (dist > bestDist) hole = candidate;
-				}
-				const tail = oldSnake[oldSnake.length - 1];
-				mouseRef.current = {
-					pos: insideSpawn,
-					target: tail,
-					hole,
-					phase: "hunt",
-					huntTicks: 0,
-					stunTicks: 0,
-					flightTicks: 0,
-				};
-				setMouse({
-					pos: insideSpawn,
-					target: tail,
-					hole,
-					phase: "hunt",
-					huntTicks: 0,
-					stunTicks: 0,
-					flightTicks: 0,
-				});
-			}
-			// ☠️ Zehir mermileri: HER tick hedefi yeniden seçer (yem ya da fare — takip),
-			// tick başına 2 hücre uçar. Yeme isabet → mama ağza ışınlanır (normal yeme akışı),
-			// fareye isabet → fare kafaya ışınlanır (normal yakalama akışı).
+// ☠️ Zehir mermileri: HER tick yemi takip eder, tick başına 2 hücre uçar.
+			// Yeme isabet → mama ağza ışınlanır (normal yeme akışı).
 			if (poisonsRef.current.length > 0) {
 				const nextShots: PoisonShot[] = [];
 				for (const shot of poisonsRef.current) {
-					const fp = foodPointRef.current;
-					const liveMouse = mouseRef.current;
-					let target = fp;
-					if (liveMouse) {
-						const dFood = Math.abs(shot.pos.x - fp.x) + Math.abs(shot.pos.y - fp.y);
-						const dMouse = Math.abs(shot.pos.x - liveMouse.pos.x) + Math.abs(shot.pos.y - liveMouse.pos.y);
-						if (dMouse <= dFood) target = liveMouse.pos;
-					}
+					const target = foodPointRef.current;
 					let px = shot.pos.x;
 					let py = shot.pos.y;
 					for (let step = 0; step < 2 && (px !== target.x || py !== target.y); step++) {
 						if (px !== target.x) px += Math.sign(target.x - px);
 						else if (py !== target.y) py += Math.sign(target.y - py);
 					}
-					const curMouse = mouseRef.current;
 					const hitFood = px === foodPointRef.current.x && py === foodPointRef.current.y;
-					const hitMouse = curMouse !== null && px === curMouse.pos.x && py === curMouse.pos.y;
 					if (hitFood) {
 						foodPointRef.current = { ...nextHead };
 						setFoodPoint({ ...nextHead });
 						setBoardFlash("gold");
 						window.setTimeout(() => setBoardFlash(null), 240);
-					} else if (hitMouse && curMouse) {
-						mouseRef.current = { ...curMouse, pos: { ...nextHead } };
-						setMouse({ ...curMouse, pos: { ...nextHead } });
 					} else if (shot.life > 1) {
 						nextShots.push({ ...shot, pos: { x: px, y: py }, life: shot.life - 1 });
 					}
@@ -1486,10 +1270,6 @@ export default function App() {
 				poisonsRef.current = nextShots;
 				setPoisons(nextShots);
 			}
-			const bitesMouse =
-				mouseRef.current !== null &&
-				Math.abs(nextHead.x - mouseRef.current.pos.x) <= 1 &&
-				Math.abs(nextHead.y - mouseRef.current.pos.y) <= 1;
 
 			// Mıknatıs güç-up'ı: mama her tick'te yılana 1 hücre yaklaşır
 			if (isMagnetActive && !isSamePoint(nextHead, foodPointRef.current)) {
@@ -1510,26 +1290,10 @@ export default function App() {
 			const bitesPowerUp =
 				powerUpRef.current && isSamePoint(nextHead, powerUpRef.current.point);
 
-			// 🐀 Fare yakalandı: +10 puan (yazı penceresi yok)
-			if (bitesMouse) {
-				const nextScore = scoreRef.current + 10;
-				scoreRef.current = nextScore;
-				setScore(nextScore);
-				addXp(1);
-				setMouseCount((c) => c + 1);
-				if (sfxEnabled) playEatSfx(false, 0);
-				mouseRef.current = null;
-				setMouse(null);
-				mouseCooldownRef.current = 24 + Math.floor(Math.random() * 14);
-			}
 
-			const bodyToCheck = bitesFood ? oldSnake : oldSnake.slice(0, -1);
 			const hitsWall =
 				!wrapWalls &&
 				(nextX < 0 || nextX >= COLUMNS || nextY < 0 || nextY >= ROWS);
-			const hitsBody = bodyToCheck.some((segment) =>
-				isSamePoint(segment, nextHead),
-			);
 
 			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır
 			// Duvar: sonsuz can — olduğu yerde kal, oyun bitmez
@@ -1539,34 +1303,10 @@ export default function App() {
 				if (hasShield) setHasShield(false);
 				return;
 			}
-			// Kendi kuyruğunu yeme: gövdeye çarpınca o noktadan kes, yılan kısalır
-			if (hitsBody && !isGhostActive) {
-				const hitIdx = bodyToCheck.findIndex((seg) => isSamePoint(seg, nextHead));
-				if (hitIdx !== -1) {
-					// Kuyruğu yedi — çarpılan segmentten kuyruğa kadar olan kısım kopar
-					const cutSnake = [nextHead, ...oldSnake.slice(0, hitIdx)];
-					// En az 1 segment kalsın
-					const finalCut = cutSnake.length < 1 ? [nextHead] : cutSnake;
-					snakeRef.current = finalCut;
-					setSnake(finalCut);
-					// Küçük efekt: board flash ve titreşim
-					setBoardFlash("good");
-					window.setTimeout(() => setBoardFlash(null), 220);
-					try { navigator.vibrate?.(25); } catch {}
-					if (sfxEnabled) playEatSfx(false, 0);
-					// Kalkan varsa harca ama oyun bitmesin
-					if (hasShield) setHasShield(false);
-				} else {
-					// Bulunamadıysa sadece dur
-					try { navigator.vibrate?.(15); } catch {}
-				}
-				return;
-			}
+			// Yılan kendine temas edince geçip gider — kendini yemez, kesilmez, sonuna kadar büyür
 
 			const nextSnake = [nextHead, ...oldSnake];
 			if (!bitesFood) nextSnake.pop();
-			// 🐀 Fare kuyruktan parça kopardı → bir segment daha eksilir (kafa asla kaybolmaz)
-			if (mouseBite && !bitesMouse && nextSnake.length > 1) nextSnake.pop();
 			snakeRef.current = nextSnake;
 			setSnake(nextSnake);
 
@@ -2159,36 +1899,7 @@ const nextFoodCell = findOpenCell(
 									)}
 									{/* Kaydırma katmanı: 576 hücre yerine slot'lar, her tick'te transform ile kayarak hareket eder */}
 									<div className="board-layer">
-										{/* 🐀 Fare delikleri: köşelerden görünen oyuklar (en alt katman) */}
-										{MOUSE_HOLES.map((hole) => (
-											<div
-												key={`hole-${hole.x}-${hole.y}`}
-												className="snake-slot"
-												style={{
-													transform: `translate(${hole.x * 100}%, ${hole.y * 100}%)`,
-												}}
-											>
-												<div className="absolute inset-0 z-0 flex items-center justify-center mouse-hole">
-													🕳️
-												</div>
-											</div>
-										))}
-										{/* Koşan fare: hedef yöne göre yüzünü çevirir */}
-										{mouse && (
-											<div
-												className="snake-slot"
-												style={{
-													transform: `translate(${mouse.pos.x * 100}%, ${mouse.pos.y * 100}%)`,
-												}}
-											>
-												<div
-													className={`absolute inset-0 z-[4] flex items-center justify-center mouse-running ${mouse.pos.x < mouse.target.x ? "mouse-facing-right" : "mouse-facing-left"}`}
-												>
-													🐀
-												</div>
-											</div>
-										)}
-										{/* ☠️ Zehir mermileri: hedefi kovalayan parlayan toplar */}
+{/* ☠️ Zehir mermileri: hedefi kovalayan parlayan toplar */}
 										{poisons.map((p) => (
 											<div
 												key={`poison-${p.id}`}
@@ -2343,11 +2054,6 @@ const nextFoodCell = findOpenCell(
 									<p className="font-[var(--font-mono)] text-[9px] font-bold text-white/50">
 										SKOR <strong className="text-[var(--accent-1)] ml-1 tabular-nums">{String(score).padStart(3, "0")}</strong>
 									</p>
-									{mouseCount > 0 && (
-										<p className="font-pixel text-[9px] text-[#c9a2ff]">
-											🐀 ×{mouseCount}
-										</p>
-									)}
 									{score >= 100 && (
 										<p className="font-pixel text-[9px] text-[#a0c4ff] animate-pulse">
 											⚡ SEVİYE {Math.min(10, Math.floor(score / 100) + 1)}
@@ -2510,7 +2216,7 @@ const nextFoodCell = findOpenCell(
 								type="button"
 								onClick={firePoison}
 								disabled={poisonAmmo <= 0 || status === "over"}
-								title="Zehir püskürt — hedefi takip eder, yemi ağza getirir, fareyi avlar (F)"
+								title="Zehir püskürt — hedefi takip eder, yemi ağza getirir (F)"
 								className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] font-black transition-all active:scale-[0.98] ${poisonAmmo > 0 && status !== "over" ? "border-[#7CFC00]/40 bg-[#7CFC00]/15 text-[#b6ff7a] hover:bg-[#7CFC00]/25 hover:shadow-[0_0_18px_rgba(124,252,0,0.35)] cursor-pointer" : "border-white/5 bg-white/[0.02] text-white/30 cursor-not-allowed opacity-60"}`}
 							>
 								<span className="text-[15px] leading-none">☠️</span>
