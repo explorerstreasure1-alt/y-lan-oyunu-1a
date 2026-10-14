@@ -329,11 +329,6 @@ button:focus-visible {
 .snake-head.has-shield { box-shadow: 0 0 0 3px rgba(var(--accent-1-rgb)/0.9), 0 0 18px rgba(var(--accent-1-rgb)/0.7), inset 0 1px 0 rgba(255,255,255,0.4) !important; animation: shield-pulse 1s ease-in-out infinite; }
 @keyframes shield-pulse { 50%{ box-shadow: 0 0 0 4px rgba(var(--accent-1-rgb)/1), 0 0 22px rgba(var(--accent-1-rgb)/0.9);} }
 
-.mouse-hole { font-size: calc(11px * var(--font-scale)); opacity:0.5; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.4)); transform:scale(0.92); }
-.mouse-running { font-size: calc(14px * var(--font-scale)); animation: mouse-run 0.28s steps(2,end) infinite; filter: drop-shadow(0 2px 1px rgba(0,0,0,0.45)); }
-.mouse-facing-left{transform:scaleX(1)} .mouse-facing-right{transform:scaleX(-1)}
-@keyframes mouse-run { 0%{translate:0 0} 100%{translate:0 -12%} }
-
 /* Word toast — ortada, büyük, şeffaf zemin, 1.1sn sonra kaybolur */
 .word-toast {
   position:absolute; z-index:20; left:50%; top:50%; display:flex; flex-direction:column; align-items:center; gap:4px;

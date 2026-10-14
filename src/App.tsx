@@ -1290,12 +1290,11 @@ export default function App() {
 			const bitesPowerUp =
 				powerUpRef.current && isSamePoint(nextHead, powerUpRef.current.point);
 
-
 			const hitsWall =
 				!wrapWalls &&
 				(nextX < 0 || nextX >= COLUMNS || nextY < 0 || nextY >= ROWS);
 
-			// 👻 Hayalet: duvar/kuyruk çarpışmaları yok sayılır
+			// 👻 Hayalet: duvar çarpışması yok sayılır (yılan gövdeden her zaman geçer)
 			// Duvar: sonsuz can — olduğu yerde kal, oyun bitmez
 			if (hitsWall && !isGhostActive) {
 				try { navigator.vibrate?.(15); } catch {}
@@ -1503,20 +1502,17 @@ const nextFoodCell = findOpenCell(
 		speed,
 		wrapWalls,
 		autoPauseOnEat,
-		bestScore,
 		sfxEnabled,
 		speechMode,
 		isSlowBerryActive,
 		isDoubleXpActive,
 		hasShield,
 		isMagnetActive,
-		extraLives,
 		boostRemaining,
 		customWordBank,
 		effectivePool,
 		isBoosting,
 		setGameStatus,
-		sessionEatenWords.length,
 		language,
 		addXp,
 		isGhostActive,

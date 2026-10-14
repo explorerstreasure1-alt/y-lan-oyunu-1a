@@ -356,7 +356,7 @@ function speakUtterance(
   const utterance = makeUtterance(text, lang, rate, pitch, volume);
   if (onStart) utterance.onstart = onStart;
   if (onEnd) utterance.onend = onEnd;
-  if (onError) utterance.onerror = onError as any;
+  if (onError) utterance.onerror = onError;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const ss = window.speechSynthesis;
   // Öncelik: motor boşken cancel() ile yarış yaratma - kelime ANINDA başlasın.
