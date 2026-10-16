@@ -87,15 +87,11 @@ export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, is
           <button
             type="button"
             onPointerDown={(e) => { e.preventDefault(); buzz(); onPoisonFire(); }}
-            className={`flex h-10 w-10 select-none flex-col items-center justify-center rounded-full border-2 text-xs font-black transition-all active:scale-90 touch-manipulation ${
-              poisonAmmo > 0
-                ? "border-[#7CFC00]/60 bg-gradient-to-b from-[#7CFC00]/30 to-[#4a8a00]/30 text-[#c6ff8a] shadow-[0_0_16px_rgba(124,252,0,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]"
-                : "border-white/10 bg-white/[0.02] text-white/30 opacity-60"
-            }`}
-            aria-label="Zehir püskürt"
+            className={`flex h-10 w-10 select-none flex-col items-center justify-center rounded-full border-2 text-xs font-black transition-all active:scale-90 touch-manipulation border-[#7CFC00]/60 bg-gradient-to-b from-[#7CFC00]/30 to-[#4a8a00]/30 text-[#c6ff8a] shadow-[0_0_16px_rgba(124,252,0,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]`}
+            aria-label="Zehir püskürt (sınırsız)"
           >
             <span className="text-base leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">☠️</span>
-            <span className="-mt-0.5 text-[8px] tabular-nums">{poisonAmmo > 0 ? `×${poisonAmmo}` : "…"}</span>
+            <span className="-mt-0.5 text-[8px] tabular-nums">∞</span>
           </button>
         </div>
       </div>

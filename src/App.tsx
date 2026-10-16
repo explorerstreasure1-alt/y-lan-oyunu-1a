@@ -154,11 +154,12 @@ function findOpenCell(
 	return { x: 2, y: 2 };
 }
 
-// ☠️ Zehir: kafadan çıkar, hedefi (yem) her tick yeniden bulup kovalar
+// ☠️ Zehir: kafadan çıkar, hedefi (yem) her tick yeniden bulup kovalar — SINIRSIZ + HIZLI
 type PoisonShot = { id: number; pos: Point; life: number };
-const POISON_MAX = 3; // cephane
-const POISON_REGEN_SEC = 10; // yeni zehir dolum süresi (3 atış sonrası 10 sn)
+const POISON_MAX = 9999; // sınırsız — ammo bitmez
+const POISON_REGEN_SEC = 10; // artık kullanılmıyor (sınırsız olduğu için dolum yok)
 const POISON_LIFE_TICKS = 60; // ıskalayan mermi bu kadar tick sonra söner
+const POISON_SPEED = 5; // tick başına hücre — hızlı kovalama
 
 // Güç paneli tanımları — ❤️ Kalp ve ✨ Boost pasiftir (kutu yiyince anında uygulanır), kalanlar şarj biriktirir
 const POWER_DEFS: {
@@ -626,15 +627,7 @@ export default function App() {
 		const id = window.setInterval(() => {
 			setNowMs(Date.now());
 			setElapsedMs((e) => (statusRef.current === "playing" ? e + 1000 : e));
-			// ☠️ Zehir dolumu: oynarken her 10 sn'de 1 cephane (max 3)
-			if (statusRef.current === "playing" && poisonAmmoRef.current < POISON_MAX) {
-				poisonRegenRef.current += 1;
-				if (poisonRegenRef.current >= POISON_REGEN_SEC) {
-					poisonRegenRef.current = 0;
-					poisonAmmoRef.current = Math.min(POISON_MAX, poisonAmmoRef.current + 1);
-					setPoisonAmmo(poisonAmmoRef.current);
-				}
-			}
+			// ☠️ Zehir sınırsız — dolum sayacı yok
 		}, 1000);
 		return () => window.clearInterval(id);
 	}, []);
@@ -1042,15 +1035,11 @@ export default function App() {
 		}, durationMs);
 	};
 
-	// ☠️ Zehir ateşle: kafadan 1 mermi çıkar, yemi kovalar
+	// ☠️ Zehir ateşle: kafadan 1 mermi çıkar, yemi kovalar — SINIRSIZ, bekleme yok
 	const firePoison = useCallback(() => {
 		if (statusRef.current !== "playing") return;
-		if (poisonAmmoRef.current <= 0) return;
 		const head = snakeRef.current[0];
 		if (!head) return;
-		poisonAmmoRef.current -= 1;
-		setPoisonAmmo(poisonAmmoRef.current);
-		poisonRegenRef.current = 0;
 		const shot: PoisonShot = { id: nextFloatId(), pos: { ...head }, life: POISON_LIFE_TICKS };
 		poisonsRef.current = [...poisonsRef.current, shot];
 		setPoisons(poisonsRef.current);
@@ -1253,7 +1242,7 @@ export default function App() {
 					const target = foodPointRef.current;
 					let px = shot.pos.x;
 					let py = shot.pos.y;
-					for (let step = 0; step < 2 && (px !== target.x || py !== target.y); step++) {
+					for (let step = 0; step < POISON_SPEED && (px !== target.x || py !== target.y); step++) {
 						if (px !== target.x) px += Math.sign(target.x - px);
 						else if (py !== target.y) py += Math.sign(target.y - py);
 					}
@@ -1302,10 +1291,28 @@ export default function App() {
 				if (hasShield) setHasShield(false);
 				return;
 			}
-			// Yılan kendine temas edince geçip gider — kendini yemez, kesilmez, sonuna kadar büyür
-
-			const nextSnake = [nextHead, ...oldSnake];
-			if (!bitesFood) nextSnake.pop();
+			// Yılan kendini ısırınca CAN GİTMEZ — ısırılan kuyruk parçası kopar, yılan kısalır
+			const selfIndex = oldSnake.findIndex((s) => isSamePoint(s, nextHead));
+			let nextSnake: Point[];
+			if (selfIndex >= 0 && !isGhostActive) {
+				const kopanParca = oldSnake.length - selfIndex;
+				nextSnake = [nextHead, ...oldSnake.slice(0, selfIndex)];
+				// En az 2 halka kalsın — tamamen yok olmasın
+				if (nextSnake.length < 2) nextSnake = [nextHead, ...oldSnake.slice(0, 1)];
+				// Küçük ödül: kopardığın parça kadar puan, can gitmez
+				if (kopanParca > 0) {
+					scoreRef.current += kopanParca;
+					setScore(scoreRef.current);
+					setBoardFlash("good");
+					window.setTimeout(() => setBoardFlash(null), 240);
+					if (sfxEnabled) playEatSfx(false, 0);
+					try { navigator.vibrate?.(15); } catch {}
+				}
+				// Yem de aynı karedeyse normal yeme akışı aşağıda devam eder (skor/XP oradan gelir)
+			} else {
+				nextSnake = [nextHead, ...oldSnake];
+				if (!bitesFood) nextSnake.pop();
+			}
 			snakeRef.current = nextSnake;
 			setSnake(nextSnake);
 
@@ -2211,13 +2218,13 @@ const nextFoodCell = findOpenCell(
 							<button
 								type="button"
 								onClick={firePoison}
-								disabled={poisonAmmo <= 0 || status === "over"}
-								title="Zehir püskürt — hedefi takip eder, yemi ağza getirir (F)"
-								className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] font-black transition-all active:scale-[0.98] ${poisonAmmo > 0 && status !== "over" ? "border-[#7CFC00]/40 bg-[#7CFC00]/15 text-[#b6ff7a] hover:bg-[#7CFC00]/25 hover:shadow-[0_0_18px_rgba(124,252,0,0.35)] cursor-pointer" : "border-white/5 bg-white/[0.02] text-white/30 cursor-not-allowed opacity-60"}`}
+								disabled={status === "over"}
+								title="Zehir püskürt — sınırsız + hızlı, hedefi takip eder, yemi ağza getirir (F)"
+								className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] font-black transition-all active:scale-[0.98] ${status !== "over" ? "border-[#7CFC00]/40 bg-[#7CFC00]/15 text-[#b6ff7a] hover:bg-[#7CFC00]/25 hover:shadow-[0_0_18px_rgba(124,252,0,0.35)] cursor-pointer" : "border-white/5 bg-white/[0.02] text-white/30 cursor-not-allowed opacity-60"}`}
 							>
 								<span className="text-[15px] leading-none">☠️</span>
 								Zehir Püskürt
-								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] tabular-nums">×{poisonAmmo}</span>
+								<span className="rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] tabular-nums">∞</span>
 								<span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] text-white/40">F</span>
 							</button>
 						</div>
