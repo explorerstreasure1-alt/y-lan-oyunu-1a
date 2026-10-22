@@ -1720,7 +1720,7 @@ const nextFoodCell = findOpenCell(
 										onTouchStart={handleBoardTouchStart}
 										onTouchMove={handleBoardTouchMove}
 										onTouchEnd={handleBoardTouchEnd}
-										className={`game-board story-board ${isSpotlightActive ? "spotlight-on" : ""}`}
+										className={`flex-1 game-board story-board ${isSpotlightActive ? "spotlight-on" : ""}`}
 										style={
 											{
 												"--columns": COLUMNS,
