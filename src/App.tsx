@@ -1611,160 +1611,6 @@ const nextFoodCell = findOpenCell(
 			<div className="arcade-stars" aria-hidden="true" />
 
 			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
-				{/* Header — minimal & zarif, ultra kompakt */}
-				<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
-					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/[0.04] transition" aria-label="Ana sayfa">
-						<div className="pixel-mark header-mark" aria-hidden="true">
-							<span />
-						</div>
-						<div className="leading-none text-left">
-							<p className="font-[var(--font-display)] text-[10.5px] font-black tracking-[-0.02em] leading-none text-white">
-								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8px] font-bold tracking-[0.1em] text-white/35 align-super">7500</span>
-							</p>
-							<p className="hidden sm:block font-[var(--font-mono)] text-[7.5px] font-bold uppercase tracking-[0.12em] text-white/30 leading-none mt-[1px]">
-								A1 — C2 • 7500
-							</p>
-						</div>
-					</button>
-
-					<div className="flex flex-wrap items-center gap-1">
-						<div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur">
-							{(Object.keys(LANG_META) as Array<keyof typeof LANG_META>).map((c) => {
-								const meta = LANG_META[c];
-								return (
-									<button key={c} type="button" onClick={() => switchLanguage(c as LearningLanguage)} aria-label={meta.nameTr} title={meta.nameTr}
-										className={`h-6 px-1.5 sm:w-auto grid place-items-center rounded-full text-[11px] leading-none transition gap-1 ${language === c ? "bg-white text-[#0a0a12] shadow-sm px-2" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
-										<span>{meta.flag}</span><span className={`hidden ${language === c ? "sm:inline" : "sm:hidden"} text-[10px] font-bold`}>{meta.nameTr}</span>
-									</button>
-								);
-							})}
-						</div>
-						<span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-white/50">{LANG_META[language]?.flag} {LANG_META[language]?.nameTr}</span>
-						<button type="button" onClick={() => { setSeriesFocusTopic(null); setIsSeriesOpen(true); }}
-							className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition ${activeSeries ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)] shadow-sm" : "bg-white/[0.05] text-white/70 border-white/10 hover:bg-white/10 hover:text-white"}`}>
-							{activeSeries ? `📚 ${activeSeries.label}` : "Seriye Başla"}
-						</button>
-						<div className="hidden sm:flex items-center gap-1">
-							<button type="button" onClick={() => setIsWordOfDayOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Günlük">🌟</button>
-							<button type="button" onClick={() => setIsAchievementsOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Rozet">🏆</button>
-						</div>
-						<button
-							type="button"
-							onClick={() => setIsLibraryOpen(true)}
-							className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80"
-						>
-							📖 {learnedCount}/{activePool.length}
-						</button>
-						<button
-							type="button"
-							onClick={() => setIsStatsOpen(true)}
-							className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-1 py-0.5 text-[9px] font-bold text-[#a0c4ff]"
-							title={`${xp} XP • ${xp % 100}/100`}
-						>
-							⚡ Lv{xpLevel}
-						</button>
-						<button
-							type="button"
-							onClick={() => setIsEyePro((v) => !v)}
-						 className={`rounded-lg border px-1.5 py-0.5 text-[9px] font-bold transition ${isEyePro ? "border-[#8FB996]/40 bg-[#8FB996]/15 text-[#8FB996] shadow-[0_0_10px_rgba(143,185,150,0.18)]" : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
-							title={isEyePro ? "Gece Modu Pro: Açık (göz yormaz)" : "Gece Modu Pro: Kapalı — tıkla göz yormayan palete geç"}
-							aria-pressed={isEyePro}
-						>
-							{isEyePro ? "👁️‍🗨️ Gece Pro" : "👁️ Gece Pro"}
-						</button>
-						<button
-							type="button"
-							onClick={() => setIsSettingsOpen(true)}
-							className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80"
-							title="Ayarlar"
-						>
-							⚙️ Ayarlar
-						</button>
-					</div>
-				</header>
-
-				{/* PWA Install Banner */}
-				{showInstallBanner && (
-					<div className="order-2 mb-3 animate-pop flex items-center justify-between gap-3 rounded-xl border border-[#99f5c3]/40 bg-[#99f5c3]/15 px-4 py-2.5">
-						<div className="flex items-center gap-2">
-							<span className="text-xl">📲</span>
-							<div className="leading-tight">
-								<p className="font-pixel text-[11px] font-bold text-white">
-									UYGULAMA OLARAK YÜKLE
-								</p>
-								<p className="text-[11px] text-white/70">
-									Telefonuna indir, tek dokunuşla aç, internet olmadan oyna!
-								</p>
-							</div>
-						</div>
-						<div className="flex items-center gap-2">
-							<button
-								onClick={handleInstall}
-								type="button"
-								className="rounded-lg bg-[#99f5c3] px-3 py-1.5 text-xs font-black text-[#17112e]"
-							>
-								YÜKLE
-							</button>
-							<button
-								onClick={() => setShowInstallBanner(false)}
-								type="button"
-								className="text-white/50"
-							>
-								✕
-							</button>
-						</div>
-					</div>
-				)}
-
-				{/* Daily Goal — kompakt */}
-				<div className="order-5 mb-1.5">
-					<DailyGoalBar learnedCount={learnedCount} />
-				</div>
-
-				{/* Top Controls — mor zarif şerit */}
-				<div className="topic-mor order-4 mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border px-2 py-1 backdrop-blur">
-					<div className="flex items-center gap-1 text-[10px]">
-						<span className="text-white/50">Hız:</span>
-						<button
-							type="button"
-							onClick={() => setSpeed("slow")}
-							className={`rounded px-1 py-0.5 font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-						>
-							Yavaş
-						</button>
-						<button
-							type="button"
-							onClick={() => setSpeed("normal")}
-							className={`rounded px-1 py-0.5 font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-						>
-							Orta
-						</button>
-						<button
-							type="button"
-							onClick={() => setSpeed("fast")}
-							className={`rounded px-1 py-0.5 font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-						>
-							Hızlı
-						</button>
-					</div>
-					<div className="ml-auto flex items-center gap-1">
-						<button
-							type="button"
-							onClick={() => setWrapWalls(!wrapWalls)}
-							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls ? "bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30" : "bg-white/10 text-white/50"}`}
-						>
-							{wrapWalls ? "🌀 Sınırsız" : "🧱 Duvarlı"}
-						</button>
-						<button
-							type="button"
-							onClick={() => setCrtMode(!crtMode)}
-							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/50"}`}
-						>
-							📺 CRT
-						</button>
-					</div>
-				</div>
-
 				{/* MAIN - Story layout: mobile first, then desktop side-by-side */}
 				<div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
 					{/* Left/Center - Story Phone Frame */}
@@ -2154,6 +2000,160 @@ const nextFoodCell = findOpenCell(
 									v1.5
 								</span>
 							</div>
+				{/* Header — minimal & zarif, ultra kompakt */}
+				<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
+					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/[0.04] transition" aria-label="Ana sayfa">
+						<div className="pixel-mark header-mark" aria-hidden="true">
+							<span />
+						</div>
+						<div className="leading-none text-left">
+							<p className="font-[var(--font-display)] text-[10.5px] font-black tracking-[-0.02em] leading-none text-white">
+								SNAKE <span className="text-[var(--accent-1)]">ABC</span> <span className="font-[var(--font-mono)] text-[8px] font-bold tracking-[0.1em] text-white/35 align-super">7500</span>
+							</p>
+							<p className="hidden sm:block font-[var(--font-mono)] text-[7.5px] font-bold uppercase tracking-[0.12em] text-white/30 leading-none mt-[1px]">
+								A1 — C2 • 7500
+							</p>
+						</div>
+					</button>
+
+					<div className="flex flex-wrap items-center gap-1">
+						<div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur">
+							{(Object.keys(LANG_META) as Array<keyof typeof LANG_META>).map((c) => {
+								const meta = LANG_META[c];
+								return (
+									<button key={c} type="button" onClick={() => switchLanguage(c as LearningLanguage)} aria-label={meta.nameTr} title={meta.nameTr}
+										className={`h-6 px-1.5 sm:w-auto grid place-items-center rounded-full text-[11px] leading-none transition gap-1 ${language === c ? "bg-white text-[#0a0a12] shadow-sm px-2" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
+										<span>{meta.flag}</span><span className={`hidden ${language === c ? "sm:inline" : "sm:hidden"} text-[10px] font-bold`}>{meta.nameTr}</span>
+									</button>
+								);
+							})}
+						</div>
+						<span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-white/50">{LANG_META[language]?.flag} {LANG_META[language]?.nameTr}</span>
+						<button type="button" onClick={() => { setSeriesFocusTopic(null); setIsSeriesOpen(true); }}
+							className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition ${activeSeries ? "bg-[var(--accent-1)] text-[#071a12] border-[var(--accent-1)] shadow-sm" : "bg-white/[0.05] text-white/70 border-white/10 hover:bg-white/10 hover:text-white"}`}>
+							{activeSeries ? `📚 ${activeSeries.label}` : "Seriye Başla"}
+						</button>
+						<div className="hidden sm:flex items-center gap-1">
+							<button type="button" onClick={() => setIsWordOfDayOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Günlük">🌟</button>
+							<button type="button" onClick={() => setIsAchievementsOpen(true)} className="h-6 w-6 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 text-[11px] hover:bg-white/10 transition" title="Rozet">🏆</button>
+						</div>
+						<button
+							type="button"
+							onClick={() => setIsLibraryOpen(true)}
+							className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80"
+						>
+							📖 {learnedCount}/{activePool.length}
+						</button>
+						<button
+							type="button"
+							onClick={() => setIsStatsOpen(true)}
+							className="rounded-lg border border-[#a0c4ff]/30 bg-[#a0c4ff]/10 px-1 py-0.5 text-[9px] font-bold text-[#a0c4ff]"
+							title={`${xp} XP • ${xp % 100}/100`}
+						>
+							⚡ Lv{xpLevel}
+						</button>
+						<button
+							type="button"
+							onClick={() => setIsEyePro((v) => !v)}
+						 className={`rounded-lg border px-1.5 py-0.5 text-[9px] font-bold transition ${isEyePro ? "border-[#8FB996]/40 bg-[#8FB996]/15 text-[#8FB996] shadow-[0_0_10px_rgba(143,185,150,0.18)]" : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
+							title={isEyePro ? "Gece Modu Pro: Açık (göz yormaz)" : "Gece Modu Pro: Kapalı — tıkla göz yormayan palete geç"}
+							aria-pressed={isEyePro}
+						>
+							{isEyePro ? "👁️‍🗨️ Gece Pro" : "👁️ Gece Pro"}
+						</button>
+						<button
+							type="button"
+							onClick={() => setIsSettingsOpen(true)}
+							className="rounded-lg border border-white/15 bg-white/5 px-1 py-0.5 text-[9px] font-bold text-white/80"
+							title="Ayarlar"
+						>
+							⚙️ Ayarlar
+						</button>
+					</div>
+				</header>
+
+				{/* PWA Install Banner */}
+				{showInstallBanner && (
+					<div className="order-2 mb-3 animate-pop flex items-center justify-between gap-3 rounded-xl border border-[#99f5c3]/40 bg-[#99f5c3]/15 px-4 py-2.5">
+						<div className="flex items-center gap-2">
+							<span className="text-xl">📲</span>
+							<div className="leading-tight">
+								<p className="font-pixel text-[11px] font-bold text-white">
+									UYGULAMA OLARAK YÜKLE
+								</p>
+								<p className="text-[11px] text-white/70">
+									Telefonuna indir, tek dokunuşla aç, internet olmadan oyna!
+								</p>
+							</div>
+						</div>
+						<div className="flex items-center gap-2">
+							<button
+								onClick={handleInstall}
+								type="button"
+								className="rounded-lg bg-[#99f5c3] px-3 py-1.5 text-xs font-black text-[#17112e]"
+							>
+								YÜKLE
+							</button>
+							<button
+								onClick={() => setShowInstallBanner(false)}
+								type="button"
+								className="text-white/50"
+							>
+								✕
+							</button>
+						</div>
+					</div>
+				)}
+
+				{/* Daily Goal — kompakt */}
+				<div className="order-5 mb-1.5">
+					<DailyGoalBar learnedCount={learnedCount} />
+				</div>
+
+				{/* Top Controls — mor zarif şerit */}
+				<div className="topic-mor order-4 mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border px-2 py-1 backdrop-blur">
+					<div className="flex items-center gap-1 text-[10px]">
+						<span className="text-white/50">Hız:</span>
+						<button
+							type="button"
+							onClick={() => setSpeed("slow")}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+						>
+							Yavaş
+						</button>
+						<button
+							type="button"
+							onClick={() => setSpeed("normal")}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+						>
+							Orta
+						</button>
+						<button
+							type="button"
+							onClick={() => setSpeed("fast")}
+							className={`rounded px-1 py-0.5 font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
+						>
+							Hızlı
+						</button>
+					</div>
+					<div className="ml-auto flex items-center gap-1">
+						<button
+							type="button"
+							onClick={() => setWrapWalls(!wrapWalls)}
+							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls ? "bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30" : "bg-white/10 text-white/50"}`}
+						>
+							{wrapWalls ? "🌀 Sınırsız" : "🧱 Duvarlı"}
+						</button>
+						<button
+							type="button"
+							onClick={() => setCrtMode(!crtMode)}
+							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/50"}`}
+						>
+							📺 CRT
+						</button>
+					</div>
+				</div>
+
 						</div>
 					</div>
 
