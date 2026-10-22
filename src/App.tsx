@@ -1714,22 +1714,23 @@ const nextFoodCell = findOpenCell(
 									</div>
 								</div>
 
-								<div
-									ref={boardRef}
-									onTouchStart={handleBoardTouchStart}
-									onTouchMove={handleBoardTouchMove}
-									onTouchEnd={handleBoardTouchEnd}
-									className={`game-board story-board ${isSpotlightActive ? "spotlight-on" : ""}`}
-									style={
-										{
-											"--columns": COLUMNS,
-											"--rows": ROWS,
-										} as React.CSSProperties
-									}
-								>
-									{boardFlash && (
-										<div className={`board-flash ${boardFlash}`} />
-									)}
+								<div className="flex-1 min-h-0 flex flex-col">
+									<div
+										ref={boardRef}
+										onTouchStart={handleBoardTouchStart}
+										onTouchMove={handleBoardTouchMove}
+										onTouchEnd={handleBoardTouchEnd}
+										className={`game-board story-board ${isSpotlightActive ? "spotlight-on" : ""}`}
+										style={
+											{
+												"--columns": COLUMNS,
+												"--rows": ROWS,
+											} as React.CSSProperties
+										}
+									>
+										{boardFlash && (
+											<div className={`board-flash ${boardFlash}`} />
+										)}
 									{wordToast && (
 										<div key={wordToast.id} className="word-toast">
 											<span
@@ -1898,8 +1899,9 @@ const nextFoodCell = findOpenCell(
 									)}
 									{/* seviye banner yazı penceresi kapalı */}
 								</div>
+							</div>
 
-								<div className="flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1">
+							<div className="flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1">
 									<p className="font-[var(--font-mono)] text-[9px] font-bold text-white/50">
 										SKOR <strong className="text-[var(--accent-1)] ml-1 tabular-nums">{String(score).padStart(3, "0")}</strong>
 									</p>
@@ -1935,18 +1937,21 @@ const nextFoodCell = findOpenCell(
 								</div>
 							</div>
 
-							<ArcadeControls
-								onDirectionChange={changeDirection}
-								onPauseToggle={() =>
-									status === "playing" ? setGameStatus("paused") : startGame()
-								}
-								isPlaying={status === "playing"}
-								isBoosting={isBoosting}
-								onBoostStart={() => setIsBoosting(true)}
-								onBoostEnd={() => setIsBoosting(false)}
-								onPoisonFire={firePoison}
-								poisonAmmo={poisonAmmo}
-							/>
+							<div className="mt-auto w-full flex flex-col items-center shrink-0">
+								<ArcadeControls
+									compact={true}
+									onDirectionChange={changeDirection}
+									onPauseToggle={() =>
+										status === "playing" ? setGameStatus("paused") : startGame()
+									}
+									isPlaying={status === "playing"}
+									isBoosting={isBoosting}
+									onBoostStart={() => setIsBoosting(true)}
+									onBoostEnd={() => setIsBoosting(false)}
+									onPoisonFire={firePoison}
+									poisonAmmo={poisonAmmo}
+								/>
+							</div>
 
 							<div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
 								<button
@@ -2000,8 +2005,9 @@ const nextFoodCell = findOpenCell(
 									v1.5
 								</span>
 							</div>
-				{/* Header — minimal & zarif, ultra kompakt */}
-				<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
+							<div className="game-bottom-controls pt-2 space-y-1.5 shrink-0">
+								{/* Header — minimal & zarif, ultra kompakt */}
+								<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
 					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/[0.04] transition" aria-label="Ana sayfa">
 						<div className="pixel-mark header-mark" aria-hidden="true">
 							<span />
@@ -2153,6 +2159,7 @@ const nextFoodCell = findOpenCell(
 						</button>
 					</div>
 				</div>
+							</div>
 
 						</div>
 					</div>
