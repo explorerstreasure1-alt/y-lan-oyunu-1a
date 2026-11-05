@@ -103,13 +103,13 @@ type PowerUpOnGrid = {
 	emoji: string;
 };
 
-// --- ULTRA STORY SIZE: 18 x 32 = tam 9:16 story, kareler olabildiğince dar, alan maksimum geniş ---
-const COLUMNS = 18;
-const ROWS = 32;
+// --- OYUN ALANI: 20 x 15 = 4:3 en-boy oranlı, kareye yakın ve dikeyde oynanabilir ideal alan ---
+const COLUMNS = 20;
+const ROWS = 15;
 const STARTING_SNAKE: Point[] = [
-	{ x: 9, y: 16 },
-	{ x: 9, y: 17 },
-	{ x: 9, y: 18 },
+	{ x: 10, y: 7 },
+	{ x: 10, y: 8 },
+	{ x: 10, y: 9 },
 ];
 
 const directionDelta: Record<Direction, Point> = {
@@ -1133,10 +1133,8 @@ export default function App() {
 			const docTop = frame.getBoundingClientRect().top + window.scrollY;
 			// Alt nefes payı: 12px
 			const available = window.innerHeight - docTop - 12;
-			frame.style.height = `${Math.max(320, Math.round(available))}px`;
-			// 9/16 en-boy çerçeve dikeyde daralsın (flex ile board kalan yüksekliği alır)
 			board.style.width = "100%";
-			board.style.aspectRatio = "auto";
+			board.style.aspectRatio = "4/3";
 		};
 
 		fitFrameToViewport();
@@ -1606,7 +1604,7 @@ const nextFoodCell = findOpenCell(
 
 	return (
 		<main
-			className={`min-h-screen overflow-x-hidden bg-transparent px-3 py-3 text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
+			className={`flex flex-col justify-between min-h-screen overflow-x-hidden bg-transparent px-3 py-3 text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
 		>
 			<div className="arcade-stars" aria-hidden="true" />
 
@@ -1615,31 +1613,6 @@ const nextFoodCell = findOpenCell(
 				<div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
 					{/* Left/Center - Story Phone Frame */}
 					<div className="w-full max-w-[420px] flex-none">
-						{/* Mobile Speed Controls - Above game board */}
-						<div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#241743] p-1 sm:hidden">
-							<span className="text-[9px] text-white/50">Hız:</span>
-							<button
-								type="button"
-								onClick={() => setSpeed("slow")}
-								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "slow" ? "bg-[#99f5c3] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-							>
-								Yavaş
-							</button>
-							<button
-								type="button"
-								onClick={() => setSpeed("normal")}
-								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "normal" ? "bg-[#ffd96d] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-							>
-								Orta
-							</button>
-							<button
-								type="button"
-								onClick={() => setSpeed("fast")}
-								className={`rounded px-2 py-0.5 text-[9px] font-bold ${speed === "fast" ? "bg-[#ff84ad] text-[#17112e]" : "bg-white/10 text-white/60"}`}
-							>
-								Hızlı
-							</button>
-						</div>
 						<div ref={frameRef} className="story-frame">
 							<div className="arcade-bezel story-bezel relative overflow-hidden">
 								{/* combo yazı penceresi kapalı */}
@@ -2023,12 +1996,12 @@ const nextFoodCell = findOpenCell(
 					</button>
 
 					<div className="flex flex-wrap items-center gap-1">
-						<div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur">
+						<div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 backdrop-blur">
 							{(Object.keys(LANG_META) as Array<keyof typeof LANG_META>).map((c) => {
 								const meta = LANG_META[c];
 								return (
 									<button key={c} type="button" onClick={() => switchLanguage(c as LearningLanguage)} aria-label={meta.nameTr} title={meta.nameTr}
-										className={`h-6 px-1.5 sm:w-auto grid place-items-center rounded-full text-[11px] leading-none transition gap-1 ${language === c ? "bg-white text-[#0a0a12] shadow-sm px-2" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
+										className={`h-7 px-2 sm:w-auto grid place-items-center rounded-full text-[11px] leading-none transition gap-1 ${language === c ? "bg-white text-[#0a0a12] shadow-sm px-2" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
 										<span>{meta.flag}</span><span className={`hidden ${language === c ? "sm:inline" : "sm:hidden"} text-[10px] font-bold`}>{meta.nameTr}</span>
 									</button>
 								);
