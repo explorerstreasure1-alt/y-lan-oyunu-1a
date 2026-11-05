@@ -153,10 +153,22 @@ body {
     radial-gradient(700px 420px at 72% 38%, rgba(110,231,255,0.06), transparent 60%),
     linear-gradient(180deg, #0f0e2a 0%, #0B091A 38%, #0a0a14 100%);
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* ---------- Ana kapsayıcı — mobil ekrana tam oturur ---------- */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* En arka layer — siyah yerine derin mor lacivert + aurora */
@@ -244,7 +256,7 @@ button:focus-visible {
   -webkit-mask-composite: xor; mask-composite: exclude;
   pointer-events:none; opacity:0.9;
 }
-.story-board { aspect-ratio: 4 / 3 !important; }
+.story-board { aspect-ratio: 1 / 1 !important; }
 
 /* Kompakt header için küçük logo — daha zarif */
 .header-mark { width: 26px !important; height: 26px !important; border-radius: 8px !important; }
@@ -255,8 +267,12 @@ button:focus-visible {
 
 .game-board {
   position: relative; display:block;
-  aspect-ratio: 4 / 3; overflow:hidden;
-  width: 100%;
+  width: 88vw !important;
+  max-width: 360px !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  margin: 4px auto;
+  overflow:hidden;
   background-color: #0f0e2e;
   background-image:
     linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
@@ -265,7 +281,7 @@ button:focus-visible {
     radial-gradient(620px 380px at 82% 88%, rgba(255,183,0,0.10), transparent 58%),
     radial-gradient(600px 420px at 50% 52%, rgba(124,90,255,0.10), transparent 62%),
     linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%);
-  background-size: 100% calc(100%/15), calc(100%/20) 100%, auto, auto, auto, auto;
+  background-size: 100% calc(100%/20), calc(100%/20) 100%, auto, auto, auto, auto;
 }
 .game-board::after {
   content:""; position:absolute; inset:0; z-index:4; pointer-events:none; opacity:0.08;
@@ -418,6 +434,14 @@ button:focus-visible {
 @media (max-width:640px){
   .arcade-pad{ width:128px; height:128px; }
   .arcade-pad ~ button{ width:128px; }
+}
+
+/* D-Pad — kompakt başparmak alanı, canvas hemen altında */
+.d-pad-container {
+  width: 160px;
+  height: 160px;
+  margin: 4px auto;
+  transform: scale(0.85);
 }
 
 /* Poison blob - hedefi kovalayan zehir mermisi */

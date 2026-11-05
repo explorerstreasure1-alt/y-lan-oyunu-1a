@@ -103,13 +103,13 @@ type PowerUpOnGrid = {
 	emoji: string;
 };
 
-// --- OYUN ALANI: 20 x 15 = 4:3 en-boy oranlı, kareye yakın ve dikeyde oynanabilir ideal alan ---
+// --- OYUN ALANI: 20 x 20 = mükemmel kare (1/1), yılan kareleri tam oturur ---
 const COLUMNS = 20;
-const ROWS = 15;
+const ROWS = 20;
 const STARTING_SNAKE: Point[] = [
-	{ x: 10, y: 7 },
-	{ x: 10, y: 8 },
-	{ x: 10, y: 9 },
+	{ x: 10, y: 10 },
+	{ x: 10, y: 11 },
+	{ x: 10, y: 12 },
 ];
 
 const directionDelta: Record<Direction, Point> = {
@@ -1604,7 +1604,7 @@ const nextFoodCell = findOpenCell(
 
 	return (
 		<main
-			className={`flex flex-col justify-between min-h-screen overflow-x-hidden bg-transparent px-3 py-3 text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
+			className={`app-container overflow-x-hidden bg-transparent text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
 		>
 			<div className="arcade-stars" aria-hidden="true" />
 
@@ -1910,7 +1910,7 @@ const nextFoodCell = findOpenCell(
 								</div>
 							</div>
 
-							<div className="mt-auto w-full flex flex-col items-center shrink-0">
+							<div className="w-full flex flex-col items-center shrink-0 d-pad-container">
 								<ArcadeControls
 									compact={true}
 									onDirectionChange={changeDirection}
@@ -2119,16 +2119,18 @@ const nextFoodCell = findOpenCell(
 						<button
 							type="button"
 							onClick={() => setWrapWalls(!wrapWalls)}
+							title="Sınırsız duvar"
 							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${wrapWalls ? "bg-[#75d9a6]/20 text-[#75d9a6] border border-[#75d9a6]/30" : "bg-white/10 text-white/50"}`}
 						>
-							{wrapWalls ? "🌀 Sınırsız" : "🧱 Duvarlı"}
+							{wrapWalls ? "♾️" : "🧱"}
 						</button>
 						<button
 							type="button"
 							onClick={() => setCrtMode(!crtMode)}
+							title="CRT mod"
 							className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${crtMode ? "bg-[#ff9ebb] text-[#330012]" : "bg-white/10 text-white/50"}`}
 						>
-							📺 CRT
+							{crtMode ? "📺" : "🖥️"}
 						</button>
 					</div>
 				</div>
