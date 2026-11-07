@@ -295,7 +295,7 @@ button:focus-visible {
 
 .game-board {
   position: relative; display:block;
-  width: min(94vw, 82vh) !important;
+  width: min(94vw, 90vh) !important;
   max-width: none !important;
   aspect-ratio: 1 / 1 !important;
   flex-shrink: 0;

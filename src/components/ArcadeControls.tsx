@@ -35,9 +35,9 @@ function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
 export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd, onPoisonFire, poisonAmmo, compact = false }: ArcadeControlsProps) {
   const pad = compact ? "h-60 w-60 gap-3 rounded-[20px] p-2" : "h-44 w-44 gap-1.5 rounded-[20px] p-2";
   const dirBtn = compact
-    ? "w-full h-[52px] rounded-[12px] rounded-b-[8px] text-[16px] shadow-[0_3px_8px_rgba(0,0,0,0.30)]"
-    : "w-full h-[42px] rounded-t-[14px] rounded-b-[8px] text-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.32)]";
-  const dirBtnH = compact ? "h-[64px]" : "h-[52px]";
+    ? "w-[56px] h-[56px] rounded-[12px] rounded-b-[8px] text-[16px] shadow-[0_3px_8px_rgba(0,0,0,0.30)]"
+    : "w-[56px] h-[56px] rounded-t-[14px] rounded-b-[8px] text-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.32)]";
+  const dirBtnH = compact ? "w-[56px] h-[56px]" : "w-[56px] h-[56px]";
   const dirBtnSide = compact ? "rounded-r-[12px] rounded-l-[8px]" : "rounded-r-[14px] rounded-l-[8px]";
   const dirBtnV = compact ? "rounded-b-[12px] rounded-t-[8px]" : "rounded-b-[14px] rounded-t-[8px]";
   const pauseBtn = compact ? "h-10 w-10" : "h-10 w-10";
