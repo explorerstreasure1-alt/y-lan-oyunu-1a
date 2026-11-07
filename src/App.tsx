@@ -476,6 +476,7 @@ export default function App() {
 
 	// Landing / Home — giriş seçim ekranı (hop diye oyuna dalma)
 	const [showLanding, setShowLanding] = useState(true);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isEyePro, setIsEyePro] = useState<boolean>(() => {
 		try { return window.localStorage.getItem("snake-abc-eye-pro") === "on"; } catch { return false; }
 	});
@@ -1607,6 +1608,7 @@ const nextFoodCell = findOpenCell(
 			className={`app-container overflow-x-hidden bg-transparent text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
 		>
 			<div className="arcade-stars" aria-hidden="true" />
+			<button type="button" onClick={() => setIsMenuOpen((p) => !p)} className="menu-toggle" aria-label="Menü">↑</button>
 
 			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
 				{/* MAIN - Story layout: mobile first, then desktop side-by-side */}
@@ -1617,7 +1619,7 @@ const nextFoodCell = findOpenCell(
 							<div className="arcade-bezel story-bezel relative overflow-hidden">
 								{/* combo yazı penceresi kapalı */}
 
-								<div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#2a2258] px-2.5 py-1">
+								<div className={`flex shrink-0 items-center justify-between border-b border-white/10 bg-[#2a2258] px-2.5 py-1 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 									<div className="flex items-center gap-1.5 min-w-0">
 										<span className={`status-light status-${status} shrink-0`} />
 										<span className="font-[var(--font-mono)] text-[9px] font-bold tracking-wide text-white/80 truncate max-w-[130px]">
@@ -1647,7 +1649,7 @@ const nextFoodCell = findOpenCell(
 									</div>
 								</div>
 								{/* Compact progress — tek satır, kısa sayılar, mor tema korunuyor */}
-								<div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#1e1750] px-2.5 py-1.5">
+								<div className={`flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#1e1750] px-2.5 py-1.5 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 									<div className="flex items-center gap-1.5 min-w-0 flex-1">
 										<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent-1)] shadow-[0_0_6px_rgba(0,255,163,0.6)]" aria-hidden="true" />
 										<span className="font-[var(--font-mono)] text-[10px] font-bold tracking-[-0.01em] text-white truncate">
@@ -1874,7 +1876,7 @@ const nextFoodCell = findOpenCell(
 								</div>
 							</div>
 
-							<div className="flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1">
+							<div className={`flex shrink-0 items-center justify-between bg-[#2a2258] px-2.5 py-1 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 									<p className="font-[var(--font-mono)] text-[9px] font-bold text-white/50">
 										SKOR <strong className="text-[var(--accent-1)] ml-1 tabular-nums">{String(score).padStart(3, "0")}</strong>
 									</p>
@@ -1926,7 +1928,7 @@ const nextFoodCell = findOpenCell(
 								/>
 							</div>
 
-							<div className="mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5">
+							<div className={`mt-1 flex flex-nowrap shrink-0 justify-start gap-0.5 overflow-x-auto topic-scroll px-0.5 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 								<button
 									onClick={() => setIsSeriesOpen(true)}
 									type="button"
@@ -1978,7 +1980,7 @@ const nextFoodCell = findOpenCell(
 									v1.5
 								</span>
 							</div>
-							<div className="game-bottom-controls pt-2 space-y-1.5 shrink-0">
+							<div className={`game-bottom-controls pt-2 space-y-1.5 shrink-0 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 								{/* Header — minimal & zarif, ultra kompakt */}
 								<header className="order-1 mb-1.5 flex flex-wrap items-center justify-between gap-1 rounded-[12px] border border-white/[0.05] bg-[rgba(255,255,255,0.03)] px-2 py-1 backdrop-blur-[10px]">
 					<button type="button" onClick={() => setShowLanding(true)} className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/[0.04] transition" aria-label="Ana sayfa">
@@ -2140,7 +2142,7 @@ const nextFoodCell = findOpenCell(
 					</div>
 
 					{/* Right — minimal zarif, nefes alan */}
-					<div className="w-full max-w-[480px] flex-1 lg:max-w-[420px] space-y-3">
+					<div className={`w-full max-w-[480px] flex-1 lg:max-w-[420px] space-y-3 ${!isMenuOpen ? "menu-hidden" : ""}`}>
 						{/* Seviye — segmented pill, mor tema korunuyor */}
 						<div className="glass-panel rounded-2xl px-3 py-2.5 flex items-center justify-between">
 							<span className="text-[10px] font-bold tracking-[0.14em] text-white/35 uppercase">Seviye</span>
