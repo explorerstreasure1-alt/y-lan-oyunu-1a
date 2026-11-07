@@ -295,11 +295,11 @@ button:focus-visible {
 
 .game-board {
   position: relative; display:block;
-  width: 88vw !important;
-  max-width: 360px !important;
+  width: min(95vw, 500px) !important;
+  max-width: none !important;
   aspect-ratio: 1 / 1 !important;
   height: auto !important;
-  margin: 4px auto;
+  margin: 4px auto 0 auto;
   overflow:hidden;
   background-color: #0f0e2e;
   background-image:
@@ -466,10 +466,12 @@ button:focus-visible {
 
 /* D-Pad — kompakt başparmak alanı, canvas hemen altında */
 .d-pad-container {
-  width: 160px;
-  height: 160px;
-  margin: 4px auto;
-  transform: scale(0.85);
+  width: 220px;
+  height: 220px;
+  margin: -40px auto 0 auto;
+  transform: scale(0.95);
+  position: relative;
+  z-index: 10;
 }
 
 /* Poison blob - hedefi kovalayan zehir mermisi */
