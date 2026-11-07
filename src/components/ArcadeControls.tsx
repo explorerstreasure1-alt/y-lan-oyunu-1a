@@ -33,17 +33,17 @@ function dirPress(dir: Direction, onDirectionChange: (dir: Direction) => void) {
 }
 
 export function ArcadeControls({ onDirectionChange, onPauseToggle, isPlaying, isBoosting, onBoostStart, onBoostEnd, onPoisonFire, poisonAmmo, compact = false }: ArcadeControlsProps) {
-  const pad = compact ? "h-40 w-40 gap-2 rounded-[18px] p-2" : "h-44 w-44 gap-1.5 rounded-[20px] p-2";
+  const pad = compact ? "h-60 w-60 gap-3 rounded-[20px] p-2" : "h-44 w-44 gap-1.5 rounded-[20px] p-2";
   const dirBtn = compact
-    ? "w-full h-[36px] rounded-[12px] rounded-b-[8px] text-[14px] shadow-[0_3px_8px_rgba(0,0,0,0.30)]"
+    ? "w-full h-[52px] rounded-[12px] rounded-b-[8px] text-[16px] shadow-[0_3px_8px_rgba(0,0,0,0.30)]"
     : "w-full h-[42px] rounded-t-[14px] rounded-b-[8px] text-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.32)]";
-  const dirBtnH = compact ? "h-[46px]" : "h-[52px]";
+  const dirBtnH = compact ? "h-[64px]" : "h-[52px]";
   const dirBtnSide = compact ? "rounded-r-[12px] rounded-l-[8px]" : "rounded-r-[14px] rounded-l-[8px]";
   const dirBtnV = compact ? "rounded-b-[12px] rounded-t-[8px]" : "rounded-b-[14px] rounded-t-[8px]";
-  const pauseBtn = compact ? "h-9 w-9" : "h-10 w-10";
-  const bottomRow = compact ? "grid-cols-[1fr_auto_1fr] gap-2" : "grid-cols-[1fr_auto_1fr] gap-1.5";
-  const boostBtn = compact ? "h-7 w-34 text-[9px]" : "h-8 w-36 text-xs";
-  const poisonBtn = compact ? "h-9 w-9" : "h-10 w-10";
+  const pauseBtn = compact ? "h-10 w-10" : "h-10 w-10";
+  const bottomRow = compact ? "grid-cols-[1fr_auto_1fr] gap-3" : "grid-cols-[1fr_auto_1fr] gap-1.5";
+  const boostBtn = compact ? "h-8 w-40 text-[10px]" : "h-8 w-36 text-xs";
+  const poisonBtn = compact ? "h-10 w-10" : "h-10 w-10";
   const padShadow = compact
     ? "shadow-[0_8px_20px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.06),inset_0_-1px_0_rgba(0,0,0,0.30)]"
     : "shadow-[0_10px_28px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.35)]";

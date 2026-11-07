@@ -470,17 +470,17 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* D-Pad'i ekranın en altına sabitler */
   margin-top: auto;
-  padding-bottom: env(safe-area-inset-bottom, 12px);
+  padding-bottom: env(safe-area-inset-bottom, 16px);
   flex-shrink: 0;
 }
 
-/* D-Pad — geniş başparmak alanı, tuş karıştırmamalı, D-Pad grid ile senkron */
+/* D-Pad — geniş başparmak alanı, tuş karıştırmamalı, ekran altına sabit */
 .d-pad-container {
-  width: 260px;
-  height: 260px;
-  margin: 16px auto 0 auto;
+  width: 320px;
+  height: 320px;
+  margin: 0 auto;
   transform: scale(1);
   position: relative;
   z-index: 10;
@@ -495,12 +495,13 @@ button:focus-visible {
   .controls-container {
     transform: scale(0.9);
     transform-origin: center bottom;
+    padding-bottom: env(safe-area-inset-bottom, 12px);
   }
   .d-pad-container {
-    width: 210px;
-    height: 210px;
+    width: 260px;
+    height: 260px;
     transform: scale(0.9);
-    margin: 12px auto 0 auto;
+    margin: 0 auto;
   }
 }
 
