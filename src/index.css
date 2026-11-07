@@ -476,11 +476,11 @@ button:focus-visible {
   flex-shrink: 0;
 }
 
-/* D-Pad — geniş başparmak alanı, tuş karıştırmamalı */
+/* D-Pad — geniş başparmak alanı, tuş karıştırmamalı, D-Pad grid ile senkron */
 .d-pad-container {
-  width: 300px;
-  height: 300px;
-  margin: 20px auto 0 auto;
+  width: 260px;
+  height: 260px;
+  margin: 16px auto 0 auto;
   transform: scale(1);
   position: relative;
   z-index: 10;
@@ -497,10 +497,10 @@ button:focus-visible {
     transform-origin: center bottom;
   }
   .d-pad-container {
-    width: 240px;
-    height: 240px;
+    width: 210px;
+    height: 210px;
     transform: scale(0.9);
-    margin: 16px auto 0 auto;
+    margin: 12px auto 0 auto;
   }
 }
 
