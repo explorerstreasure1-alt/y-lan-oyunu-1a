@@ -266,7 +266,7 @@ button:focus-visible {
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(120,90,255,0.10), inset 0 1px 0 rgba(255,255,255,0.07);
   backdrop-filter: blur(12px) saturate(1.18);
 }
-.story-frame { display:flex; flex-direction:column; align-items:center; width:100%; min-height: auto; }
+.story-frame { display:flex; flex-direction:column; align-items:center; width:100%; flex: 1; min-height: 0; }
 @media (min-width: 640px) { .story-frame { min-height: auto; } }
 .story-bezel {
   position: relative;
@@ -295,11 +295,11 @@ button:focus-visible {
 
 .game-board {
   position: relative; display:block;
-  width: min(95vw, 500px) !important;
-  max-width: none !important;
+  width: 100%;
+  max-width: min(400px, 75vh) !important;
   aspect-ratio: 1 / 1 !important;
-  height: auto !important;
-  margin: 4px auto 0 auto;
+  flex-shrink: 0;
+  margin: 0 auto;
   overflow:hidden;
   background-color: #0f0e2e;
   background-image:
@@ -464,14 +464,43 @@ button:focus-visible {
   .arcade-pad ~ button{ width:128px; }
 }
 
-/* D-Pad — kompakt başparmak alanı, canvas hemen altında */
+/* Kontrol paneli — D-Pad ve tuşlar, oyun tahtasının ALTINDA, üzerine binmez */
+.controls-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding-bottom: env(safe-area-inset-bottom, 12px);
+  flex-shrink: 0;
+}
+
+/* D-Pad — kontrol panelinin içindeki yapı */
 .d-pad-container {
   width: 220px;
   height: 220px;
-  margin: -40px auto 0 auto;
+  margin: 8px auto 0 auto;
   transform: scale(0.95);
   position: relative;
   z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Küçük ekranlar için responsive ayar */
+@media (max-height: 700px) {
+  .game-board {
+    max-width: min(320px, 60vh) !important;
+  }
+  .controls-container {
+    transform: scale(0.9);
+    transform-origin: center bottom;
+  }
+  .d-pad-container {
+    width: 180px;
+    height: 180px;
+    transform: scale(0.85);
+  }
 }
 
 /* Poison blob - hedefi kovalayan zehir mermisi */

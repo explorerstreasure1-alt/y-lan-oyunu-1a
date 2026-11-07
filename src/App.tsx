@@ -1610,9 +1610,9 @@ const nextFoodCell = findOpenCell(
 			<div className="arcade-stars" aria-hidden="true" />
 			<button type="button" onClick={() => setIsMenuOpen((p) => !p)} className="menu-toggle" aria-label="Menü">↑</button>
 
-			<div className="relative mx-auto flex max-w-[1280px] flex-col lg:block">
+			<div className="relative mx-auto flex flex-1 min-h-0 max-w-[1280px] flex-col lg:block">
 				{/* MAIN - Story layout: mobile first, then desktop side-by-side */}
-				<div className="order-3 flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
+				<div className="order-3 flex flex-1 min-h-0 flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
 					{/* Left/Center - Story Phone Frame */}
 					<div className="w-full max-w-[420px] flex-none">
 						<div ref={frameRef} className="story-frame">
@@ -1912,7 +1912,7 @@ const nextFoodCell = findOpenCell(
 								</div>
 							</div>
 
-							<div className="w-full flex flex-col items-center shrink-0 d-pad-container">
+							<div className="controls-container d-pad-container">
 								<ArcadeControls
 									compact={true}
 									onDirectionChange={changeDirection}
