@@ -1605,16 +1605,16 @@ const nextFoodCell = findOpenCell(
 
 	return (
 		<main
-			className={`app-container overflow-x-hidden bg-transparent text-[var(--text-primary)] sm:px-5 sm:py-5 ${crtMode ? "crt-overlay" : ""}`}
+			className={`app-container overflow-x-hidden bg-transparent text-[var(--text-primary)] ${crtMode ? "crt-overlay" : ""}`}
 		>
 			<div className="arcade-stars" aria-hidden="true" />
 			<button type="button" onClick={() => setIsMenuOpen((p) => !p)} className="menu-toggle" aria-label="Menü">↑</button>
 
 			<div className="relative mx-auto flex flex-1 min-h-0 max-w-[1280px] flex-col lg:block">
 				{/* MAIN - Story layout: mobile first, then desktop side-by-side */}
-				<div className="order-3 flex flex-1 min-h-0 flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
+				<div className="order-3 flex flex-1 min-h-0 flex-col items-center gap-0 lg:flex-row lg:items-start lg:justify-center lg:gap-0">
 					{/* Left/Center - Story Phone Frame */}
-					<div className="w-full max-w-[420px] flex-none">
+					<div className="w-full flex-1">
 						<div ref={frameRef} className="story-frame">
 							<div className="arcade-bezel story-bezel relative overflow-hidden">
 								{/* combo yazı penceresi kapalı */}
